@@ -1,0 +1,932 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl" data-bs-theme="light">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>سُل وب — طراحی وب‌سایت حرفه‌ای</title>
+  <link rel="stylesheet" href="assets/css/bootstrap.rtl.min.css">
+  <link rel="stylesheet" href="assets/css/style.css">
+  <link rel="stylesheet" href="assets/css/icons-1.13.1/font/bootstrap-icons.min.css">
+  <style>
+    #scrollProgress {
+      position: fixed;
+      top: 0; right: 0; left: 0;
+      height: 3px;
+      background: linear-gradient(90deg, #6447f4, #0090e8);
+      width: 0%;
+      z-index: 9998;
+      transition: width .1s linear;
+    }
+  </style>
+</head>
+<body>
+
+<!-- ═══════════ Scroll Progress ═══════════ -->
+<div id="scrollProgress" aria-hidden="true"></div>
+
+<!-- ═══════════ Preloader ═══════════ -->
+<div id="preloader" aria-hidden="true">
+  <div class="preloader-logo">سُل وب</div>
+  <div class="preloader-dots">
+    <span></span><span></span><span></span>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════
+     NAVBAR
+═══════════════════════════════════════ -->
+<nav class="navbar navbar-sol navbar-expand-lg" aria-label="منوی اصلی">
+  <div class="container">
+
+    <!-- Brand -->
+    <a class="navbar-brand" href="#home">سُل وب</a>
+
+    <!-- Mobile toggle -->
+    <button class="navbar-toggler" type="button"
+            data-bs-toggle="collapse" data-bs-target="#navbarNav"
+            aria-controls="navbarNav" aria-expanded="false" aria-label="باز کردن منو">
+      <i class="bi bi-list" style="font-size:1.4rem;"></i>
+    </button>
+
+    <!-- Nav links -->
+    <div class="collapse navbar-collapse" id="navbarNav">
+      <ul class="navbar-nav me-auto mb-2 mb-lg-0 gap-1">
+        <li class="nav-item"><a class="nav-link active" href="#home">صفحه اصلی</a></li>
+        <li class="nav-item"><a class="nav-link" href="services.html">خدمات</a></li>
+        <li class="nav-item"><a class="nav-link" href="portfolio.html">نمونه کارها</a></li>
+        <li class="nav-item"><a class="nav-link" href="packages.html">پکیج‌ها</a></li>
+        <li class="nav-item"><a class="nav-link" href="about.html">درباره ما</a></li>
+        <li class="nav-item"><a class="nav-link" href="contact.html">تماس با ما</a></li>
+      </ul>
+
+      <div class="d-flex align-items-center gap-3">
+        <!-- Theme toggle -->
+        <button class="btn-theme-toggle" id="themeToggle" aria-label="تغییر تم">
+          <i class="bi bi-moon-stars-fill"></i>
+        </button>
+        <!-- CTA -->
+        <a href="contact.html" class="btn btn-main btn-sm d-none d-lg-inline-flex align-items-center gap-1">
+          مشاوره رایگان
+          <i class="bi bi-arrow-left"></i>
+        </a>
+      </div>
+    </div>
+
+  </div>
+</nav>
+
+
+<!-- ═══════════════════════════════════════
+     HERO SECTION
+═══════════════════════════════════════ -->
+<section class="hero-section" id="home">
+  <div class="hero-blob hero-blob-1" aria-hidden="true"></div>
+  <div class="hero-blob hero-blob-2" aria-hidden="true"></div>
+  <div class="hero-blob hero-blob-3" aria-hidden="true"></div>
+  <div class="hero-dots" aria-hidden="true"></div>
+
+  <div class="container">
+    <div class="row align-items-center">
+
+      <!-- Content -->
+      <div class="col-lg-6 hero-content">
+        <div class="hero-badge">
+          <span class="badge-dot"></span>
+          آماده پروژه جدید هستیم!
+        </div>
+
+        <h1 class="hero-title">
+          ما وب‌سایت‌هایی می‌سازیم که
+          <span style="display:block; color:#a394fb;">روح دارند</span>
+        </h1>
+
+        <p class="hero-subtitle">
+          وب‌سایت‌هایی مبتنی بر آخرین فناوری‌ها، با طراحی بی‌نظیر و عملکردی که کسب‌وکار شما را متحول می‌کند.
+        </p>
+
+        <div class="hero-actions">
+          <a href="portfolio.html" class="btn-hero-primary">
+            نمونه کارها
+            <i class="bi bi-grid-3x3-gap"></i>
+          </a>
+          <a href="contact.html" class="btn-hero-secondary">
+            <i class="bi bi-chat-dots"></i>
+            مشاوره رایگان
+          </a>
+        </div>
+
+        <!-- Stats -->
+        <div class="hero-stats">
+          <div class="hero-stat">
+            <strong>+۱۵۰</strong>
+            <span>پروژه موفق</span>
+          </div>
+          <div class="hero-stat">
+            <strong>+۸۰</strong>
+            <span>مشتری راضی</span>
+          </div>
+          <div class="hero-stat">
+            <strong>۵ سال</strong>
+            <span>تجربه</span>
+          </div>
+          <div class="hero-stat">
+            <strong>۹۸٪</strong>
+            <span>رضایت‌مشتری</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Visual -->
+      <div class="col-lg-6 hero-visual d-none d-lg-flex">
+        <div style="position:relative; width:340px; height:340px;">
+          <div style="
+            width:230px; height:230px;
+            border-radius:50% 50% 50% 50% / 60% 60% 40% 40%;
+            background: linear-gradient(160deg, rgba(255,255,255,.25) 0%, rgba(255,255,255,.05) 100%);
+            border: 1.5px solid rgba(255,255,255,.3);
+            backdrop-filter: blur(20px);
+            margin: 55px auto 0;
+            display: flex; align-items: center; justify-content: center;
+            animation: ghostFloat 4s ease-in-out infinite;
+            position: relative; z-index: 2;
+          ">
+            <i class="bi bi-code-slash" style="font-size:4rem; color:rgba(255,255,255,.9);"></i>
+          </div>
+          <div style="width:30px;height:30px;border-radius:50%;background:rgba(255,255,255,.2);position:absolute;bottom:34px;left:120px;animation:ghostFloat 4s ease-in-out infinite;animation-delay:.2s;"></div>
+          <div style="width:18px;height:18px;border-radius:50%;background:rgba(255,255,255,.15);position:absolute;bottom:12px;left:135px;animation:ghostFloat 4s ease-in-out infinite;animation-delay:.4s;"></div>
+
+          <div class="hero-glass-card card-tl" style="right:-20px; top:10px;">
+            <div class="d-flex align-items-center gap-2">
+              <i class="bi bi-check-circle-fill" style="color:#4ade80;"></i>
+              <span style="font-size:.8rem; font-weight:600;">پروژه تحویل داده شد!</span>
+            </div>
+          </div>
+          <div class="hero-glass-card card-br" style="left:-20px; bottom:10px;">
+            <div class="d-flex align-items-center gap-2">
+              <i class="bi bi-star-fill" style="color:#fbbf24;"></i>
+              <span style="font-size:.8rem; font-weight:600;">رضایت ۱۰۰٪</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+
+<!-- ═══════════════════════════════════════
+     SERVICES SECTION
+═══════════════════════════════════════ -->
+<section class="services-section" id="services">
+  <div class="container">
+
+    <div class="text-center mb-5 reveal">
+      <span class="section-tag">
+        <i class="bi bi-lightning-charge-fill"></i>
+        خدمات ما
+      </span>
+      <h2 class="section-title">طراحی آنلاین، بی‌نظیر و باکیفیت</h2>
+      <p class="section-subtitle mx-auto">
+        از طراحی اختصاصی تا فروشگاه آنلاین — همه چیز در یک تیم حرفه‌ای
+      </p>
+    </div>
+
+    <div class="row g-4">
+
+      <div class="col-md-6 col-lg-4 reveal reveal-delay-1">
+        <div class="card-sol card-service h-100">
+          <div class="service-icon">
+            <i class="bi bi-code-slash"></i>
+          </div>
+          <h5>طراحی اختصاصی با PHP</h5>
+          <p class="text-muted" style="font-size:.9rem; line-height:1.8;">
+            توسعه وب‌سایت کاملاً سفارشی با PHP، Laravel یا Node.js — بدون محدودیت قالب، با سرعت و امنیت بالا.
+          </p>
+          <a href="services.html" class="btn btn-ghost btn-sm mt-3">
+            بیشتر بدانید
+            <i class="bi bi-arrow-left ms-1"></i>
+          </a>
+        </div>
+      </div>
+
+      <div class="col-md-6 col-lg-4 reveal reveal-delay-2">
+        <div class="card-sol card-service h-100">
+          <div class="service-icon">
+            <i class="bi bi-wordpress"></i>
+          </div>
+          <h5>طراحی با وردپرس</h5>
+          <p class="text-muted" style="font-size:.9rem; line-height:1.8;">
+            ساخت وب‌سایت با وردپرس — شخصی‌سازی کامل، مدیریت آسان محتوا و افزونه‌های حرفه‌ای.
+          </p>
+          <a href="services.html" class="btn btn-ghost btn-sm mt-3">
+            بیشتر بدانید
+            <i class="bi bi-arrow-left ms-1"></i>
+          </a>
+        </div>
+      </div>
+
+      <div class="col-md-6 col-lg-4 reveal reveal-delay-3">
+        <div class="card-sol card-service h-100">
+          <div class="service-icon">
+            <i class="bi bi-cart4"></i>
+          </div>
+          <h5>فروشگاه آنلاین</h5>
+          <p class="text-muted" style="font-size:.9rem; line-height:1.8;">
+            فروشگاه اینترنتی حرفه‌ای با امکانات کامل پرداخت، انبارداری و گزارش‌گیری پیشرفته.
+          </p>
+          <a href="services.html" class="btn btn-ghost btn-sm mt-3">
+            بیشتر بدانید
+            <i class="bi bi-arrow-left ms-1"></i>
+          </a>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+
+<!-- ═══════════════════════════════════════
+     HOW WE WORK
+═══════════════════════════════════════ -->
+<section class="how-section" id="how">
+  <div class="container">
+
+    <div class="text-center mb-5 reveal">
+      <span class="section-tag">
+        <i class="bi bi-gear-fill"></i>
+        فرایند کار
+      </span>
+      <h2 class="section-title">چطور کار می‌کنیم؟</h2>
+      <p class="section-subtitle mx-auto">
+        از اولین جلسه مشاوره تا تحویل محصول نهایی، هر مرحله را شفاف دنبال کنید
+      </p>
+    </div>
+
+    <!-- Steps — Desktop timeline -->
+    <div class="d-none d-lg-flex align-items-start justify-content-between mb-5 position-relative reveal" style="gap:1rem;">
+      <div style="position:absolute;top:1.5rem;right:12.5%;left:12.5%;height:2px;background:linear-gradient(90deg,#6447f4,#0090e8);opacity:.25;z-index:0;"></div>
+
+      <div class="text-center flex-fill position-relative" style="z-index:1;">
+        <div class="step-num mx-auto">۱</div>
+        <h6 style="font-weight:700;">کشف</h6>
+        <p class="text-muted" style="font-size:.82rem; line-height:1.7;">شناخت کامل از کسب‌وکار، هدف‌ها و مخاطبان شما</p>
+      </div>
+      <div class="text-center flex-fill position-relative" style="z-index:1;">
+        <div class="step-num mx-auto">۲</div>
+        <h6 style="font-weight:700;">طراحی</h6>
+        <p class="text-muted" style="font-size:.82rem; line-height:1.7;">طراحی پروتوتایپ و تایید رابط کاربری با مشتری</p>
+      </div>
+      <div class="text-center flex-fill position-relative" style="z-index:1;">
+        <div class="step-num mx-auto">۳</div>
+        <h6 style="font-weight:700;">توسعه</h6>
+        <p class="text-muted" style="font-size:.82rem; line-height:1.7;">کدنویسی تمیز، سریع و بهینه با بهترین تکنولوژی‌ها</p>
+      </div>
+      <div class="text-center flex-fill position-relative" style="z-index:1;">
+        <div class="step-num mx-auto">۴</div>
+        <h6 style="font-weight:700;">تحویل</h6>
+        <p class="text-muted" style="font-size:.82rem; line-height:1.7;">تست کامل، انتشار و پشتیبانی مداوم پروژه شما</p>
+      </div>
+    </div>
+
+    <!-- Steps — Mobile -->
+    <div class="d-lg-none row g-3 mb-4">
+      <div class="col-6 reveal reveal-delay-1">
+        <div class="card-sol step-card h-100">
+          <div class="step-num">۱</div>
+          <h6 style="font-weight:700;">کشف</h6>
+          <p class="text-muted" style="font-size:.82rem; line-height:1.7; margin:0;">شناخت کامل کسب‌وکار شما</p>
+        </div>
+      </div>
+      <div class="col-6 reveal reveal-delay-2">
+        <div class="card-sol step-card h-100">
+          <div class="step-num">۲</div>
+          <h6 style="font-weight:700;">طراحی</h6>
+          <p class="text-muted" style="font-size:.82rem; line-height:1.7; margin:0;">پروتوتایپ و تایید رابط کاربری</p>
+        </div>
+      </div>
+      <div class="col-6 reveal reveal-delay-3">
+        <div class="card-sol step-card h-100">
+          <div class="step-num">۳</div>
+          <h6 style="font-weight:700;">توسعه</h6>
+          <p class="text-muted" style="font-size:.82rem; line-height:1.7; margin:0;">کدنویسی تمیز و بهینه</p>
+        </div>
+      </div>
+      <div class="col-6 reveal reveal-delay-4">
+        <div class="card-sol step-card h-100">
+          <div class="step-num">۴</div>
+          <h6 style="font-weight:700;">تحویل</h6>
+          <p class="text-muted" style="font-size:.82rem; line-height:1.7; margin:0;">انتشار و پشتیبانی مداوم</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Why us -->
+    <div class="row g-4 mt-2">
+      <div class="col-md-4 reveal reveal-delay-1">
+        <div class="d-flex gap-3">
+          <div class="float-icon float-icon-main flex-shrink-0"><i class="bi bi-shield-check"></i></div>
+          <div>
+            <h6 style="font-weight:700; margin-bottom:.3rem;">ضمانت کیفیت</h6>
+            <p class="text-muted" style="font-size:.875rem; line-height:1.7; margin:0;">تمام پروژه‌ها با ضمانت کیفیت و بازنگری رایگان تحویل داده می‌شوند.</p>
+          </div>
+        </div>
+      </div>
+      <div class="col-md-4 reveal reveal-delay-2">
+        <div class="d-flex gap-3">
+          <div class="float-icon float-icon-accent flex-shrink-0"><i class="bi bi-lightning-charge"></i></div>
+          <div>
+            <h6 style="font-weight:700; margin-bottom:.3rem;">تحویل سریع</h6>
+            <p class="text-muted" style="font-size:.875rem; line-height:1.7; margin:0;">پروژه‌ها در کمترین زمان ممکن و با بالاترین کیفیت تحویل داده می‌شوند.</p>
+          </div>
+        </div>
+      </div>
+      <div class="col-md-4 reveal reveal-delay-3">
+        <div class="d-flex gap-3">
+          <div class="float-icon float-icon-main flex-shrink-0"><i class="bi bi-headset"></i></div>
+          <div>
+            <h6 style="font-weight:700; margin-bottom:.3rem;">پشتیبانی ۲۴/۷</h6>
+            <p class="text-muted" style="font-size:.875rem; line-height:1.7; margin:0;">تیم پشتیبانی ما همیشه آماده پاسخگویی به سوالات و رفع مشکلات شماست.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</section>
+
+
+<!-- ═══════════════════════════════════════
+     STATS SECTION
+═══════════════════════════════════════ -->
+<section class="stats-section" id="stats">
+  <div class="container">
+    <div class="stats-grid reveal">
+
+      <div class="stat-card">
+        <div class="stat-icon"><i class="bi bi-trophy-fill"></i></div>
+        <span class="stat-number">
+          <span class="counter" data-target="150" data-prefix="+" data-suffix=""></span>
+        </span>
+        <span class="stat-label">پروژه موفق</span>
+      </div>
+
+      <div class="stat-divider-v"></div>
+
+      <div class="stat-card">
+        <div class="stat-icon"><i class="bi bi-people-fill"></i></div>
+        <span class="stat-number">
+          <span class="counter" data-target="80" data-prefix="+" data-suffix=""></span>
+        </span>
+        <span class="stat-label">مشتری راضی</span>
+      </div>
+
+      <div class="stat-divider-v"></div>
+
+      <div class="stat-card">
+        <div class="stat-icon"><i class="bi bi-calendar-check-fill"></i></div>
+        <span class="stat-number">
+          <span class="counter" data-target="5" data-suffix=" سال"></span>
+        </span>
+        <span class="stat-label">تجربه</span>
+      </div>
+
+      <div class="stat-divider-v"></div>
+
+      <div class="stat-card">
+        <div class="stat-icon"><i class="bi bi-hand-thumbs-up-fill"></i></div>
+        <span class="stat-number">
+          <span class="counter" data-target="98" data-suffix="٪"></span>
+        </span>
+        <span class="stat-label">رضایت مشتری</span>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+
+<!-- ═══════════════════════════════════════
+     PORTFOLIO SECTION
+═══════════════════════════════════════ -->
+<section class="portfolio-section" id="portfolio">
+  <div class="container">
+
+    <div class="text-center mb-5 reveal">
+      <span class="section-tag">
+        <i class="bi bi-collection-fill"></i>
+        نمونه کارها
+      </span>
+      <h2 class="section-title">آخرین پروژه‌های ما</h2>
+      <p class="section-subtitle mx-auto">
+        نگاهی به برخی از بهترین پروژه‌هایی که برای مشتریان عزیزمان انجام داده‌ایم
+      </p>
+    </div>
+
+    <div class="portfolio-filter justify-content-center reveal">
+      <button class="filter-btn active" data-filter="*">همه</button>
+      <button class="filter-btn" data-filter=".web">طراحی وب</button>
+      <button class="filter-btn" data-filter=".shop">فروشگاه</button>
+      <button class="filter-btn" data-filter=".ui">UI/UX</button>
+    </div>
+
+    <div class="row g-4">
+
+      <div class="col-md-6 col-lg-4 portfolio-item web reveal reveal-delay-1">
+        <div class="card-sol card-portfolio">
+          <div class="portfolio-img">
+            <div style="width:100%;height:220px;background:linear-gradient(135deg,#6447f4,#0090e8);display:flex;align-items:center;justify-content:center;">
+              <i class="bi bi-laptop" style="font-size:4rem;color:rgba(255,255,255,.7);"></i>
+            </div>
+            <div class="portfolio-overlay">
+              <a href="#" class="btn-portfolio-view">
+                <i class="bi bi-eye me-1"></i>
+                مشاهده پروژه
+              </a>
+            </div>
+          </div>
+          <div class="portfolio-body">
+            <p class="tag">طراحی وب</p>
+            <h5 style="font-weight:700;font-size:.95rem;margin-bottom:.3rem;">وب‌سایت شرکتی آتین‌دیزاین</h5>
+            <p class="text-muted" style="font-size:.82rem;margin:0;">طراحی و توسعه وب‌سایت شرکت دیزاین آتین</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="col-md-6 col-lg-4 portfolio-item shop reveal reveal-delay-2">
+        <div class="card-sol card-portfolio">
+          <div class="portfolio-img">
+            <div style="width:100%;height:220px;background:linear-gradient(135deg,#0090e8,#4dc3ff);display:flex;align-items:center;justify-content:center;">
+              <i class="bi bi-bag-heart" style="font-size:4rem;color:rgba(255,255,255,.7);"></i>
+            </div>
+            <div class="portfolio-overlay">
+              <a href="#" class="btn-portfolio-view">
+                <i class="bi bi-eye me-1"></i>
+                مشاهده پروژه
+              </a>
+            </div>
+          </div>
+          <div class="portfolio-body">
+            <p class="tag">فروشگاه</p>
+            <h5 style="font-weight:700;font-size:.95rem;margin-bottom:.3rem;">فروشگاه آنلاین مد و پوشاک</h5>
+            <p class="text-muted" style="font-size:.82rem;margin:0;">طراحی فروشگاه برند لباس لوکس کیانی</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="col-md-6 col-lg-4 portfolio-item ui reveal reveal-delay-3">
+        <div class="card-sol card-portfolio">
+          <div class="portfolio-img">
+            <div style="width:100%;height:220px;background:linear-gradient(135deg,#a394fb,#6447f4);display:flex;align-items:center;justify-content:center;">
+              <i class="bi bi-palette2" style="font-size:4rem;color:rgba(255,255,255,.7);"></i>
+            </div>
+            <div class="portfolio-overlay">
+              <a href="#" class="btn-portfolio-view">
+                <i class="bi bi-eye me-1"></i>
+                مشاهده پروژه
+              </a>
+            </div>
+          </div>
+          <div class="portfolio-body">
+            <p class="tag">UI/UX</p>
+            <h5 style="font-weight:700;font-size:.95rem;margin-bottom:.3rem;">اپلیکیشن مدیریت مالی</h5>
+            <p class="text-muted" style="font-size:.82rem;margin:0;">طراحی رابط کاربری اپ مدیریت بودجه</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="col-md-6 col-lg-4 portfolio-item web reveal reveal-delay-1">
+        <div class="card-sol card-portfolio">
+          <div class="portfolio-img">
+            <div style="width:100%;height:220px;background:linear-gradient(135deg,#1e1274,#4028b8);display:flex;align-items:center;justify-content:center;">
+              <i class="bi bi-building" style="font-size:4rem;color:rgba(255,255,255,.7);"></i>
+            </div>
+            <div class="portfolio-overlay">
+              <a href="#" class="btn-portfolio-view">
+                <i class="bi bi-eye me-1"></i>
+                مشاهده پروژه
+              </a>
+            </div>
+          </div>
+          <div class="portfolio-body">
+            <p class="tag">طراحی وب</p>
+            <h5 style="font-weight:700;font-size:.95rem;margin-bottom:.3rem;">پورتال سازمانی پارسیان</h5>
+            <p class="text-muted" style="font-size:.82rem;margin:0;">طراحی پورتال اینترانت سازمان پارسیان</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="col-md-6 col-lg-4 portfolio-item shop reveal reveal-delay-2">
+        <div class="card-sol card-portfolio">
+          <div class="portfolio-img">
+            <div style="width:100%;height:220px;background:linear-gradient(135deg,#005896,#0090e8);display:flex;align-items:center;justify-content:center;">
+              <i class="bi bi-cart3" style="font-size:4rem;color:rgba(255,255,255,.7);"></i>
+            </div>
+            <div class="portfolio-overlay">
+              <a href="#" class="btn-portfolio-view">
+                <i class="bi bi-eye me-1"></i>
+                مشاهده پروژه
+              </a>
+            </div>
+          </div>
+          <div class="portfolio-body">
+            <p class="tag">فروشگاه</p>
+            <h5 style="font-weight:700;font-size:.95rem;margin-bottom:.3rem;">فروشگاه دیجیتال پرتو</h5>
+            <p class="text-muted" style="font-size:.82rem;margin:0;">راه‌اندازی فروشگاه آنلاین تجهیزات الکترونیک</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="col-md-6 col-lg-4 portfolio-item ui reveal reveal-delay-3">
+        <div class="card-sol card-portfolio">
+          <div class="portfolio-img">
+            <div style="width:100%;height:220px;background:linear-gradient(135deg,#4028b8,#836af8);display:flex;align-items:center;justify-content:center;">
+              <i class="bi bi-grid-3x3-gap-fill" style="font-size:4rem;color:rgba(255,255,255,.7);"></i>
+            </div>
+            <div class="portfolio-overlay">
+              <a href="#" class="btn-portfolio-view">
+                <i class="bi bi-eye me-1"></i>
+                مشاهده پروژه
+              </a>
+            </div>
+          </div>
+          <div class="portfolio-body">
+            <p class="tag">UI/UX</p>
+            <h5 style="font-weight:700;font-size:.95rem;margin-bottom:.3rem;">داشبورد تحلیل داده</h5>
+            <p class="text-muted" style="font-size:.82rem;margin:0;">طراحی داشبورد مدیریت و گزارش‌گیری هوشمند</p>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+    <div class="text-center mt-5 reveal">
+      <a href="portfolio.html" class="btn btn-outline-main btn-lg">
+        مشاهده همه پروژه‌ها
+        <i class="bi bi-arrow-left ms-2"></i>
+      </a>
+    </div>
+
+  </div>
+</section>
+
+
+<!-- ═══════════════════════════════════════
+     PACKAGES / PRICING
+═══════════════════════════════════════ -->
+<section class="packages-section" id="packages">
+  <div class="container">
+
+    <div class="text-center mb-5 reveal">
+      <span class="section-tag">
+        <i class="bi bi-box-seam-fill"></i>
+        پکیج‌ها
+      </span>
+      <h2 class="section-title">پکیج مناسب خود را انتخاب کنید</h2>
+      <p class="section-subtitle mx-auto">
+        راه‌حل‌های متنوع برای هر نوع کسب‌وکار — از طراحی ساده تا پروژه‌های سازمانی
+      </p>
+    </div>
+
+    <div class="row g-4 justify-content-center">
+
+      <!-- Package 1: Basic -->
+      <div class="col-md-6 col-lg-3 reveal reveal-delay-1">
+        <div class="card-sol card-package h-100">
+          <div class="package-badge">پایه</div>
+          <div class="package-icon"><i class="bi bi-file-earmark-code"></i></div>
+          <h4 class="package-name">پایه</h4>
+          <p class="package-desc">طراحی ساده وردپرسی با قالب آماده — مناسب کسب‌وکارهای نوپا</p>
+          <ul class="package-features">
+            <li><i class="bi bi-check-lg"></i> قالب وردپرس آماده</li>
+            <li><i class="bi bi-check-lg"></i> ۵ صفحه اصلی</li>
+            <li><i class="bi bi-check-lg"></i> ریسپانسیو</li>
+            <li><i class="bi bi-check-lg"></i> ۱ ماه پشتیبانی</li>
+            <li class="disabled"><i class="bi bi-x-lg"></i> سئو پیشرفته</li>
+            <li class="disabled"><i class="bi bi-x-lg"></i> طراحی اختصاصی</li>
+          </ul>
+          <a href="contact.html" class="btn btn-outline-main w-100 mt-auto">مشاوره رایگان</a>
+        </div>
+      </div>
+
+      <!-- Package 2: Economy -->
+      <div class="col-md-6 col-lg-3 reveal reveal-delay-2">
+        <div class="card-sol card-package h-100">
+          <div class="package-badge">اقتصادی</div>
+          <div class="package-icon"><i class="bi bi-window-stack"></i></div>
+          <h4 class="package-name">اقتصادی</h4>
+          <p class="package-desc">طراحی وردپرسی با شخصی‌سازی بیشتر — ایده‌آل برای کسب‌وکارهای متوسط</p>
+          <ul class="package-features">
+            <li><i class="bi bi-check-lg"></i> وردپرس شخصی‌سازی‌شده</li>
+            <li><i class="bi bi-check-lg"></i> تا ۱۰ صفحه</li>
+            <li><i class="bi bi-check-lg"></i> سئو پایه</li>
+            <li><i class="bi bi-check-lg"></i> ۳ ماه پشتیبانی</li>
+            <li><i class="bi bi-check-lg"></i> فرم تماس</li>
+            <li class="disabled"><i class="bi bi-x-lg"></i> کد اختصاصی</li>
+          </ul>
+          <a href="contact.html" class="btn btn-outline-main w-100 mt-auto">مشاوره رایگان</a>
+        </div>
+      </div>
+
+      <!-- Package 3: Pro -->
+      <div class="col-md-6 col-lg-3 reveal reveal-delay-3">
+        <div class="card-sol card-package card-package-featured h-100">
+          <div class="package-badge package-badge-featured">پرطرفدار</div>
+          <div class="package-icon"><i class="bi bi-rocket-takeoff"></i></div>
+          <h4 class="package-name">حرفه‌ای</h4>
+          <p class="package-desc">طراحی کاملاً اختصاصی با PHP یا Node.js — بدون محدودیت</p>
+          <ul class="package-features">
+            <li><i class="bi bi-check-lg"></i> کدنویسی اختصاصی</li>
+            <li><i class="bi bi-check-lg"></i> صفحات نامحدود</li>
+            <li><i class="bi bi-check-lg"></i> سئو پیشرفته</li>
+            <li><i class="bi bi-check-lg"></i> ۶ ماه پشتیبانی</li>
+            <li><i class="bi bi-check-lg"></i> پنل مدیریت</li>
+            <li><i class="bi bi-check-lg"></i> بهینه‌سازی سرعت</li>
+          </ul>
+          <a href="contact.html" class="btn btn-main w-100 mt-auto">مشاوره رایگان</a>
+        </div>
+      </div>
+
+      <!-- Package 4: Enterprise -->
+      <div class="col-md-6 col-lg-3 reveal reveal-delay-4">
+        <div class="card-sol card-package h-100">
+          <div class="package-badge">پیشرفته</div>
+          <div class="package-icon"><i class="bi bi-building-gear"></i></div>
+          <h4 class="package-name">سازمانی</h4>
+          <p class="package-desc">پروژه‌های بزرگ و سازمانی با معماری مقیاس‌پذیر و امنیت بالا</p>
+          <ul class="package-features">
+            <li><i class="bi bi-check-lg"></i> معماری سفارشی</li>
+            <li><i class="bi bi-check-lg"></i> API اختصاصی</li>
+            <li><i class="bi bi-check-lg"></i> یکپارچه‌سازی سیستم‌ها</li>
+            <li><i class="bi bi-check-lg"></i> ۱۲ ماه پشتیبانی</li>
+            <li><i class="bi bi-check-lg"></i> امنیت پیشرفته</li>
+            <li><i class="bi bi-check-lg"></i> SLA اختصاصی</li>
+          </ul>
+          <a href="contact.html" class="btn btn-outline-main w-100 mt-auto">مشاوره رایگان</a>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+
+<!-- ═══════════════════════════════════════
+     TESTIMONIALS (last section before footer)
+═══════════════════════════════════════ -->
+<section class="testimonials-section" id="testimonials">
+  <div class="container">
+
+    <div class="text-center mb-5 reveal">
+      <span class="section-tag">
+        <i class="bi bi-chat-quote-fill"></i>
+        نظرات مشتریان
+      </span>
+      <h2 class="section-title">مشتریان ما چه می‌گویند</h2>
+      <p class="section-subtitle mx-auto">
+        رضایت مشتریان ما بزرگ‌ترین دستاورد و انگیزه تیم سُل وب است
+      </p>
+    </div>
+
+    <div class="reveal py-5">
+      <div id="testimonialsCarousel py-5" class="carousel slide" data-bs-ride="false">
+        <div class="carousel-inner py-5">
+          <div class="carousel-item active">
+            <div class="row g-4 justify-content-center">
+              <div class="col-md-6 col-lg-4">
+                <div class="card-sol card-testimonial h-100">
+                  <div class="rating">★★★★★</div>
+                  <blockquote>"سُل وب وب‌سایتی برای فروشگاه ما طراحی کرد که واقعاً فروش آنلاین‌مان را چند برابر کرد. طراحی زیبا و عملکرد عالی!"</blockquote>
+                  <div class="author">
+                    <div class="avatar">علم</div>
+                    <div class="author-info">
+                      <strong>علی امینی</strong>
+                      <span>مدیر فروشگاه اسیل</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <div class="col-md-6 col-lg-4">
+                <div class="card-sol card-testimonial h-100">
+                  <div class="rating">★★★★★</div>
+                  <blockquote>"بهترین تیم توسعه وبی بودند که باهاشون کار کردم. پروژه را سر وقت تحویل دادند و پشتیبانی‌شان هم عالی بود."</blockquote>
+                  <div class="author">
+                    <div class="avatar">محس</div>
+                    <div class="author-info">
+                      <strong>محسن مظاهر</strong>
+                      <span>بنیان‌گذار استارتاپ آفیلیو</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <div class="col-md-6 col-lg-4 d-none d-lg-block">
+                <div class="card-sol card-testimonial h-100">
+                  <div class="rating">★★★★★</div>
+                  <blockquote>"طراحی UI/UX که سُل وب برای اپلیکیشن ما انجام داد فوق‌العاده بود. کاربران از رابط کاربری عاشق شدند!"</blockquote>
+                  <div class="author">
+                    <div class="avatar">محن</div>
+                    <div class="author-info">
+                      <strong>محن قاضی</strong>
+                      <span>مدیر محصول نرم‌افزار پارسه</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="carousel-item">
+            <div class="row g-4 justify-content-center">
+              <div class="col-md-6 col-lg-4">
+                <div class="card-sol card-testimonial h-100">
+                  <div class="rating">★★★★★</div>
+                  <blockquote>"رابط کاربری که طراحی کردند خیلی شیک و مدرن بود. مشتریانم بعد از راه‌اندازی سایت جدید خیلی خوش‌حال بودند."</blockquote>
+                  <div class="author">
+                    <div class="avatar">سار</div>
+                    <div class="author-info">
+                      <strong>سارا طاهری</strong>
+                      <span>مدیر استودیوی خلاق نگاه</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <div class="col-md-6 col-lg-4">
+                <div class="card-sol card-testimonial h-100">
+                  <div class="rating">★★★★★</div>
+                  <blockquote>"از ابتدا تا انتهای پروژه همراه‌مان بودند. مشاوره حرفه‌ای، طراحی عالی و تحویل به موقع. واقعاً ممنونم!"</blockquote>
+                  <div class="author">
+                    <div class="avatar">رضا</div>
+                    <div class="author-info">
+                      <strong>رضا محمدی</strong>
+                      <span>مدیرعامل شرکت فناوری آوا</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <div class="col-md-6 col-lg-4 d-none d-lg-block">
+                <div class="card-sol card-testimonial h-100">
+                  <div class="rating">★★★★★</div>
+                  <blockquote>"سئوی سایت‌مان بعد از همکاری با سُل وب به‌شدت بهبود پیدا کرد. درآمد آنلاین‌مان دو برابر شد!"</blockquote>
+                  <div class="author">
+                    <div class="avatar">نگر</div>
+                    <div class="author-info">
+                      <strong>نگار صادقی</strong>
+                      <span>صاحب برند آرایشی لوستا</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+        </div>
+
+        <button class="carousel-control-prev" type="button" data-bs-target="#testimonialsCarousel" data-bs-slide="prev" aria-label="قبلی">
+          <span class="carousel-control-prev-icon"></span>
+        </button>
+        <button class="carousel-control-next" type="button" data-bs-target="#testimonialsCarousel" data-bs-slide="next" aria-label="بعدی">
+          <span class="carousel-control-next-icon"></span>
+        </button>
+
+        <div class="carousel-indicators" style="bottom:-2.5rem;">
+          <button type="button" data-bs-target="#testimonialsCarousel" data-bs-slide-to="0" class="active" aria-current="true"></button>
+          <button type="button" data-bs-target="#testimonialsCarousel" data-bs-slide-to="1"></button>
+        </div>
+      </div>
+    </div>
+
+    <div style="height:3.5rem;"></div>
+
+    <div class="row g-4 mt-2 reveal">
+      <div class="col-6 col-md-3 text-center">
+        <div class="card-sol py-3">
+          <i class="bi bi-award-fill text-main fs-2 d-block mb-2"></i>
+          <small class="text-muted" style="font-size:.8rem;">بهترین تیم طراحی</small>
+        </div>
+      </div>
+      <div class="col-6 col-md-3 text-center">
+        <div class="card-sol py-3">
+          <i class="bi bi-patch-check-fill text-main fs-2 d-block mb-2"></i>
+          <small class="text-muted" style="font-size:.8rem;">تضمین کیفیت</small>
+        </div>
+      </div>
+      <div class="col-6 col-md-3 text-center">
+        <div class="card-sol py-3">
+          <i class="bi bi-clock-history text-main fs-2 d-block mb-2"></i>
+          <small class="text-muted" style="font-size:.8rem;">تحویل به موقع</small>
+        </div>
+      </div>
+      <div class="col-6 col-md-3 text-center">
+        <div class="card-sol py-3">
+          <i class="bi bi-hand-thumbs-up-fill text-main fs-2 d-block mb-2"></i>
+          <small class="text-muted" style="font-size:.8rem;">پشتیبانی مداوم</small>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</section>
+
+
+<!-- ═══════════════════════════════════════
+     FOOTER
+═══════════════════════════════════════ -->
+<footer class="footer-sol">
+  <div class="footer-inner">
+    <div class="container">
+      <div class="row g-5">
+
+        <!-- Brand -->
+        <div class="col-lg-4">
+          <a href="#home" class="footer-brand text-decoration-none">سُل وب</a>
+          <p>تیم سُل وب روح وب‌سایت‌ها را می‌آفریند. ما وب‌سایت‌هایی می‌سازیم که نه‌تنها زیبا هستند، بلکه کسب‌وکار شما را متحول می‌کنند.</p>
+          <div class="social-links mt-3">
+            <a href="#" class="social-link" aria-label="اینستاگرام"><i class="bi bi-instagram"></i></a>
+            <a href="#" class="social-link" aria-label="تلگرام"><i class="bi bi-telegram"></i></a>
+            <a href="#" class="social-link" aria-label="لینکدین"><i class="bi bi-linkedin"></i></a>
+            <a href="#" class="social-link" aria-label="واتساپ"><i class="bi bi-whatsapp"></i></a>
+          </div>
+        </div>
+
+        <!-- Services -->
+        <div class="col-6 col-lg-2">
+          <h6>خدمات</h6>
+          <ul class="footer-links">
+            <li><a href="services.html"><i class="bi bi-chevron-left"></i>طراحی وب</a></li>
+            <li><a href="services.html"><i class="bi bi-chevron-left"></i>فروشگاه آنلاین</a></li>
+            <li><a href="services.html"><i class="bi bi-chevron-left"></i>وردپرس</a></li>
+            <li><a href="services.html"><i class="bi bi-chevron-left"></i>کد اختصاصی</a></li>
+            <li><a href="services.html"><i class="bi bi-chevron-left"></i>سئو</a></li>
+          </ul>
+        </div>
+
+        <!-- Quick Links -->
+        <div class="col-6 col-lg-2">
+          <h6>لینک‌های سریع</h6>
+          <ul class="footer-links">
+            <li><a href="#home"><i class="bi bi-chevron-left"></i>صفحه اصلی</a></li>
+            <li><a href="portfolio.html"><i class="bi bi-chevron-left"></i>نمونه کارها</a></li>
+            <li><a href="packages.html"><i class="bi bi-chevron-left"></i>پکیج‌ها</a></li>
+            <li><a href="about.html"><i class="bi bi-chevron-left"></i>درباره ما</a></li>
+            <li><a href="contact.html"><i class="bi bi-chevron-left"></i>تماس با ما</a></li>
+          </ul>
+        </div>
+
+        <!-- Contact + Enamad -->
+        <div class="col-lg-4">
+          <h6>تماس با ما</h6>
+          <ul class="footer-links mb-4">
+            <li><a href="tel:+982188001234"><i class="bi bi-telephone"></i>۰۲۱-۸۸۰۰۱۲۳۴</a></li>
+            <li><a href="mailto:hello@solweb.ir"><i class="bi bi-envelope"></i>hello@solweb.ir</a></li>
+            <li><a href="#"><i class="bi bi-geo-alt"></i>تهران، خیابان ولیعصر</a></li>
+          </ul>
+
+          <!-- Trust badges / Enamad placeholder -->
+          <div class="footer-trust">
+            <div class="trust-badge" title="نماد اعتماد الکترونیکی">
+              <i class="bi bi-patch-check-fill"></i>
+              <span>اینماد</span>
+            </div>
+            <div class="trust-badge" title="درگاه پرداخت امن">
+              <i class="bi bi-lock-fill"></i>
+              <span>پرداخت امن</span>
+            </div>
+            <div class="trust-badge" title="SSL امن">
+              <i class="bi bi-shield-lock-fill"></i>
+              <span>SSL</span>
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+      <hr class="footer-divider" />
+
+      <div class="d-flex flex-column flex-md-row justify-content-between align-items-center gap-3">
+        <p style="font-size:.825rem;margin:0;color:rgba(255,255,255,.4);">
+          © ۱۴۰۴ تیم سُل وب. تمامی حقوق محفوظ است.
+        </p>
+        <div class="d-flex gap-3">
+          <a href="#" style="font-size:.8rem;color:rgba(255,255,255,.4);text-decoration:none;">حریم خصوصی</a>
+          <a href="#" style="font-size:.8rem;color:rgba(255,255,255,.4);text-decoration:none;">قوانین و مقررات</a>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</footer>
+
+
+<!-- ═══════════ Back To Top ═══════════ -->
+<button id="backToTop" aria-label="رفتن به بالای صفحه">
+  <i class="bi bi-chevron-up"></i>
+</button>
+
+
+<!-- ═══════════ Scripts ═══════════ -->
+<script src="assets/js/jquery-3.7.1.min.js"></script>
+<script src="assets/js/bootstrap.bundle.min.js"></script>
+<script src="assets/js/script.js"></script>
+</body>
+</html>

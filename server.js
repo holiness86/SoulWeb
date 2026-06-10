@@ -17,3 +17,7 @@ app.listen(3000 , () => {
 app.get('/' , (req , res) => {
     res.render('index')
 })
+
+app.get('/sw-admin' , (req , res) => {
+    res.render('dashboard')
+})

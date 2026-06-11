@@ -1,34 +1,614 @@
-const express = require('express')
-const app = express()
-const mongoose = require('mongoose')
-const bcrypt = require('bcryptjs')
+const express    = require('express')
+const mongoose   = require('mongoose')
+const bcrypt     = require('bcryptjs')
+const path       = require('path')
 
-// midellwer
-app.set('view engine' , 'ejs')
-app.use(express.static('public'))
-app.use(express.urlencoded({extended: true}))
+const app = express()
+
+// ─────────────────────────────────────────
+//  MIDDLEWARE
+// ─────────────────────────────────────────
+app.set('view engine', 'ejs')
+app.set('views', path.join(__dirname, 'views'))
+app.use(express.static(path.join(__dirname, 'public')))
+app.use(express.urlencoded({ extended: true }))
 app.use(express.json())
 
-// listin app & DB conection
-const DBurl = "mongodb://localhost:27017/SoulWeb"
-const PORT = process.env.PORT || 3000
-mongoose.connect(DBurl)
-.then(() => {
+// ─────────────────────────────────────────
+//  MODELS
+// ─────────────────────────────────────────
+const User      = require('./models/user.model')
+const Client    = require('./models/client.model')
+const Project   = require('./models/project.model')
+const Invoice   = require('./models/invoice.model')
+const Message   = require('./models/message.model')
+const Task      = require('./models/task.model')
+const Activity  = require('./models/activity.model')
+const Portfolio = require('./models/portfolio.model')
+const Review    = require('./models/review.model')
+const Package   = require('./models/package.model')
+const BlogPost  = require('./models/blogPost.model')
+const Setting   = require('./models/setting.model')
+
+// ─────────────────────────────────────────
+//  DB + SERVER START
+// ─────────────────────────────────────────
+const DB_URL = process.env.DB_URL || 'mongodb://localhost:27017/SoulWeb'
+const PORT   = process.env.PORT   || 3000
+
+mongoose.connect(DB_URL)
+  .then(() => {
     console.log('DB is connected ✅')
-    app.listen(PORT , () => {
-        console.log(`Server running on port ${PORT} 🚀`)
+    app.listen(PORT, () => {
+      console.log(`Server running on port ${PORT} 🚀`)
     })
+  })
+  .catch(err => {
+    console.error('DB connection failed ❌', err.message)
+    process.exit(1)
+  })
+
+// ─────────────────────────────────────────
+//  PUBLIC ROUTES
+// ─────────────────────────────────────────
+app.get('/', (req, res) => {
+  res.render('index')
 })
 
-// router
-app.get('/' , (req , res) => {
-    res.render('index')
+// ─────────────────────────────────────────
+//  ADMIN — DASHBOARD
+// ─────────────────────────────────────────
+app.get('/sw-admin', async (req, res) => {
+  try {
+    const [
+      activeProjects,
+      totalClients,
+      deliveredProjects,
+      unreadMessages,
+      recentActivities,
+      todayTasks
+    ] = await Promise.all([
+      Project.countDocuments({ status: 'active' }),
+      Client.countDocuments({ isActive: true }),
+      Project.countDocuments({ status: 'done' }),
+      Message.countDocuments({ isRead: false }),
+      Activity.find().sort({ createdAt: -1 }).limit(7),
+      Task.find().sort({ createdAt: -1 }).limit(7)
+    ])
+
+    res.render('admin/Dashboard', {
+      stats: {
+        activeProjects,
+        totalClients,
+        deliveredProjects,
+        unreadMessages
+      },
+      recentActivities,
+      todayTasks
+    })
+  } catch (err) {
+    console.error(err)
+    res.status(500).send('خطا در بارگذاری داشبورد')
+  }
 })
 
-app.get('/sw-admin', (req, res) => {
-    res.render('admin/Dashboard')
+// ─────────────────────────────────────────
+//  ADMIN — PROJECTS
+// ─────────────────────────────────────────
+app.get('/sw-admin/projects', async (req, res) => {
+  try {
+    const { status, search } = req.query
+    const filter = {}
+    if (status)  filter.status = status
+    if (search)  filter.title  = { $regex: search, $options: 'i' }
+
+    const projects = await Project.find(filter)
+      .populate('client', 'name company')
+      .sort({ createdAt: -1 })
+
+    res.render('admin/Projects', { projects, query: req.query })
+  } catch (err) {
+    console.error(err)
+    res.status(500).send('خطا در بارگذاری پروژه‌ها')
+  }
 })
 
-app.get('/sw-admin/projects' , (req , res) => {
-    res.render('admin/Projects')
+app.post('/sw-admin/projects', async (req, res) => {
+  try {
+    const { title, description, client, type, techStack,
+            status, progress, deadline, price, tags } = req.body
+
+    // createdBy: در پروژه واقعی از session میاد — فعلا placeholder
+    const ADMIN_PLACEHOLDER_ID = '000000000000000000000001'
+
+    await Project.create({
+      title, description, client, type,
+      techStack : techStack ? techStack.split(',').map(t => t.trim()) : [],
+      status    : status || 'active',
+      progress  : Number(progress) || 0,
+      deadline  : deadline || null,
+      price     : Number(price) || 0,
+      tags      : tags ? tags.split(',').map(t => t.trim()) : [],
+      createdBy : ADMIN_PLACEHOLDER_ID
+    })
+
+    // ثبت فعالیت
+    await Activity.create({
+      type        : 'project_created',
+      title       : `پروژه جدید «${title}» ثبت شد`,
+      icon        : 'bi-file-earmark-plus-fill',
+      colorVariant: 'main'
+    })
+
+    res.redirect('/sw-admin/projects')
+  } catch (err) {
+    console.error(err)
+    res.status(500).send('خطا در ثبت پروژه')
+  }
+})
+
+app.post('/sw-admin/projects/:id/update', async (req, res) => {
+  try {
+    const { title, status, progress, deadline } = req.body
+    await Project.findByIdAndUpdate(req.params.id, {
+      title,
+      status,
+      progress: Number(progress),
+      deadline: deadline || null
+    })
+    res.redirect('/sw-admin/projects')
+  } catch (err) {
+    console.error(err)
+    res.status(500).send('خطا در ویرایش پروژه')
+  }
+})
+
+app.post('/sw-admin/projects/:id/delete', async (req, res) => {
+  try {
+    await Project.findByIdAndDelete(req.params.id)
+    res.redirect('/sw-admin/projects')
+  } catch (err) {
+    console.error(err)
+    res.status(500).send('خطا در حذف پروژه')
+  }
+})
+
+// ─────────────────────────────────────────
+//  ADMIN — CLIENTS
+// ─────────────────────────────────────────
+app.get('/sw-admin/clients', async (req, res) => {
+  try {
+    const clients = await Client.find().sort({ createdAt: -1 })
+    res.render('admin/Clients', { clients })
+  } catch (err) {
+    res.status(500).send('خطا در بارگذاری مشتریان')
+  }
+})
+
+app.post('/sw-admin/clients', async (req, res) => {
+  try {
+    const { name, company, email, phone, address, notes } = req.body
+    await Client.create({ name, company, email, phone, address, notes })
+    res.redirect('/sw-admin/clients')
+  } catch (err) {
+    res.status(500).send('خطا در ثبت مشتری')
+  }
+})
+
+app.post('/sw-admin/clients/:id/delete', async (req, res) => {
+  try {
+    await Client.findByIdAndDelete(req.params.id)
+    res.redirect('/sw-admin/clients')
+  } catch (err) {
+    res.status(500).send('خطا در حذف مشتری')
+  }
+})
+
+// ─────────────────────────────────────────
+//  ADMIN — MESSAGES
+// ─────────────────────────────────────────
+app.get('/sw-admin/messages', async (req, res) => {
+  try {
+    const messages = await Message.find()
+      .populate('client', 'name')
+      .sort({ createdAt: -1 })
+    res.render('admin/Messages', { messages })
+  } catch (err) {
+    res.status(500).send('خطا در بارگذاری پیام‌ها')
+  }
+})
+
+app.post('/sw-admin/messages/:id/read', async (req, res) => {
+  try {
+    await Message.findByIdAndUpdate(req.params.id, { isRead: true })
+    res.redirect('/sw-admin/messages')
+  } catch (err) {
+    res.status(500).send('خطا')
+  }
+})
+
+app.post('/sw-admin/messages/:id/delete', async (req, res) => {
+  try {
+    await Message.findByIdAndDelete(req.params.id)
+    res.redirect('/sw-admin/messages')
+  } catch (err) {
+    res.status(500).send('خطا در حذف پیام')
+  }
+})
+
+// ─────────────────────────────────────────
+//  ADMIN — INVOICES
+// ─────────────────────────────────────────
+app.get('/sw-admin/invoices', async (req, res) => {
+  try {
+    const invoices = await Invoice.find()
+      .populate('client',  'name company')
+      .populate('project', 'title')
+      .sort({ createdAt: -1 })
+    res.render('admin/Invoices', { invoices })
+  } catch (err) {
+    res.status(500).send('خطا در بارگذاری فاکتورها')
+  }
+})
+
+app.post('/sw-admin/invoices', async (req, res) => {
+  try {
+    // items از فرم به صورت JSON string میاد
+    const items = JSON.parse(req.body.items || '[]')
+    const lastInvoice = await Invoice.findOne().sort({ createdAt: -1 })
+    const lastNum = lastInvoice
+      ? parseInt(lastInvoice.invoiceNumber.replace('INV-', '')) + 1
+      : 1001
+
+    await Invoice.create({
+      invoiceNumber: `INV-${lastNum}`,
+      client : req.body.client,
+      project: req.body.project || null,
+      items,
+      tax      : Number(req.body.tax)      || 0,
+      discount : Number(req.body.discount) || 0,
+      dueDate  : req.body.dueDate  || null,
+      notes    : req.body.notes    || '',
+      currency : req.body.currency || 'IRR',
+      createdBy: '000000000000000000000001'
+    })
+
+    res.redirect('/sw-admin/invoices')
+  } catch (err) {
+    console.error(err)
+    res.status(500).send('خطا در ثبت فاکتور')
+  }
+})
+
+app.post('/sw-admin/invoices/:id/paid', async (req, res) => {
+  try {
+    await Invoice.findByIdAndUpdate(req.params.id, {
+      status: 'paid',
+      paidAt: new Date()
+    })
+
+    const inv = await Invoice.findById(req.params.id)
+    await Activity.create({
+      type        : 'invoice_paid',
+      title       : `فاکتور #${inv.invoiceNumber} پرداخت شد`,
+      icon        : 'bi-receipt-cutoff',
+      colorVariant: 'success',
+      relatedModel: 'Invoice',
+      relatedId   : inv._id
+    })
+
+    res.redirect('/sw-admin/invoices')
+  } catch (err) {
+    res.status(500).send('خطا')
+  }
+})
+
+// ─────────────────────────────────────────
+//  ADMIN — PORTFOLIO
+// ─────────────────────────────────────────
+app.get('/sw-admin/portfolio', async (req, res) => {
+  try {
+    const items = await Portfolio.find()
+      .populate('client',  'name')
+      .populate('project', 'title')
+      .sort({ order: 1, createdAt: -1 })
+    res.render('admin/Portfolio', { items })
+  } catch (err) {
+    res.status(500).send('خطا در بارگذاری پورتفولیو')
+  }
+})
+
+app.post('/sw-admin/portfolio', async (req, res) => {
+  try {
+    const { title, description, coverImage, category,
+            techStack, liveUrl, client, project, isFeatured } = req.body
+    await Portfolio.create({
+      title, description, coverImage, category,
+      techStack  : techStack ? techStack.split(',').map(t => t.trim()) : [],
+      liveUrl    : liveUrl   || '',
+      client     : client    || null,
+      project    : project   || null,
+      isFeatured : isFeatured === 'on'
+    })
+    res.redirect('/sw-admin/portfolio')
+  } catch (err) {
+    res.status(500).send('خطا در ثبت نمونه‌کار')
+  }
+})
+
+app.post('/sw-admin/portfolio/:id/delete', async (req, res) => {
+  try {
+    await Portfolio.findByIdAndDelete(req.params.id)
+    res.redirect('/sw-admin/portfolio')
+  } catch (err) {
+    res.status(500).send('خطا')
+  }
+})
+
+// ─────────────────────────────────────────
+//  ADMIN — PACKAGES
+// ─────────────────────────────────────────
+app.get('/sw-admin/packages', async (req, res) => {
+  try {
+    const packages = await Package.find().sort({ order: 1 })
+    res.render('admin/Packages', { packages })
+  } catch (err) {
+    res.status(500).send('خطا در بارگذاری پکیج‌ها')
+  }
+})
+
+app.post('/sw-admin/packages', async (req, res) => {
+  try {
+    const { name, description, price, currency,
+            duration, features, category, isFeatured } = req.body
+    const slug = name
+      .replace(/\s+/g, '-')
+      .replace(/[^\u0600-\u06FFa-zA-Z0-9-]/g, '')
+      + '-' + Date.now()
+
+    await Package.create({
+      name, description, price: Number(price), currency, duration, slug,
+      features   : features ? features.split('\n').map(f => f.trim()).filter(Boolean) : [],
+      category   : category   || 'web',
+      isFeatured : isFeatured === 'on'
+    })
+    res.redirect('/sw-admin/packages')
+  } catch (err) {
+    res.status(500).send('خطا در ثبت پکیج')
+  }
+})
+
+// ─────────────────────────────────────────
+//  ADMIN — REVIEWS
+// ─────────────────────────────────────────
+app.get('/sw-admin/reviews', async (req, res) => {
+  try {
+    const reviews = await Review.find()
+      .populate('client',  'name')
+      .populate('project', 'title')
+      .sort({ createdAt: -1 })
+    res.render('admin/Reviews', { reviews })
+  } catch (err) {
+    res.status(500).send('خطا در بارگذاری نظرات')
+  }
+})
+
+app.post('/sw-admin/reviews/:id/approve', async (req, res) => {
+  try {
+    await Review.findByIdAndUpdate(req.params.id, {
+      isApproved : true,
+      isPublished: true
+    })
+    res.redirect('/sw-admin/reviews')
+  } catch (err) {
+    res.status(500).send('خطا')
+  }
+})
+
+// ─────────────────────────────────────────
+//  ADMIN — BLOG
+// ─────────────────────────────────────────
+app.get('/sw-admin/blog', async (req, res) => {
+  try {
+    const posts = await BlogPost.find()
+      .populate('author', 'name')
+      .sort({ createdAt: -1 })
+    res.render('admin/Blog', { posts })
+  } catch (err) {
+    res.status(500).send('خطا در بارگذاری وبلاگ')
+  }
+})
+
+app.post('/sw-admin/blog', async (req, res) => {
+  try {
+    const { title, excerpt, body, tags, category, status, coverImage } = req.body
+    const slug = title
+      .replace(/\s+/g, '-')
+      .replace(/[^\u0600-\u06FFa-zA-Z0-9-]/g, '')
+      + '-' + Date.now()
+
+    const wordsPerMinute = 200
+    const wordCount      = body.split(/\s+/).length
+    const readingTime    = Math.ceil(wordCount / wordsPerMinute)
+
+    await BlogPost.create({
+      title, slug, excerpt, body, coverImage,
+      tags        : tags ? tags.split(',').map(t => t.trim()) : [],
+      category    : category    || '',
+      status      : status      || 'draft',
+      readingTime,
+      author      : '000000000000000000000001'
+    })
+    res.redirect('/sw-admin/blog')
+  } catch (err) {
+    res.status(500).send('خطا در ثبت پست')
+  }
+})
+
+app.post('/sw-admin/blog/:id/delete', async (req, res) => {
+  try {
+    await BlogPost.findByIdAndDelete(req.params.id)
+    res.redirect('/sw-admin/blog')
+  } catch (err) {
+    res.status(500).send('خطا')
+  }
+})
+
+// ─────────────────────────────────────────
+//  ADMIN — TASKS (AJAX-friendly)
+// ─────────────────────────────────────────
+app.get('/sw-admin/tasks', async (req, res) => {
+  try {
+    const tasks = await Task.find()
+      .populate('project', 'title')
+      .sort({ createdAt: -1 })
+    res.render('admin/Tasks', { tasks })
+  } catch (err) {
+    res.status(500).send('خطا')
+  }
+})
+
+app.post('/sw-admin/tasks', async (req, res) => {
+  try {
+    const { title, priority, dueDate, project } = req.body
+    await Task.create({
+      title,
+      priority  : priority || 'medium',
+      dueDate   : dueDate  || null,
+      project   : project  || null,
+      assignedTo: '000000000000000000000001',
+      createdBy : '000000000000000000000001'
+    })
+    res.redirect(req.get('Referer') || '/sw-admin')
+  } catch (err) {
+    res.status(500).send('خطا در ثبت وظیفه')
+  }
+})
+
+// toggle done — returns JSON for fetch calls from dashboard
+app.post('/sw-admin/tasks/:id/toggle', async (req, res) => {
+  try {
+    const task   = await Task.findById(req.params.id)
+    task.isDone  = !task.isDone
+    task.doneAt  = task.isDone ? new Date() : null
+    await task.save()
+    res.json({ success: true, isDone: task.isDone })
+  } catch (err) {
+    res.status(500).json({ success: false })
+  }
+})
+
+app.post('/sw-admin/tasks/:id/delete', async (req, res) => {
+  try {
+    await Task.findByIdAndDelete(req.params.id)
+    res.redirect(req.get('Referer') || '/sw-admin')
+  } catch (err) {
+    res.status(500).send('خطا')
+  }
+})
+
+// ─────────────────────────────────────────
+//  ADMIN — REPORTS
+// ─────────────────────────────────────────
+app.get('/sw-admin/reports', async (req, res) => {
+  try {
+    const [totalProjects, totalClients, totalInvoices,
+           paidInvoices, totalReviews] = await Promise.all([
+      Project.countDocuments(),
+      Client.countDocuments(),
+      Invoice.countDocuments(),
+      Invoice.countDocuments({ status: 'paid' }),
+      Review.countDocuments({ isApproved: true })
+    ])
+
+    const revenueResult = await Invoice.aggregate([
+      { $match: { status: 'paid' } },
+      { $group: { _id: null, total: { $sum: '$total' } } }
+    ])
+    const totalRevenue = revenueResult[0]?.total || 0
+
+    res.render('admin/Reports', {
+      stats: {
+        totalProjects, totalClients,
+        totalInvoices, paidInvoices,
+        totalReviews,  totalRevenue
+      }
+    })
+  } catch (err) {
+    res.status(500).send('خطا در بارگذاری گزارش‌ها')
+  }
+})
+
+// ─────────────────────────────────────────
+//  ADMIN — SETTINGS
+// ─────────────────────────────────────────
+app.get('/sw-admin/settings', async (req, res) => {
+  try {
+    // getOrCreate the singleton
+    let setting = await Setting.findOne()
+    if (!setting) setting = await Setting.create({})
+    res.render('admin/Settings', { setting })
+  } catch (err) {
+    res.status(500).send('خطا در بارگذاری تنظیمات')
+  }
+})
+
+app.post('/sw-admin/settings', async (req, res) => {
+  try {
+    const { siteName, siteUrl, email, phone, address,
+            'social.instagram': instagram,
+            'social.telegram' : telegram,
+            'social.linkedin' : linkedin,
+            'social.github'   : github,
+            'seo.metaTitle'   : metaTitle,
+            'seo.metaDescription': metaDescription } = req.body
+
+    await Setting.findOneAndUpdate(
+      {},
+      {
+        siteName, siteUrl, email, phone, address,
+        socialLinks: { instagram, telegram, linkedin, github },
+        seo        : { metaTitle, metaDescription }
+      },
+      { upsert: true, new: true }
+    )
+    res.redirect('/sw-admin/settings')
+  } catch (err) {
+    res.status(500).send('خطا در ذخیره تنظیمات')
+  }
+})
+
+// ─────────────────────────────────────────
+//  PUBLIC CONTACT FORM (from front-end site)
+// ─────────────────────────────────────────
+app.post('/contact', async (req, res) => {
+  try {
+    const { name, email, phone, subject, body } = req.body
+    await Message.create({
+      senderName : name,
+      senderEmail: email,
+      senderPhone: phone  || '',
+      subject    : subject || '',
+      body,
+      source     : 'contact_form'
+    })
+
+    await Activity.create({
+      type        : 'message_received',
+      title       : `پیام جدید از ${name}`,
+      icon        : 'bi-chat-left-dots-fill',
+      colorVariant: 'warning'
+    })
+
+    res.json({ success: true, message: 'پیام شما با موفقیت ارسال شد' })
+  } catch (err) {
+    res.status(500).json({ success: false, message: 'خطا در ارسال پیام' })
+  }
+})
+
+// ─────────────────────────────────────────
+//  404
+// ─────────────────────────────────────────
+app.use((req, res) => {
+  res.status(404).render('404')
 })

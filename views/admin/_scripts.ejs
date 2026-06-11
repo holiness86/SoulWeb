@@ -1,0 +1,19 @@
+<%#
+  admin/_scripts.ejs
+  در انتهای body هر صفحه include می‌شود
+  پارامتر اختیاری:
+    - extraScripts (string) — اسکریپت‌های اضافه مخصوص آن صفحه (inline یا path)
+%>
+
+  <!-- jQuery -->
+  <script src="../assets/js/jquery-3.7.1.min.js"></script>
+  <!-- Bootstrap Bundle -->
+  <script src="../assets/js/bootstrap.bundle.min.js"></script>
+  <!-- Admin Core Scripts -->
+  <script src="../assets/js/admin.js"></script>
+
+  <!-- اسکریپت‌های اختصاصی صفحه (در صورت نیاز) -->
+  <%- typeof extraScripts !== 'undefined' ? extraScripts : '' %>
+
+</body>
+</html>

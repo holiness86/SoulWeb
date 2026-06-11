@@ -1,0 +1,83 @@
+<%#
+  admin/_sidebar.ejs
+  پارامترهای مورد نیاز:
+    - activePage  (string)  — نام صفحه فعال: 'dashboard' | 'projects' | 'clients' | ...
+    - adminUser   (object)  — { name, role, initials }
+%>
+
+<%
+  // helper برای تشخیص active
+  const isActive = (page) => activePage === page ? 'active' : '';
+
+  // nav items
+  const navMain = [
+    { page: 'dashboard', href: '/sw-admin',          icon: 'bi-grid-1x2-fill',  label: 'داشبورد' },
+    { page: 'projects',  href: '/sw-admin/projects', icon: 'bi-kanban-fill',    label: 'پروژه‌ها', badge: '۱۲' },
+    { page: 'clients',   href: '/sw-admin/clients',  icon: 'bi-people-fill',    label: 'مشتریان' },
+    { page: 'messages',  href: '/sw-admin/messages', icon: 'bi-chat-dots-fill', label: 'پیام‌ها',  badge: '۵' },
+    { page: 'invoices',  href: '/sw-admin/invoices', icon: 'bi-receipt',        label: 'فاکتورها' },
+  ];
+  const navContent = [
+    { page: 'portfolio', href: '/sw-admin/portfolio', icon: 'bi-collection-fill', label: 'پورتفولیو' },
+    { page: 'packages',  href: '/sw-admin/packages',  icon: 'bi-box-seam-fill',   label: 'پکیج‌ها' },
+    { page: 'reviews',   href: '/sw-admin/reviews',   icon: 'bi-star-fill',       label: 'نظرات' },
+    { page: 'blog',      href: '/sw-admin/blog',      icon: 'bi-journal-text',    label: 'وبلاگ' },
+  ];
+  const navSystem = [
+    { page: 'reports',  href: '/sw-admin/reports',  icon: 'bi-bar-chart-line-fill', label: 'گزارش‌ها' },
+    { page: 'settings', href: '/sw-admin/settings', icon: 'bi-gear-fill',           label: 'تنظیمات' },
+  ];
+%>
+
+<aside class="sidebar" id="sidebar">
+
+  <!-- Brand -->
+  <a class="sidebar-brand" href="/sw-admin">
+    <div class="sidebar-logo">سل</div>
+    <span class="sidebar-brand-text">سُل وب — پنل</span>
+  </a>
+
+  <!-- Nav -->
+  <nav class="sidebar-nav">
+
+    <span class="nav-label">اصلی</span>
+    <% navMain.forEach(function(item){ %>
+      <a href="<%= item.href %>" class="nav-item-sol <%= isActive(item.page) %>">
+        <span class="nav-icon"><i class="bi <%= item.icon %>"></i></span>
+        <span class="nav-text"><%= item.label %></span>
+        <% if(item.badge){ %><span class="nav-badge"><%= item.badge %></span><% } %>
+      </a>
+    <% }); %>
+
+    <span class="nav-label">محتوا</span>
+    <% navContent.forEach(function(item){ %>
+      <a href="<%= item.href %>" class="nav-item-sol <%= isActive(item.page) %>">
+        <span class="nav-icon"><i class="bi <%= item.icon %>"></i></span>
+        <span class="nav-text"><%= item.label %></span>
+        <% if(item.badge){ %><span class="nav-badge"><%= item.badge %></span><% } %>
+      </a>
+    <% }); %>
+
+    <span class="nav-label">سیستم</span>
+    <% navSystem.forEach(function(item){ %>
+      <a href="<%= item.href %>" class="nav-item-sol <%= isActive(item.page) %>">
+        <span class="nav-icon"><i class="bi <%= item.icon %>"></i></span>
+        <span class="nav-text"><%= item.label %></span>
+      </a>
+    <% }); %>
+
+  </nav>
+
+  <!-- User Footer -->
+  <div class="sidebar-footer">
+    <div class="sidebar-user">
+      <div class="user-avatar"><%= adminUser ? adminUser.initials : 'ادم' %></div>
+      <div class="user-info">
+        <div class="user-name"><%= adminUser ? adminUser.name : 'مدیر سیستم' %></div>
+        <div class="user-role"><%= adminUser ? adminUser.role : 'مدیر کل' %></div>
+      </div>
+      <i class="bi bi-three-dots-vertical" style="color:rgba(255,255,255,.3);font-size:.85rem;flex-shrink:0;"></i>
+    </div>
+  </div>
+
+</aside>

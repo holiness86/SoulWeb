@@ -18,6 +18,10 @@ app.get('/' , (req , res) => {
     res.render('index')
 })
 
-app.get('/sw-admin' , (req , res) => {
-    res.render('dashboard')
+app.get('/sw-admin', (req, res) => {
+    res.render('admin/Dashboard')
+})
+
+app.get('/sw-admin/projects' , (req , res) => {
+    res.render('admin/Projects')
 })

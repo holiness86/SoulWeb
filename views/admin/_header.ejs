@@ -1,0 +1,54 @@
+<%#
+  admin/_header.ejs
+  پارامترهای مورد نیاز:
+    - breadcrumbs  (array)   — [{ label: 'داشبورد', href: '/sw-admin' }, { label: 'پروژه‌ها' }]
+    - searchPlaceholder (string, optional) — placeholder جستجو
+%>
+
+<header class="admin-header">
+
+  <!-- Sidebar Toggle -->
+  <button class="header-toggle" id="sidebarToggle" title="باز/بسته کردن منو">
+    <i class="bi bi-layout-sidebar-reverse"></i>
+  </button>
+
+  <!-- Breadcrumb -->
+  <div class="header-breadcrumb">
+    <i class="bi bi-house-fill" style="font-size:.8rem;color:var(--color-text-light);"></i>
+    <% if(typeof breadcrumbs !== 'undefined' && breadcrumbs.length){ %>
+      <% breadcrumbs.forEach(function(crumb, i){ %>
+        <span class="sep">/</span>
+        <% if(crumb.href && i < breadcrumbs.length - 1){ %>
+          <a href="<%= crumb.href %>"><%= crumb.label %></a>
+        <% } else { %>
+          <span class="current"><%= crumb.label %></span>
+        <% } %>
+      <% }); %>
+    <% } %>
+  </div>
+
+  <!-- Search -->
+  <div class="header-search d-none d-md-flex">
+    <i class="bi bi-search"></i>
+    <input type="text" placeholder="<%= typeof searchPlaceholder !== 'undefined' ? searchPlaceholder : 'جستجو در پنل…' %>">
+  </div>
+
+  <!-- Actions -->
+  <div class="header-actions">
+    <button class="hdr-btn" title="اعلان‌ها">
+      <i class="bi bi-bell-fill"></i>
+      <span class="hdr-notif-dot"></span>
+    </button>
+
+    <button class="hdr-btn" id="themeToggle" title="تغییر تم">
+      <i class="bi bi-moon-stars-fill"></i>
+    </button>
+
+    <button class="hdr-btn d-none d-md-flex" id="fullscreenBtn" title="تمام‌صفحه">
+      <i class="bi bi-fullscreen"></i>
+    </button>
+
+    <div class="hdr-avatar" title="پروفایل">ادم</div>
+  </div>
+
+</header>

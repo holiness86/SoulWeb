@@ -1,0 +1,599 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl" data-bs-theme="light">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>سُل وب — مدیریت پروژه‌ها</title>
+  <link rel="stylesheet" href="../assets/css/bootstrap.rtl.min.css">
+  <link rel="stylesheet" href="../assets/css/icons-1.13.1/font/bootstrap-icons.min.css">
+  <style>
+    @font-face{font-family:YekanBakh;src:url("assets/fonts/YekanBakh-VF.ttf")}
+    :root{--font-primary:'YekanBakh','Tahoma',sans-serif;--main-50:#f0eeff;--main-100:#ddd9fe;--main-200:#c4bcfd;--main-300:#a394fb;--main-400:#836af8;--main-500:#6447f4;--main-600:#5236d6;--main-700:#4028b8;--main-800:#2f1d95;--main-900:#1e1274;--accent-400:#17aaff;--accent-500:#0090e8;--accent-600:#0073bf;--neutral-0:#fff;--neutral-50:#f7f7fb;--neutral-100:#eeeff7;--neutral-200:#dcddf0;--neutral-300:#c3c4de;--neutral-400:#9899bc;--neutral-500:#6d6e94;--neutral-600:#505175;--neutral-700:#393a5c;--neutral-800:#232441;--neutral-900:#10102a;--color-bg:#f5f5fb;--color-surface:#fff;--color-surface-alt:#f0eeff;--color-border:#e2e2f0;--color-text-primary:#10102a;--color-text-muted:#6d6e94;--color-text-light:#9899bc;--grad-main:linear-gradient(135deg,#6447f4 0%,#0090e8 100%);--grad-hero:linear-gradient(145deg,#1e1274 0%,#4028b8 40%,#0073bf 100%);--grad-soft:linear-gradient(135deg,#f0eeff 0%,#e8f8ff 100%);--shadow-xs:0 1px 3px rgba(16,16,42,.06);--shadow-sm:0 2px 8px rgba(16,16,42,.08);--shadow-md:0 4px 20px rgba(16,16,42,.10);--shadow-lg:0 8px 40px rgba(16,16,42,.12);--shadow-main:0 8px 32px rgba(100,71,244,.28);--radius-sm:.75rem;--radius-md:1.1rem;--radius-lg:1.5rem;--radius-xl:2rem;--radius-full:9999px;--ease-spring:cubic-bezier(.34,1.56,.64,1);--ease-smooth:cubic-bezier(.4,0,.2,1);--dur-fast:150ms;--dur-normal:280ms;--sidebar-w:260px;--sidebar-w-mini:72px;--header-h:60px}
+    [data-bs-theme="dark"]{--color-bg:#0d0d22;--color-surface:#14142e;--color-surface-alt:#1a1a38;--color-border:rgba(255,255,255,.08);--color-text-primary:#e8e8f5;--color-text-muted:#9899bc;--color-text-light:#505175}
+    *,*::before,*::after{box-sizing:border-box}html{scroll-behavior:smooth}
+    body{font-family:var(--font-primary);font-size:.9rem;line-height:1.65;color:var(--color-text-primary);background:var(--color-bg);overflow-x:hidden;direction:rtl;transition:background var(--dur-normal) var(--ease-smooth),color var(--dur-normal) var(--ease-smooth)}
+    ::-webkit-scrollbar{width:5px;height:5px}::-webkit-scrollbar-track{background:transparent}::-webkit-scrollbar-thumb{background:var(--main-300);border-radius:99px}
+    .admin-shell{display:flex;min-height:100vh;position:relative}
+    .sidebar{width:var(--sidebar-w);flex-shrink:0;position:fixed;top:0;right:0;bottom:0;background:var(--neutral-900);display:flex;flex-direction:column;z-index:1050;transition:width var(--dur-normal) var(--ease-smooth),transform var(--dur-normal) var(--ease-smooth);overflow:hidden}
+    .sidebar.mini{width:var(--sidebar-w-mini)}
+    .sidebar::before{content:'';position:absolute;top:0;right:0;width:3px;height:100%;background:var(--grad-main);opacity:.6}
+    .sidebar-brand{display:flex;align-items:center;gap:.75rem;padding:1.1rem 1.1rem 1rem;border-bottom:1px solid rgba(255,255,255,.07);text-decoration:none;flex-shrink:0;min-height:var(--header-h)}
+    .sidebar-logo{width:36px;height:36px;border-radius:var(--radius-sm);background:var(--grad-main);display:flex;align-items:center;justify-content:center;font-size:.8rem;font-weight:900;color:#fff;flex-shrink:0;box-shadow:var(--shadow-main)}
+    .sidebar-brand-text{font-size:1.15rem;font-weight:900;background:var(--grad-main);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;white-space:nowrap;transition:opacity var(--dur-fast),width var(--dur-fast)}
+    .sidebar.mini .sidebar-brand-text,.sidebar.mini .nav-label,.sidebar.mini .nav-text,.sidebar.mini .nav-badge{opacity:0;width:0;overflow:hidden}
+    .sidebar-nav{flex:1;overflow-y:auto;overflow-x:hidden;padding:.75rem .7rem;display:flex;flex-direction:column;gap:.25rem}
+    .sidebar-nav::-webkit-scrollbar{width:3px}
+    .nav-label{font-size:.68rem;font-weight:700;color:rgba(255,255,255,.25);text-transform:uppercase;letter-spacing:.1em;padding:.8rem .5rem .3rem;white-space:nowrap;transition:opacity var(--dur-fast)}
+    .nav-item-sol{display:flex;align-items:center;gap:.75rem;padding:.65rem .75rem;border-radius:var(--radius-sm);color:rgba(255,255,255,.5);text-decoration:none;transition:all var(--dur-fast) var(--ease-smooth);cursor:pointer;position:relative;white-space:nowrap;font-size:.87rem;font-weight:500}
+    .nav-item-sol .nav-icon{width:34px;height:34px;border-radius:var(--radius-sm);display:flex;align-items:center;justify-content:center;font-size:1rem;flex-shrink:0;transition:all var(--dur-normal) var(--ease-spring);background:rgba(255,255,255,.06)}
+    .nav-item-sol:hover{color:rgba(255,255,255,.9);background:rgba(255,255,255,.07)}
+    .nav-item-sol:hover .nav-icon{background:rgba(100,71,244,.25);color:var(--main-300)}
+    .nav-item-sol.active{color:#fff;background:rgba(100,71,244,.2)}
+    .nav-item-sol.active .nav-icon{background:var(--grad-main);color:#fff;box-shadow:0 4px 16px rgba(100,71,244,.4)}
+    .nav-item-sol.active::before{content:'';position:absolute;right:-.7rem;top:50%;transform:translateY(-50%);width:3px;height:60%;border-radius:99px;background:var(--grad-main)}
+    .nav-text{transition:opacity var(--dur-fast),width var(--dur-fast)}
+    .nav-badge{margin-right:auto;background:var(--main-500);color:#fff;font-size:.65rem;font-weight:700;padding:.1rem .45rem;border-radius:99px;transition:opacity var(--dur-fast),width var(--dur-fast)}
+    .sidebar-footer{padding:.85rem .7rem;border-top:1px solid rgba(255,255,255,.07);flex-shrink:0}
+    .sidebar-user{display:flex;align-items:center;gap:.65rem;padding:.6rem .75rem;border-radius:var(--radius-sm);transition:background var(--dur-fast);cursor:pointer}
+    .sidebar-user:hover{background:rgba(255,255,255,.06)}
+    .user-avatar{width:34px;height:34px;border-radius:var(--radius-sm);background:var(--grad-main);color:#fff;font-size:.72rem;font-weight:800;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+    .user-info{overflow:hidden}
+    .user-name{font-size:.82rem;font-weight:700;color:rgba(255,255,255,.9);white-space:nowrap}
+    .user-role{font-size:.7rem;color:rgba(255,255,255,.35);white-space:nowrap}
+    .main-content{flex:1;margin-right:var(--sidebar-w);min-height:100vh;display:flex;flex-direction:column;transition:margin-right var(--dur-normal) var(--ease-smooth)}
+    .main-content.mini{margin-right:var(--sidebar-w-mini)}
+    .admin-header{height:var(--header-h);background:var(--color-surface);border-bottom:1px solid var(--color-border);display:flex;align-items:center;padding:0 1.5rem;gap:1rem;position:sticky;top:0;z-index:100;transition:background var(--dur-normal),border-color var(--dur-normal);backdrop-filter:blur(20px)}
+    .header-toggle{width:34px;height:34px;border-radius:var(--radius-sm);border:1.5px solid var(--color-border);background:var(--color-bg);color:var(--color-text-muted);display:flex;align-items:center;justify-content:center;cursor:pointer;transition:all var(--dur-fast);font-size:1rem;flex-shrink:0}
+    .header-toggle:hover{background:var(--main-50);border-color:var(--main-300);color:var(--main-500)}
+    .header-breadcrumb{flex:1;display:flex;align-items:center;gap:.4rem;font-size:.8rem;color:var(--color-text-muted)}
+    .header-breadcrumb .current{font-weight:700;color:var(--color-text-primary)}
+    .header-breadcrumb .sep{color:var(--color-text-light)}
+    .header-search{display:flex;align-items:center;gap:.4rem;background:var(--color-bg);border:1.5px solid var(--color-border);border-radius:var(--radius-md);padding:.35rem .85rem;transition:all var(--dur-fast)}
+    .header-search:focus-within{border-color:var(--main-400);box-shadow:0 0 0 3px rgba(100,71,244,.12)}
+    .header-search i{color:var(--color-text-light);font-size:.85rem}
+    .header-search input{border:none;background:transparent;outline:none;font-family:var(--font-primary);font-size:.82rem;color:var(--color-text-primary);width:160px}
+    .header-search input::placeholder{color:var(--color-text-light)}
+    .header-actions{display:flex;align-items:center;gap:.5rem}
+    .hdr-btn{width:34px;height:34px;border-radius:var(--radius-sm);border:1.5px solid var(--color-border);background:var(--color-bg);color:var(--color-text-muted);display:flex;align-items:center;justify-content:center;cursor:pointer;transition:all var(--dur-fast);font-size:.95rem;position:relative;flex-shrink:0}
+    .hdr-btn:hover{background:var(--main-50);border-color:var(--main-300);color:var(--main-500);transform:translateY(-1px)}
+    [data-bs-theme="dark"] .hdr-btn:hover{background:rgba(100,71,244,.15)}
+    .hdr-notif-dot{position:absolute;top:4px;left:4px;width:7px;height:7px;border-radius:50%;background:#ef4444;border:2px solid var(--color-surface);animation:dotPulse 2s ease-in-out infinite}
+    @keyframes dotPulse{0%,100%{box-shadow:0 0 0 0 rgba(239,68,68,.4)}50%{box-shadow:0 0 0 5px rgba(239,68,68,0)}}
+    .hdr-avatar{width:34px;height:34px;border-radius:var(--radius-sm);background:var(--grad-main);color:#fff;font-size:.7rem;font-weight:800;display:flex;align-items:center;justify-content:center;cursor:pointer;box-shadow:var(--shadow-main);flex-shrink:0;transition:transform var(--dur-fast) var(--ease-spring)}
+    .hdr-avatar:hover{transform:scale(1.08)}
+    .page-content{flex:1;padding:1.75rem 2rem}
+    .page-header{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:1.75rem;gap:1rem;flex-wrap:wrap}
+    .page-title{font-size:1.4rem;font-weight:900;margin-bottom:.2rem;letter-spacing:-.02em}
+    .page-subtitle{font-size:.82rem;color:var(--color-text-muted);margin:0}
+    .dash-panel{background:var(--color-surface);border:1px solid var(--color-border);border-radius:var(--radius-lg);overflow:hidden;transition:border-color var(--dur-fast)}
+    .dash-panel:hover{border-color:var(--main-200)}
+    [data-bs-theme="dark"] .dash-panel:hover{border-color:rgba(100,71,244,.2)}
+    .panel-header{display:flex;align-items:center;justify-content:space-between;padding:1rem 1.25rem;border-bottom:1px solid var(--color-border)}
+    .panel-title{font-size:.9rem;font-weight:700;margin:0}
+    .panel-action{font-size:.75rem;color:var(--main-500);font-weight:600;text-decoration:none;display:flex;align-items:center;gap:.25rem;transition:gap var(--dur-fast)}
+    .panel-action:hover{gap:.5rem;color:var(--main-600)}
+    .btn-sol-sm{display:inline-flex;align-items:center;gap:.35rem;background:var(--grad-main);color:#fff;border:none;border-radius:var(--radius-sm);padding:.45rem 1.1rem;font-family:var(--font-primary);font-size:.8rem;font-weight:700;cursor:pointer;transition:all var(--dur-normal) var(--ease-spring);box-shadow:var(--shadow-main);white-space:nowrap}
+    .btn-sol-sm:hover{transform:translateY(-2px);box-shadow:0 10px 32px rgba(100,71,244,.4)}
+    .btn-ghost-sm{display:inline-flex;align-items:center;gap:.35rem;background:transparent;color:var(--main-500);border:1.5px solid var(--main-200);border-radius:var(--radius-sm);padding:.42rem 1rem;font-family:var(--font-primary);font-size:.8rem;font-weight:600;cursor:pointer;transition:all var(--dur-fast)}
+    .btn-ghost-sm:hover{background:var(--main-50);border-color:var(--main-400)}
+    .btn-danger-sm{display:inline-flex;align-items:center;gap:.35rem;background:rgba(239,68,68,.1);color:#dc2626;border:1.5px solid rgba(239,68,68,.2);border-radius:var(--radius-sm);padding:.42rem 1rem;font-family:var(--font-primary);font-size:.8rem;font-weight:600;cursor:pointer;transition:all var(--dur-fast)}
+    .btn-danger-sm:hover{background:#dc2626;color:#fff}
+    .badge-status{display:inline-flex;align-items:center;gap:.3rem;font-size:.7rem;font-weight:700;padding:.2rem .65rem;border-radius:var(--radius-full)}
+    .badge-status::before{content:'';width:5px;height:5px;border-radius:50%;background:currentColor}
+    .badge-done{background:rgba(34,197,94,.12);color:#16a34a}
+    .badge-inprog{background:rgba(100,71,244,.12);color:var(--main-600)}
+    .badge-review{background:rgba(245,158,11,.12);color:#d97706}
+    .badge-hold{background:rgba(239,68,68,.1);color:#dc2626}
+    .badge-new{background:rgba(0,144,232,.12);color:var(--accent-600)}
+    .text-grad{background:var(--grad-main);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+    .fade-up{opacity:0;transform:translateY(16px);animation:fadeUp .4s var(--ease-smooth) forwards}
+    @keyframes fadeUp{to{opacity:1;transform:translateY(0)}}
+    .fade-up-1{animation-delay:.05s}.fade-up-2{animation-delay:.1s}.fade-up-3{animation-delay:.15s}.fade-up-4{animation-delay:.2s}
+    .sidebar-overlay{display:none;position:fixed;inset:0;background:rgba(16,16,42,.6);backdrop-filter:blur(4px);z-index:1049;opacity:0;transition:opacity var(--dur-normal)}
+    .sidebar-overlay.show{opacity:1}
+    @media(max-width:768px){.sidebar{transform:translateX(100%);width:var(--sidebar-w)!important}.sidebar.mobile-open{transform:translateX(0)}.sidebar-overlay{display:block}.main-content{margin-right:0!important}.page-content{padding:1.25rem 1rem}}
+    .sol-input{font-family:var(--font-primary);font-size:.85rem;background:var(--color-surface);border:1.5px solid var(--color-border);border-radius:var(--radius-sm);color:var(--color-text-primary);padding:.55rem .9rem;outline:none;transition:all var(--dur-fast);width:100%}
+    .sol-input:focus{border-color:var(--main-400);box-shadow:0 0 0 3px rgba(100,71,244,.12)}
+    .sol-input::placeholder{color:var(--color-text-light)}
+    [data-bs-theme="dark"] .sol-input{background:rgba(255,255,255,.05)}
+    .sol-select{font-family:var(--font-primary);font-size:.85rem;background:var(--color-surface);border:1.5px solid var(--color-border);border-radius:var(--radius-sm);color:var(--color-text-primary);padding:.55rem .9rem;outline:none;transition:all var(--dur-fast);cursor:pointer}
+    .sol-select:focus{border-color:var(--main-400);box-shadow:0 0 0 3px rgba(100,71,244,.12)}
+    [data-bs-theme="dark"] .sol-select{background:rgba(255,255,255,.05)}
+
+    /* ═══ Page-specific ═══ */
+    /* Stat mini */
+    .pstat{background:var(--color-surface);border:1px solid var(--color-border);border-radius:var(--radius-lg);padding:1.1rem 1.25rem;display:flex;align-items:center;gap:.85rem;transition:all var(--dur-normal) var(--ease-spring)}
+    .pstat:hover{transform:translateY(-2px);box-shadow:var(--shadow-sm);border-color:var(--main-200)}
+    .pstat-icon{width:40px;height:40px;border-radius:var(--radius-sm);display:flex;align-items:center;justify-content:center;font-size:1.1rem;flex-shrink:0}
+    .pstat-val{font-size:1.5rem;font-weight:900;line-height:1}
+    .pstat-lbl{font-size:.73rem;color:var(--color-text-muted);margin-top:.15rem}
+
+    /* Kanban */
+    .kanban-board{display:grid;grid-template-columns:repeat(4,1fr);gap:1rem;margin-bottom:1.5rem}
+    @media(max-width:1100px){.kanban-board{grid-template-columns:repeat(2,1fr)}}
+    @media(max-width:600px){.kanban-board{grid-template-columns:1fr}}
+    .kanban-col{background:var(--color-bg);border:1px solid var(--color-border);border-radius:var(--radius-lg);overflow:hidden}
+    [data-bs-theme="dark"] .kanban-col{background:var(--color-surface-alt)}
+    .kanban-head{padding:.75rem 1rem;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid var(--color-border)}
+    .kanban-head-title{font-size:.8rem;font-weight:700;display:flex;align-items:center;gap:.45rem}
+    .kanban-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
+    .kanban-count{font-size:.68rem;font-weight:700;background:var(--color-border);color:var(--color-text-muted);padding:.1rem .4rem;border-radius:99px}
+    .kanban-cards{padding:.65rem;display:flex;flex-direction:column;gap:.6rem;min-height:120px}
+    .kcard{background:var(--color-surface);border:1px solid var(--color-border);border-radius:var(--radius-md);padding:.85rem 1rem;cursor:pointer;transition:all var(--dur-normal) var(--ease-spring);position:relative;overflow:hidden}
+    .kcard:hover{transform:translateY(-2px);box-shadow:var(--shadow-md);border-color:var(--main-200)}
+    [data-bs-theme="dark"] .kcard:hover{border-color:rgba(100,71,244,.25)}
+    .kcard::before{content:'';position:absolute;top:0;right:0;left:0;height:3px;background:var(--grad-main);opacity:0;transition:opacity var(--dur-fast)}
+    .kcard:hover::before{opacity:1}
+    .kcard-title{font-size:.83rem;font-weight:700;margin-bottom:.5rem;line-height:1.4}
+    .kcard-meta{display:flex;align-items:center;justify-content:space-between;gap:.5rem;flex-wrap:wrap}
+    .kcard-type{font-size:.68rem;color:var(--color-text-light)}
+    .kcard-due{font-size:.68rem;color:var(--color-text-muted);display:flex;align-items:center;gap:.2rem}
+    .kcard-prog{height:3px;border-radius:99px;background:var(--color-border);margin:.6rem 0;overflow:hidden}
+    .kcard-prog-fill{height:100%;border-radius:99px;background:var(--grad-main)}
+    .kcard-avatars{display:flex;gap:.25rem;align-items:center}
+    .kcard-av{width:20px;height:20px;border-radius:5px;font-size:.55rem;font-weight:800;color:#fff;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+
+    /* Table */
+    .sol-table{width:100%;border-collapse:collapse}
+    .sol-table th{font-size:.72rem;font-weight:700;color:var(--color-text-light);text-transform:uppercase;letter-spacing:.06em;padding:.65rem 1.25rem;border-bottom:1px solid var(--color-border);text-align:right;white-space:nowrap}
+    .sol-table td{padding:.85rem 1.25rem;border-bottom:1px solid var(--color-border);font-size:.84rem;vertical-align:middle}
+    .sol-table tr:last-child td{border-bottom:none}
+    .sol-table tbody tr{transition:background var(--dur-fast);cursor:pointer}
+    .sol-table tbody tr:hover{background:var(--color-bg)}
+    [data-bs-theme="dark"] .sol-table tbody tr:hover{background:rgba(255,255,255,.03)}
+    .prog-bar-mini{width:80px;height:5px;border-radius:99px;background:var(--color-border);overflow:hidden}
+    .prog-fill{height:100%;border-radius:99px;background:var(--grad-main);transition:width .8s var(--ease-spring)}
+
+    /* Modal overlay */
+    .modal-overlay{position:fixed;inset:0;background:rgba(16,16,42,.55);backdrop-filter:blur(6px);z-index:2000;display:flex;align-items:center;justify-content:center;opacity:0;visibility:hidden;transition:all var(--dur-normal) var(--ease-smooth)}
+    .modal-overlay.open{opacity:1;visibility:visible}
+    .modal-box{background:var(--color-surface);border-radius:var(--radius-xl);padding:2rem;width:min(500px,92vw);max-height:85vh;overflow-y:auto;box-shadow:var(--shadow-xl);transform:scale(.95) translateY(10px);transition:transform var(--dur-normal) var(--ease-spring)}
+    .modal-overlay.open .modal-box{transform:scale(1) translateY(0)}
+    .modal-title{font-size:1.1rem;font-weight:900;margin-bottom:1.5rem}
+    .form-row{margin-bottom:1rem}
+    .sol-label{font-size:.78rem;font-weight:700;color:var(--color-text-muted);margin-bottom:.35rem;display:block}
+    /* shadow-xl */
+    --shadow-xl:0 16px 64px rgba(16,16,42,.14);
+
+    /* filter bar */
+    .filter-bar{display:flex;align-items:center;gap:.6rem;flex-wrap:wrap;margin-bottom:1.25rem}
+    .filter-chip{display:inline-flex;align-items:center;gap:.35rem;font-family:var(--font-primary);font-size:.78rem;font-weight:600;padding:.38rem .9rem;border-radius:var(--radius-full);border:1.5px solid var(--color-border);background:var(--color-surface);color:var(--color-text-muted);cursor:pointer;transition:all var(--dur-fast)}
+    .filter-chip:hover,.filter-chip.active{background:var(--main-500);border-color:var(--main-500);color:#fff}
+    [data-bs-theme="dark"] .filter-chip{background:var(--color-surface-alt)}
+    .view-toggle{display:flex;gap:.3rem}
+    .view-btn{width:32px;height:32px;border-radius:var(--radius-sm);border:1.5px solid var(--color-border);background:var(--color-surface);color:var(--color-text-muted);display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:.9rem;transition:all var(--dur-fast)}
+    .view-btn.active,.view-btn:hover{background:var(--main-500);border-color:var(--main-500);color:#fff}
+  </style>
+</head>
+<body>
+<div class="sidebar-overlay" id="sidebarOverlay"></div>
+<div class="admin-shell">
+
+  <!-- SIDEBAR -->
+  <aside class="sidebar" id="sidebar">
+    <a class="sidebar-brand" href="dashboard.html">
+      <div class="sidebar-logo">سل</div>
+      <span class="sidebar-brand-text">سُل وب — پنل</span>
+    </a>
+    <nav class="sidebar-nav">
+      <span class="nav-label">اصلی</span>
+      <a href="dashboard.html" class="nav-item-sol"><span class="nav-icon"><i class="bi bi-grid-1x2-fill"></i></span><span class="nav-text">داشبورد</span></a>
+      <a href="sw-projects.html" class="nav-item-sol active"><span class="nav-icon"><i class="bi bi-kanban-fill"></i></span><span class="nav-text">پروژه‌ها</span><span class="nav-badge">۱۲</span></a>
+      <a href="sw-clients.html" class="nav-item-sol"><span class="nav-icon"><i class="bi bi-people-fill"></i></span><span class="nav-text">مشتریان</span></a>
+      <a href="sw-messages.html" class="nav-item-sol"><span class="nav-icon"><i class="bi bi-chat-dots-fill"></i></span><span class="nav-text">پیام‌ها</span><span class="nav-badge">۵</span></a>
+      <a href="sw-invoices.html" class="nav-item-sol"><span class="nav-icon"><i class="bi bi-receipt"></i></span><span class="nav-text">فاکتورها</span></a>
+      <span class="nav-label">محتوا</span>
+      <a href="sw-portfolio.html" class="nav-item-sol"><span class="nav-icon"><i class="bi bi-collection-fill"></i></span><span class="nav-text">پورتفولیو</span></a>
+      <a href="#" class="nav-item-sol"><span class="nav-icon"><i class="bi bi-box-seam-fill"></i></span><span class="nav-text">پکیج‌ها</span></a>
+      <a href="#" class="nav-item-sol"><span class="nav-icon"><i class="bi bi-star-fill"></i></span><span class="nav-text">نظرات</span></a>
+      <a href="#" class="nav-item-sol"><span class="nav-icon"><i class="bi bi-journal-text"></i></span><span class="nav-text">وبلاگ</span></a>
+      <span class="nav-label">سیستم</span>
+      <a href="sw-settings.html" class="nav-item-sol"><span class="nav-icon"><i class="bi bi-gear-fill"></i></span><span class="nav-text">تنظیمات</span></a>
+    </nav>
+    <div class="sidebar-footer">
+      <div class="sidebar-user">
+        <div class="user-avatar">ادم</div>
+        <div class="user-info"><div class="user-name">علی مدیری</div><div class="user-role">مدیر کل سیستم</div></div>
+        <i class="bi bi-three-dots-vertical" style="color:rgba(255,255,255,.3);font-size:.85rem;flex-shrink:0;"></i>
+      </div>
+    </div>
+  </aside>
+
+  <!-- MAIN -->
+  <div class="main-content" id="mainContent">
+    <header class="admin-header">
+      <button class="header-toggle" id="sidebarToggle"><i class="bi bi-layout-sidebar-reverse"></i></button>
+      <div class="header-breadcrumb">
+        <i class="bi bi-house-fill" style="font-size:.8rem;color:var(--color-text-light);"></i>
+        <span class="sep">/</span><a href="dashboard.html" style="color:var(--color-text-muted);text-decoration:none;">داشبورد</a>
+        <span class="sep">/</span><span class="current">پروژه‌ها</span>
+      </div>
+      <div class="header-search d-none d-md-flex">
+        <i class="bi bi-search"></i><input type="text" placeholder="جستجو در پروژه‌ها…">
+      </div>
+      <div class="header-actions">
+        <button class="hdr-btn" title="اعلان‌ها"><i class="bi bi-bell-fill"></i><span class="hdr-notif-dot"></span></button>
+        <button class="hdr-btn" id="themeToggle"><i class="bi bi-moon-stars-fill"></i></button>
+        <button class="hdr-btn d-none d-md-flex" id="fullscreenBtn"><i class="bi bi-fullscreen"></i></button>
+        <div class="hdr-avatar">ادم</div>
+      </div>
+    </header>
+
+    <main class="page-content">
+      <!-- Page Header -->
+      <div class="page-header fade-up fade-up-1">
+        <div>
+          <h1 class="page-title">مدیریت پروژه‌ها</h1>
+          <p class="page-subtitle">۲۴ پروژه فعال · ۸ در انتظار بررسی · ۳ متوقف</p>
+        </div>
+        <div class="d-flex gap-2">
+          <button class="btn-ghost-sm"><i class="bi bi-download"></i> خروجی Excel</button>
+          <button class="btn-sol-sm" id="newProjectBtn"><i class="bi bi-plus-lg"></i> پروژه جدید</button>
+        </div>
+      </div>
+
+      <!-- Stats row -->
+      <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:1rem;margin-bottom:1.5rem;" class="fade-up fade-up-2">
+        <div class="pstat">
+          <div class="pstat-icon" style="background:rgba(100,71,244,.1);color:var(--main-500);"><i class="bi bi-kanban-fill"></i></div>
+          <div><div class="pstat-val text-grad">۲۴</div><div class="pstat-lbl">پروژه فعال</div></div>
+        </div>
+        <div class="pstat">
+          <div class="pstat-icon" style="background:rgba(34,197,94,.1);color:#16a34a;"><i class="bi bi-check-circle-fill"></i></div>
+          <div><div class="pstat-val text-grad">۱۵۳</div><div class="pstat-lbl">تحویل‌داده‌شده</div></div>
+        </div>
+        <div class="pstat">
+          <div class="pstat-icon" style="background:rgba(245,158,11,.1);color:#d97706;"><i class="bi bi-clock-history"></i></div>
+          <div><div class="pstat-val text-grad">۸</div><div class="pstat-lbl">در انتظار ریویو</div></div>
+        </div>
+        <div class="pstat">
+          <div class="pstat-icon" style="background:rgba(239,68,68,.1);color:#dc2626;"><i class="bi bi-pause-circle-fill"></i></div>
+          <div><div class="pstat-val text-grad">۳</div><div class="pstat-lbl">متوقف‌شده</div></div>
+        </div>
+      </div>
+
+      <!-- Filter + View toggle -->
+      <div class="filter-bar fade-up fade-up-2">
+        <button class="filter-chip active" data-filter="all">همه</button>
+        <button class="filter-chip" data-filter="inprog">در حال انجام</button>
+        <button class="filter-chip" data-filter="review">ریویو</button>
+        <button class="filter-chip" data-filter="done">تحویل‌شده</button>
+        <button class="filter-chip" data-filter="hold">متوقف</button>
+        <div style="margin-right:auto;display:flex;gap:.5rem;align-items:center;">
+          <select class="sol-select" style="width:auto;font-size:.78rem;padding:.38rem .8rem;">
+            <option>مرتب: جدیدترین</option>
+            <option>مرتب: ددلاین</option>
+            <option>مرتب: پیشرفت</option>
+          </select>
+          <div class="view-toggle">
+            <button class="view-btn active" id="viewKanban" title="کانبان"><i class="bi bi-grid-3x3-gap"></i></button>
+            <button class="view-btn" id="viewTable" title="جدول"><i class="bi bi-list-ul"></i></button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Kanban View -->
+      <div id="kanbanView">
+        <div class="kanban-board fade-up fade-up-3">
+
+          <!-- در انتظار -->
+          <div class="kanban-col">
+            <div class="kanban-head">
+              <div class="kanban-head-title"><div class="kanban-dot" style="background:#9899bc;"></div>در انتظار</div>
+              <span class="kanban-count">۳</span>
+            </div>
+            <div class="kanban-cards">
+              <div class="kcard">
+                <div class="kcard-title">طراحی وب‌سایت استارتاپ ویستا</div>
+                <div class="kcard-prog"><div class="kcard-prog-fill" style="width:0%"></div></div>
+                <div class="kcard-meta">
+                  <span class="kcard-type"><span class="badge-status badge-new">جدید</span></span>
+                  <span class="kcard-due"><i class="bi bi-calendar3"></i>۵ تیر</span>
+                </div>
+                <div style="margin-top:.6rem;display:flex;justify-content:space-between;align-items:center;">
+                  <div class="kcard-avatars"><div class="kcard-av" style="background:var(--grad-main);">علی</div><div class="kcard-av" style="background:linear-gradient(135deg,#0090e8,#4dc3ff);">مح</div></div>
+                  <span style="font-size:.68rem;color:var(--color-text-light);">PHP · ۰٪</span>
+                </div>
+              </div>
+              <div class="kcard">
+                <div class="kcard-title">اپلیکیشن مدیریت انبار سورنا</div>
+                <div class="kcard-prog"><div class="kcard-prog-fill" style="width:0%"></div></div>
+                <div class="kcard-meta">
+                  <span><span class="badge-status badge-new">جدید</span></span>
+                  <span class="kcard-due"><i class="bi bi-calendar3"></i>۱۲ تیر</span>
+                </div>
+              </div>
+              <div class="kcard">
+                <div class="kcard-title">رابط کاربری اپ سلامت پلاس</div>
+                <div class="kcard-prog"><div class="kcard-prog-fill" style="width:0%"></div></div>
+                <div class="kcard-meta">
+                  <span><span class="badge-status badge-new">جدید</span></span>
+                  <span class="kcard-due"><i class="bi bi-calendar3"></i>۲۰ تیر</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- در حال انجام -->
+          <div class="kanban-col">
+            <div class="kanban-head">
+              <div class="kanban-head-title"><div class="kanban-dot" style="background:#6447f4;"></div>در حال انجام</div>
+              <span class="kanban-count">۵</span>
+            </div>
+            <div class="kanban-cards">
+              <div class="kcard">
+                <div class="kcard-title">فروشگاه کیانی لباس</div>
+                <div class="kcard-prog"><div class="kcard-prog-fill" style="width:68%"></div></div>
+                <div class="kcard-meta">
+                  <span><span class="badge-status badge-inprog">در انجام</span></span>
+                  <span class="kcard-due"><i class="bi bi-calendar3"></i>۱۵ خرداد</span>
+                </div>
+                <div style="margin-top:.6rem;display:flex;justify-content:space-between;align-items:center;">
+                  <div class="kcard-avatars"><div class="kcard-av" style="background:linear-gradient(135deg,#a394fb,#6447f4);">سار</div></div>
+                  <span style="font-size:.68rem;color:var(--color-text-light);">WooCommerce · ۶۸٪</span>
+                </div>
+              </div>
+              <div class="kcard">
+                <div class="kcard-title">پورتال سازمانی پارسیان</div>
+                <div class="kcard-prog"><div class="kcard-prog-fill" style="width:42%"></div></div>
+                <div class="kcard-meta">
+                  <span><span class="badge-status badge-inprog">در انجام</span></span>
+                  <span class="kcard-due" style="color:#dc2626;font-weight:700;"><i class="bi bi-exclamation-triangle"></i>فردا!</span>
+                </div>
+                <div style="margin-top:.6rem;display:flex;justify-content:space-between;align-items:center;">
+                  <div class="kcard-avatars"><div class="kcard-av" style="background:var(--grad-main);">علی</div><div class="kcard-av" style="background:linear-gradient(135deg,#22c55e,#0090e8);">رضا</div></div>
+                  <span style="font-size:.68rem;color:var(--color-text-light);">Laravel · ۴۲٪</span>
+                </div>
+              </div>
+              <div class="kcard">
+                <div class="kcard-title">فروشگاه دیجیتال آذرنت</div>
+                <div class="kcard-prog"><div class="kcard-prog-fill" style="width:55%"></div></div>
+                <div class="kcard-meta">
+                  <span><span class="badge-status badge-inprog">در انجام</span></span>
+                  <span class="kcard-due"><i class="bi bi-calendar3"></i>۸ تیر</span>
+                </div>
+              </div>
+              <div class="kcard">
+                <div class="kcard-title">سایت شرکتی پردیس‌گستر</div>
+                <div class="kcard-prog"><div class="kcard-prog-fill" style="width:78%"></div></div>
+                <div class="kcard-meta">
+                  <span><span class="badge-status badge-inprog">در انجام</span></span>
+                  <span class="kcard-due"><i class="bi bi-calendar3"></i>۲۵ خرداد</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- ریویو -->
+          <div class="kanban-col">
+            <div class="kanban-head">
+              <div class="kanban-head-title"><div class="kanban-dot" style="background:#f59e0b;"></div>در ریویو</div>
+              <span class="kanban-count">۸</span>
+            </div>
+            <div class="kanban-cards">
+              <div class="kcard">
+                <div class="kcard-title">اپلیکیشن مدیریت مالی آفیلیو</div>
+                <div class="kcard-prog"><div class="kcard-prog-fill" style="width:85%"></div></div>
+                <div class="kcard-meta">
+                  <span><span class="badge-status badge-review">ریویو</span></span>
+                  <span class="kcard-due"><i class="bi bi-calendar3"></i>۲۲ خرداد</span>
+                </div>
+                <div style="margin-top:.6rem;display:flex;justify-content:space-between;align-items:center;">
+                  <div class="kcard-avatars"><div class="kcard-av" style="background:linear-gradient(135deg,#f59e0b,#ef4444);">نگر</div></div>
+                  <span style="font-size:.68rem;color:var(--color-text-light);">React · ۸۵٪</span>
+                </div>
+              </div>
+              <div class="kcard">
+                <div class="kcard-title">داشبورد تحلیل داده هوشمند</div>
+                <div class="kcard-prog"><div class="kcard-prog-fill" style="width:92%"></div></div>
+                <div class="kcard-meta">
+                  <span><span class="badge-status badge-review">ریویو</span></span>
+                  <span class="kcard-due"><i class="bi bi-calendar3"></i>۱۸ خرداد</span>
+                </div>
+              </div>
+              <div class="kcard">
+                <div class="kcard-title">وب‌سایت پزشکی دکتر رضایی</div>
+                <div class="kcard-prog"><div class="kcard-prog-fill" style="width:95%"></div></div>
+                <div class="kcard-meta">
+                  <span><span class="badge-status badge-review">ریویو</span></span>
+                  <span class="kcard-due"><i class="bi bi-calendar3"></i>۱۶ خرداد</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- تحویل‌شده -->
+          <div class="kanban-col">
+            <div class="kanban-head">
+              <div class="kanban-head-title"><div class="kanban-dot" style="background:#22c55e;"></div>تحویل‌شده</div>
+              <span class="kanban-count">۸</span>
+            </div>
+            <div class="kanban-cards">
+              <div class="kcard" style="opacity:.7;">
+                <div class="kcard-title">وب‌سایت شرکتی آتین‌دیزاین</div>
+                <div class="kcard-prog"><div class="kcard-prog-fill" style="width:100%;background:linear-gradient(135deg,#22c55e,#16a34a)"></div></div>
+                <div class="kcard-meta">
+                  <span><span class="badge-status badge-done">تحویل‌شد</span></span>
+                  <span class="kcard-due"><i class="bi bi-calendar3"></i>۱ خرداد</span>
+                </div>
+              </div>
+              <div class="kcard" style="opacity:.7;">
+                <div class="kcard-title">اپ رستوران‌یاب کافه‌نت</div>
+                <div class="kcard-prog"><div class="kcard-prog-fill" style="width:100%;background:linear-gradient(135deg,#22c55e,#16a34a)"></div></div>
+                <div class="kcard-meta">
+                  <span><span class="badge-status badge-done">تحویل‌شد</span></span>
+                  <span class="kcard-due"><i class="bi bi-calendar3"></i>۲۰ اردیبهشت</span>
+                </div>
+              </div>
+              <div class="kcard" style="opacity:.7;">
+                <div class="kcard-title">سایت خدمات پاک‌سرویس</div>
+                <div class="kcard-prog"><div class="kcard-prog-fill" style="width:100%;background:linear-gradient(135deg,#22c55e,#16a34a)"></div></div>
+                <div class="kcard-meta">
+                  <span><span class="badge-status badge-done">تحویل‌شد</span></span>
+                  <span class="kcard-due"><i class="bi bi-calendar3"></i>۱۰ اردیبهشت</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+        </div>
+      </div><!-- /kanban -->
+
+      <!-- Table View (hidden by default) -->
+      <div id="tableView" style="display:none;">
+        <div class="dash-panel fade-up fade-up-3">
+          <div style="overflow-x:auto;">
+            <table class="sol-table">
+              <thead>
+                <tr>
+                  <th>#</th><th>نام پروژه</th><th>مشتری</th><th>نوع</th><th>وضعیت</th><th>پیشرفت</th><th>ددلاین</th><th>عملیات</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td><span style="font-size:.75rem;color:var(--color-text-light);">#۱۰۱</span></td>
+                  <td><div style="font-weight:600;font-size:.85rem;">فروشگاه کیانی لباس</div><div style="font-size:.73rem;color:var(--color-text-muted);">WooCommerce</div></td>
+                  <td>کیانی لباس</td><td>فروشگاه</td>
+                  <td><span class="badge-status badge-inprog">در انجام</span></td>
+                  <td><div style="display:flex;align-items:center;gap:.5rem;"><div class="prog-bar-mini"><div class="prog-fill" style="width:68%"></div></div><span style="font-size:.73rem;color:var(--color-text-muted);">۶۸٪</span></div></td>
+                  <td style="font-size:.78rem;">۱۵ خرداد</td>
+                  <td><div style="display:flex;gap:.4rem;"><button class="btn-ghost-sm" style="padding:.28rem .6rem;"><i class="bi bi-eye"></i></button><button class="btn-ghost-sm" style="padding:.28rem .6rem;"><i class="bi bi-pencil"></i></button><button class="btn-danger-sm" style="padding:.28rem .6rem;"><i class="bi bi-trash"></i></button></div></td>
+                </tr>
+                <tr>
+                  <td><span style="font-size:.75rem;color:var(--color-text-light);">#۱۰۲</span></td>
+                  <td><div style="font-weight:600;font-size:.85rem;">پورتال سازمانی پارسیان</div><div style="font-size:.73rem;color:var(--color-text-muted);">Laravel</div></td>
+                  <td>گروه پارسیان</td><td>وب اپ</td>
+                  <td><span class="badge-status badge-inprog">در انجام</span></td>
+                  <td><div style="display:flex;align-items:center;gap:.5rem;"><div class="prog-bar-mini"><div class="prog-fill" style="width:42%"></div></div><span style="font-size:.73rem;color:#dc2626;font-weight:700;">۴۲٪</span></div></td>
+                  <td style="font-size:.78rem;color:#dc2626;font-weight:700;">⚠️ فردا!</td>
+                  <td><div style="display:flex;gap:.4rem;"><button class="btn-ghost-sm" style="padding:.28rem .6rem;"><i class="bi bi-eye"></i></button><button class="btn-ghost-sm" style="padding:.28rem .6rem;"><i class="bi bi-pencil"></i></button><button class="btn-danger-sm" style="padding:.28rem .6rem;"><i class="bi bi-trash"></i></button></div></td>
+                </tr>
+                <tr>
+                  <td><span style="font-size:.75rem;color:var(--color-text-light);">#۱۰۳</span></td>
+                  <td><div style="font-weight:600;font-size:.85rem;">اپلیکیشن مدیریت مالی</div><div style="font-size:.73rem;color:var(--color-text-muted);">React + Node.js</div></td>
+                  <td>آفیلیو</td><td>UI/UX</td>
+                  <td><span class="badge-status badge-review">ریویو</span></td>
+                  <td><div style="display:flex;align-items:center;gap:.5rem;"><div class="prog-bar-mini"><div class="prog-fill" style="width:85%"></div></div><span style="font-size:.73rem;color:var(--color-text-muted);">۸۵٪</span></div></td>
+                  <td style="font-size:.78rem;">۲۲ خرداد</td>
+                  <td><div style="display:flex;gap:.4rem;"><button class="btn-ghost-sm" style="padding:.28rem .6rem;"><i class="bi bi-eye"></i></button><button class="btn-ghost-sm" style="padding:.28rem .6rem;"><i class="bi bi-pencil"></i></button><button class="btn-danger-sm" style="padding:.28rem .6rem;"><i class="bi bi-trash"></i></button></div></td>
+                </tr>
+                <tr>
+                  <td><span style="font-size:.75rem;color:var(--color-text-light);">#۱۰۰</span></td>
+                  <td><div style="font-weight:600;font-size:.85rem;">وب‌سایت شرکتی آتین‌دیزاین</div><div style="font-size:.73rem;color:var(--color-text-muted);">PHP</div></td>
+                  <td>آتین‌دیزاین</td><td>وب</td>
+                  <td><span class="badge-status badge-done">تحویل‌شد</span></td>
+                  <td><div style="display:flex;align-items:center;gap:.5rem;"><div class="prog-bar-mini"><div class="prog-fill" style="width:100%"></div></div><span style="font-size:.73rem;color:#16a34a;font-weight:700;">۱۰۰٪</span></div></td>
+                  <td style="font-size:.78rem;">۱ خرداد</td>
+                  <td><div style="display:flex;gap:.4rem;"><button class="btn-ghost-sm" style="padding:.28rem .6rem;"><i class="bi bi-eye"></i></button><button class="btn-ghost-sm" style="padding:.28rem .6rem;"><i class="bi bi-pencil"></i></button><button class="btn-danger-sm" style="padding:.28rem .6rem;"><i class="bi bi-trash"></i></button></div></td>
+                </tr>
+                <tr>
+                  <td><span style="font-size:.75rem;color:var(--color-text-light);">#۰۹۹</span></td>
+                  <td><div style="font-weight:600;font-size:.85rem;">فروشگاه دیجیتال پرتو</div><div style="font-size:.73rem;color:var(--color-text-muted);">Node.js</div></td>
+                  <td>شرکت پرتو</td><td>فروشگاه</td>
+                  <td><span class="badge-status badge-hold">متوقف</span></td>
+                  <td><div style="display:flex;align-items:center;gap:.5rem;"><div class="prog-bar-mini"><div class="prog-fill" style="width:30%"></div></div><span style="font-size:.73rem;color:var(--color-text-muted);">۳۰٪</span></div></td>
+                  <td style="font-size:.78rem;">نامشخص</td>
+                  <td><div style="display:flex;gap:.4rem;"><button class="btn-ghost-sm" style="padding:.28rem .6rem;"><i class="bi bi-eye"></i></button><button class="btn-ghost-sm" style="padding:.28rem .6rem;"><i class="bi bi-pencil"></i></button><button class="btn-danger-sm" style="padding:.28rem .6rem;"><i class="bi bi-trash"></i></button></div></td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+          <!-- Pagination -->
+          <div style="display:flex;align-items:center;justify-content:space-between;padding:1rem 1.25rem;border-top:1px solid var(--color-border);flex-wrap:wrap;gap:.75rem;">
+            <span style="font-size:.78rem;color:var(--color-text-muted);">نمایش ۱–۵ از ۲۴ پروژه</span>
+            <div style="display:flex;gap:.35rem;">
+              <button class="view-btn" disabled><i class="bi bi-chevron-right"></i></button>
+              <button class="view-btn active">۱</button>
+              <button class="view-btn">۲</button>
+              <button class="view-btn">۳</button>
+              <button class="view-btn"><i class="bi bi-chevron-left"></i></button>
+            </div>
+          </div>
+        </div>
+      </div><!-- /tableView -->
+
+    </main>
+  </div>
+</div>
+
+<!-- New Project Modal -->
+<div class="modal-overlay" id="projectModal">
+  <div class="modal-box">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1.5rem;">
+      <div class="modal-title" style="margin:0;">پروژه جدید</div>
+      <button id="closeModal" style="background:transparent;border:none;font-size:1.2rem;color:var(--color-text-muted);cursor:pointer;"><i class="bi bi-x-lg"></i></button>
+    </div>
+    <div class="form-row">
+      <label class="sol-label">نام پروژه</label>
+      <input class="sol-input" type="text" placeholder="مثال: وب‌سایت شرکت آلفا">
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;">
+      <div class="form-row">
+        <label class="sol-label">مشتری</label>
+        <select class="sol-select">
+          <option>انتخاب مشتری…</option><option>کیانی لباس</option><option>گروه پارسیان</option><option>آفیلیو</option>
+        </select>
+      </div>
+      <div class="form-row">
+        <label class="sol-label">نوع پروژه</label>
+        <select class="sol-select">
+          <option>طراحی وب</option><option>فروشگاه</option><option>UI/UX</option><option>وب اپ</option>
+        </select>
+      </div>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;">
+      <div class="form-row">
+        <label class="sol-label">تاریخ شروع</label>
+        <input class="sol-input" type="text" placeholder="۱۴۰۴/۰۳/۲۱">
+      </div>
+      <div class="form-row">
+        <label class="sol-label">ددلاین</label>
+        <input class="sol-input" type="text" placeholder="۱۴۰۴/۰۴/۱۵">
+      </div>
+    </div>
+    <div class="form-row">
+      <label class="sol-label">تکنولوژی</label>
+      <input class="sol-input" type="text" placeholder="مثال: PHP · Laravel · React">
+    </div>
+    <div class="form-row">
+      <label class="sol-label">توضیحات</label>
+      <textarea class="sol-input" rows="3" placeholder="توضیح مختصر پروژه…" style="resize:vertical;"></textarea>
+    </div>
+    <div style="display:flex;gap:.75rem;justify-content:flex-end;margin-top:1.5rem;">
+      <button class="btn-ghost-sm" id="cancelModal">انصراف</button>
+      <button class="btn-sol-sm"><i class="bi bi-check-lg"></i> ثبت پروژه</button>
+    </div>
+  </div>
+</div>
+
+<script>
+(function(){
+  'use strict';
+  const html=document.documentElement,themeBtn=document.getElementById('themeToggle'),TKEY='sol-admin-theme';
+  applyTheme(localStorage.getItem(TKEY)||'light');
+  themeBtn.addEventListener('click',function(){const n=html.getAttribute('data-bs-theme')==='dark'?'light':'dark';applyTheme(n);localStorage.setItem(TKEY,n);});
+  function applyTheme(t){html.setAttribute('data-bs-theme',t);themeBtn.innerHTML=t==='dark'?'<i class="bi bi-sun-fill"></i>':'<i class="bi bi-moon-stars-fill"></i>';}
+  const sidebar=document.getElementById('sidebar'),mainContent=document.getElementById('mainContent'),toggleBtn=document.getElementById('sidebarToggle'),overlay=document.getElementById('sidebarOverlay');
+  let isMini=false,isMobile=window.innerWidth<=768;
+  toggleBtn.addEventListener('click',function(){if(isMobile){sidebar.classList.toggle('mobile-open');overlay.classList.toggle('show');}else{isMini=!isMini;sidebar.classList.toggle('mini',isMini);mainContent.classList.toggle('mini',isMini);}});
+  overlay.addEventListener('click',function(){sidebar.classList.remove('mobile-open');overlay.classList.remove('show');});
+  window.addEventListener('resize',function(){isMobile=window.innerWidth<=768;if(!isMobile){sidebar.classList.remove('mobile-open');overlay.classList.remove('show');}});
+  document.querySelectorAll('.nav-item-sol').forEach(function(item){item.addEventListener('click',function(e){if(item.getAttribute('href')==='#')e.preventDefault();document.querySelectorAll('.nav-item-sol').forEach(function(i){i.classList.remove('active');});item.classList.add('active');});});
+  const fsBtn=document.getElementById('fullscreenBtn');
+  if(fsBtn){fsBtn.addEventListener('click',function(){if(!document.fullscreenElement){document.documentElement.requestFullscreen().catch(function(){});fsBtn.innerHTML='<i class="bi bi-fullscreen-exit"></i>';}else{document.exitFullscreen();fsBtn.innerHTML='<i class="bi bi-fullscreen"></i>';}});}
+  /* View toggle */
+  const kanbanView=document.getElementById('kanbanView'),tableView=document.getElementById('tableView');
+  document.getElementById('viewKanban').addEventListener('click',function(){kanbanView.style.display='';tableView.style.display='none';this.classList.add('active');document.getElementById('viewTable').classList.remove('active');});
+  document.getElementById('viewTable').addEventListener('click',function(){tableView.style.display='';kanbanView.style.display='none';this.classList.add('active');document.getElementById('viewKanban').classList.remove('active');});
+  /* Filter chips */
+  document.querySelectorAll('.filter-chip').forEach(function(chip){chip.addEventListener('click',function(){document.querySelectorAll('.filter-chip').forEach(function(c){c.classList.remove('active');});chip.classList.add('active');});});
+  /* Modal */
+  const modal=document.getElementById('projectModal');
+  document.getElementById('newProjectBtn').addEventListener('click',function(){modal.classList.add('open');});
+  document.getElementById('closeModal').addEventListener('click',function(){modal.classList.remove('open');});
+  document.getElementById('cancelModal').addEventListener('click',function(){modal.classList.remove('open');});
+  modal.addEventListener('click',function(e){if(e.target===modal)modal.classList.remove('open');});
+})();
+</script>
+</body>
+</html>

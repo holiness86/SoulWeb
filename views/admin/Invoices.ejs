@@ -1,0 +1,279 @@
+<%- include('partials/_head', { title: 'فاکتورها' }) %>
+
+<div class="sidebar-overlay" id="sidebarOverlay"></div>
+<div class="admin-shell">
+
+<%- include('partials/_sidebar', {
+  activePage: 'invoices',
+  adminUser: { name: 'علی مدیری', role: 'مدیر کل سیستم', initials: 'ادم' }
+}) %>
+
+<div class="main-content" id="mainContent">
+<%- include('partials/_header', {
+  breadcrumbs: [{ label: 'داشبورد', href: '/sw-admin' }, { label: 'فاکتورها' }],
+  searchPlaceholder: 'جستجو در فاکتورها…'
+}) %>
+
+<main class="page-content">
+
+  <div class="page-header fade-up fade-up-1">
+    <div>
+      <h1 class="page-title">مدیریت فاکتورها</h1>
+      <p class="page-subtitle">۳۸ فاکتور کل · ۵ فاکتور در انتظار پرداخت</p>
+    </div>
+    <div style="display:flex;gap:.6rem;">
+      <button class="btn-ghost-sm"><i class="bi bi-download"></i> خروجی PDF</button>
+      <button class="btn-sol-sm" data-modal-open="invoiceModal"><i class="bi bi-plus-lg"></i> فاکتور جدید</button>
+    </div>
+  </div>
+
+  <!-- Stats -->
+  <div class="stat-grid fade-up fade-up-2" style="display:grid;grid-template-columns:repeat(4,1fr);gap:1rem;margin-bottom:1.5rem;">
+    <div class="inv-stat">
+      <div class="inv-stat-icon" style="background:rgba(100,71,244,.1);color:var(--main-500);"><i class="bi bi-receipt"></i></div>
+      <div>
+        <div class="inv-stat-val text-grad">۳۸</div>
+        <div class="inv-stat-lbl">کل فاکتورها</div>
+      </div>
+    </div>
+    <div class="inv-stat">
+      <div class="inv-stat-icon" style="background:rgba(34,197,94,.1);color:#16a34a;"><i class="bi bi-check-circle-fill"></i></div>
+      <div>
+        <div class="inv-stat-val" style="color:#16a34a;">۲۸,۵۰۰,۰۰۰</div>
+        <div class="inv-stat-lbl">پرداخت‌شده (تومان)</div>
+      </div>
+    </div>
+    <div class="inv-stat">
+      <div class="inv-stat-icon" style="background:rgba(245,158,11,.1);color:#d97706;"><i class="bi bi-clock-history"></i></div>
+      <div>
+        <div class="inv-stat-val" style="color:#d97706;">۴,۲۰۰,۰۰۰</div>
+        <div class="inv-stat-lbl">در انتظار (تومان)</div>
+      </div>
+    </div>
+    <div class="inv-stat">
+      <div class="inv-stat-icon" style="background:rgba(239,68,68,.1);color:#dc2626;"><i class="bi bi-exclamation-circle-fill"></i></div>
+      <div>
+        <div class="inv-stat-val" style="color:#dc2626;">۸۵۰,۰۰۰</div>
+        <div class="inv-stat-lbl">معوق (تومان)</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Filter -->
+  <div style="display:flex;gap:.75rem;align-items:center;flex-wrap:wrap;margin-bottom:1.25rem;" class="fade-up fade-up-2">
+    <div style="flex:1;min-width:200px;display:flex;align-items:center;gap:.5rem;background:var(--color-surface);border:1.5px solid var(--color-border);border-radius:var(--radius-md);padding:.45rem 1rem;">
+      <i class="bi bi-search" style="color:var(--color-text-light);font-size:.85rem;"></i>
+      <input type="text" placeholder="شماره فاکتور، نام مشتری…" style="border:none;background:transparent;outline:none;font-family:var(--font-primary);font-size:.85rem;color:var(--color-text-primary);width:100%;" id="invSearch">
+    </div>
+    <select class="sol-select" style="width:auto;">
+      <option>همه وضعیت‌ها</option>
+      <option>پرداخت‌شده</option>
+      <option>در انتظار</option>
+      <option>معوق</option>
+      <option>پیش‌نویس</option>
+    </select>
+    <select class="sol-select" style="width:auto;">
+      <option>این ماه</option>
+      <option>۳ ماه اخیر</option>
+      <option>۶ ماه اخیر</option>
+      <option>امسال</option>
+    </select>
+  </div>
+
+  <!-- Invoices Table -->
+  <div class="dash-panel fade-up fade-up-3">
+    <div style="overflow-x:auto;">
+      <table class="sol-table" id="invTable">
+        <thead>
+          <tr>
+            <th>شماره فاکتور</th>
+            <th>مشتری</th>
+            <th>پروژه</th>
+            <th>مبلغ (تومان)</th>
+            <th>تاریخ صدور</th>
+            <th>سررسید</th>
+            <th>وضعیت</th>
+            <th>عملیات</th>
+          </tr>
+        </thead>
+        <tbody>
+          <% const invoices = [
+            { num:'#۱۰۵۲', client:'آفیلیو',       project:'اپ مدیریت مالی',     amount:'۴,۵۰۰,۰۰۰', issued:'۱۴۰۴/۰۳/۱۵', due:'۱۴۰۴/۰۴/۱۵', status:'pending' },
+            { num:'#۱۰۵۱', client:'کیانی لباس',   project:'فروشگاه آنلاین',     amount:'۶,۸۰۰,۰۰۰', issued:'۱۴۰۴/۰۳/۱۰', due:'۱۴۰۴/۰۴/۱۰', status:'paid'    },
+            { num:'#۱۰۵۰', client:'گروه پارسیان', project:'پورتال سازمانی',     amount:'۱۲,۰۰۰,۰۰۰',issued:'۱۴۰۴/۰۳/۰۵', due:'۱۴۰۴/۰۴/۰۵', status:'pending' },
+            { num:'#۱۰۴۹', client:'استودیو نگاه', project:'سایت شرکتی نگاه',   amount:'۲,۲۰۰,۰۰۰', issued:'۱۴۰۴/۰۲/۲۸', due:'۱۴۰۴/۰۳/۲۸', status:'paid'    },
+            { num:'#۱۰۴۸', client:'شرکت آوا',     project:'پورتال آوا',         amount:'۵,۴۰۰,۰۰۰', issued:'۱۴۰۴/۰۲/۲۰', due:'۱۴۰۴/۰۳/۲۰', status:'paid'    },
+            { num:'#۱۰۴۷', client:'برند لوستا',   project:'فروشگاه آرایشی',    amount:'۳,۱۰۰,۰۰۰', issued:'۱۴۰۴/۰۲/۱۰', due:'۱۴۰۴/۰۳/۱۰', status:'overdue' },
+            { num:'#۱۰۴۶', client:'اسیل',         project:'فروشگاه اسیل',      amount:'۸,۵۰۰,۰۰۰', issued:'۱۴۰۴/۰۱/۲۵', due:'۱۴۰۴/۰۲/۲۵', status:'paid'    },
+            { num:'#۱۰۴۵', client:'آتین‌دیزاین',  project:'وب‌سایت شرکتی',     amount:'۳,۸۰۰,۰۰۰', issued:'۱۴۰۴/۰۱/۱۵', due:'۱۴۰۴/۰۲/۱۵', status:'draft'   },
+          ]; %>
+          <% invoices.forEach(function(inv){ %>
+          <tr>
+            <td>
+              <span style="font-family:monospace;font-size:.82rem;font-weight:700;color:var(--main-500);"><%= inv.num %></span>
+            </td>
+            <td style="font-size:.84rem;font-weight:600;"><%= inv.client %></td>
+            <td style="font-size:.82rem;color:var(--color-text-muted);"><%= inv.project %></td>
+            <td style="font-size:.84rem;font-weight:700;direction:ltr;text-align:right;"><%= inv.amount %></td>
+            <td style="font-size:.78rem;"><%= inv.issued %></td>
+            <td style="font-size:.78rem;color:<%= inv.status==='overdue' ? '#dc2626' : 'var(--color-text-muted)' %>;font-weight:<%= inv.status==='overdue' ? '700' : 'normal' %>;"><%= inv.due %></td>
+            <td>
+              <span class="badge-status badge-<%= inv.status==='paid' ? 'done' : inv.status==='pending' ? 'review' : inv.status==='overdue' ? 'hold' : 'new' %>">
+                <%= inv.status==='paid' ? 'پرداخت‌شده' : inv.status==='pending' ? 'در انتظار' : inv.status==='overdue' ? 'معوق' : 'پیش‌نویس' %>
+              </span>
+            </td>
+            <td>
+              <div style="display:flex;gap:.4rem;">
+                <button class="btn-ghost-sm" style="padding:.28rem .6rem;" title="مشاهده" data-modal-open="invViewModal"><i class="bi bi-eye"></i></button>
+                <button class="btn-ghost-sm" style="padding:.28rem .6rem;" title="دانلود PDF"><i class="bi bi-download"></i></button>
+                <button class="btn-ghost-sm" style="padding:.28rem .6rem;" title="ارسال ایمیل"><i class="bi bi-envelope"></i></button>
+                <button class="btn-danger-sm" style="padding:.28rem .6rem;" title="حذف"><i class="bi bi-trash"></i></button>
+              </div>
+            </td>
+          </tr>
+          <% }); %>
+        </tbody>
+      </table>
+    </div>
+    <div style="display:flex;align-items:center;justify-content:space-between;padding:1rem 1.25rem;border-top:1px solid var(--color-border);flex-wrap:wrap;gap:.75rem;">
+      <span style="font-size:.78rem;color:var(--color-text-muted);">نمایش ۱–۸ از ۳۸ فاکتور</span>
+      <div style="display:flex;gap:.35rem;">
+        <button class="pg-btn" disabled><i class="bi bi-chevron-right"></i></button>
+        <button class="pg-btn active">۱</button>
+        <button class="pg-btn">۲</button>
+        <button class="pg-btn">۳</button>
+        <button class="pg-btn"><i class="bi bi-chevron-left"></i></button>
+      </div>
+    </div>
+  </div>
+
+</main>
+</div>
+</div>
+
+<!-- Modal: فاکتور جدید -->
+<div class="modal-overlay" id="invoiceModal">
+  <div class="modal-box" style="width:min(560px,92vw);">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1.5rem;">
+      <div class="modal-title" style="margin:0;">فاکتور جدید</div>
+      <button data-modal-close style="background:transparent;border:none;font-size:1.2rem;color:var(--color-text-muted);cursor:pointer;"><i class="bi bi-x-lg"></i></button>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;">
+      <div class="form-row">
+        <label class="sol-label">مشتری</label>
+        <select class="sol-select" style="width:100%">
+          <option>انتخاب مشتری…</option>
+          <option>آفیلیو</option><option>کیانی لباس</option><option>گروه پارسیان</option>
+        </select>
+      </div>
+      <div class="form-row">
+        <label class="sol-label">پروژه</label>
+        <select class="sol-select" style="width:100%">
+          <option>انتخاب پروژه…</option>
+        </select>
+      </div>
+    </div>
+    <div id="invItems">
+      <div class="inv-item-row">
+        <input class="sol-input" type="text" placeholder="شرح خدمات" style="flex:2;">
+        <input class="sol-input" type="number" placeholder="تعداد" style="flex:0.5;">
+        <input class="sol-input" type="text" placeholder="مبلغ واحد" style="flex:1;">
+        <button class="btn-danger-sm" style="padding:.45rem .6rem;flex-shrink:0;"><i class="bi bi-trash"></i></button>
+      </div>
+    </div>
+    <button class="btn-ghost-sm" style="margin-top:.5rem;width:100%;justify-content:center;" id="addInvItem"><i class="bi bi-plus"></i> افزودن آیتم</button>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin-top:1rem;">
+      <div class="form-row">
+        <label class="sol-label">تاریخ صدور</label>
+        <input class="sol-input" type="text" placeholder="۱۴۰۴/۰۳/۲۱">
+      </div>
+      <div class="form-row">
+        <label class="sol-label">سررسید پرداخت</label>
+        <input class="sol-input" type="text" placeholder="۱۴۰۴/۰۴/۲۱">
+      </div>
+    </div>
+    <div class="form-row">
+      <label class="sol-label">یادداشت</label>
+      <textarea class="sol-input" rows="2" placeholder="یادداشت اختیاری…" style="resize:vertical;"></textarea>
+    </div>
+    <div style="display:flex;gap:.75rem;justify-content:flex-end;margin-top:1.5rem;">
+      <button class="btn-ghost-sm" data-modal-close>انصراف</button>
+      <button class="btn-ghost-sm"><i class="bi bi-file-earmark"></i> پیش‌نویس</button>
+      <button class="btn-sol-sm"><i class="bi bi-send-fill"></i> صدور فاکتور</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: مشاهده فاکتور -->
+<div class="modal-overlay" id="invViewModal">
+  <div class="modal-box" style="width:min(600px,92vw);">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1.5rem;">
+      <div class="modal-title" style="margin:0;">فاکتور #۱۰۵۲</div>
+      <button data-modal-close style="background:transparent;border:none;font-size:1.2rem;color:var(--color-text-muted);cursor:pointer;"><i class="bi bi-x-lg"></i></button>
+    </div>
+    <div style="background:var(--color-bg);border-radius:var(--radius-lg);padding:1.5rem;margin-bottom:1.25rem;">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:1.5rem;">
+        <div>
+          <div style="font-size:1.2rem;font-weight:900;" class="text-grad">سُل وب</div>
+          <div style="font-size:.78rem;color:var(--color-text-muted);">تهران، خیابان ولیعصر</div>
+          <div style="font-size:.78rem;color:var(--color-text-muted);">hello@solweb.ir</div>
+        </div>
+        <div style="text-align:left;">
+          <div style="font-size:.72rem;color:var(--color-text-light);">فاکتور شماره</div>
+          <div style="font-size:1.1rem;font-weight:800;color:var(--main-500);">#۱۰۵۲</div>
+          <div style="font-size:.72rem;color:var(--color-text-light);">تاریخ: ۱۴۰۴/۰۳/۱۵</div>
+        </div>
+      </div>
+      <div style="background:var(--color-surface);border-radius:var(--radius-md);padding:1rem;margin-bottom:1rem;">
+        <table style="width:100%;border-collapse:collapse;">
+          <thead><tr style="border-bottom:1px solid var(--color-border);">
+            <th style="text-align:right;padding:.5rem;font-size:.73rem;color:var(--color-text-light);">شرح</th>
+            <th style="text-align:center;padding:.5rem;font-size:.73rem;color:var(--color-text-light);">تعداد</th>
+            <th style="text-align:left;padding:.5rem;font-size:.73rem;color:var(--color-text-light);">مبلغ</th>
+          </tr></thead>
+          <tbody>
+            <tr><td style="padding:.6rem .5rem;font-size:.83rem;">طراحی UI/UX اپلیکیشن مالی</td><td style="text-align:center;font-size:.83rem;">۱</td><td style="text-align:left;font-size:.83rem;font-weight:600;">۲,۵۰۰,۰۰۰</td></tr>
+            <tr><td style="padding:.6rem .5rem;font-size:.83rem;">توسعه فرانت‌اند React</td><td style="text-align:center;font-size:.83rem;">۱</td><td style="text-align:left;font-size:.83rem;font-weight:600;">۲,۰۰۰,۰۰۰</td></tr>
+          </tbody>
+        </table>
+        <div style="border-top:1px solid var(--color-border);padding-top:.75rem;margin-top:.5rem;display:flex;justify-content:flex-end;gap:2rem;">
+          <span style="font-size:.83rem;color:var(--color-text-muted);">جمع کل:</span>
+          <span style="font-size:.95rem;font-weight:900;color:var(--main-500);">۴,۵۰۰,۰۰۰ تومان</span>
+        </div>
+      </div>
+    </div>
+    <div style="display:flex;gap:.75rem;justify-content:flex-end;">
+      <button class="btn-ghost-sm" data-modal-close>بستن</button>
+      <button class="btn-ghost-sm"><i class="bi bi-download"></i> دانلود PDF</button>
+      <button class="btn-sol-sm"><i class="bi bi-envelope"></i> ارسال به مشتری</button>
+    </div>
+  </div>
+</div>
+
+<%- include('partials/_scripts', { extraScripts: `
+<style>
+.inv-stat{background:var(--color-surface);border:1px solid var(--color-border);border-radius:var(--radius-lg);padding:1.1rem 1.25rem;display:flex;align-items:center;gap:.85rem;transition:all var(--dur-normal) var(--ease-spring);}
+.inv-stat:hover{transform:translateY(-2px);box-shadow:var(--shadow-sm);border-color:var(--main-200);}
+.inv-stat-icon{width:40px;height:40px;border-radius:var(--radius-sm);display:flex;align-items:center;justify-content:center;font-size:1.1rem;flex-shrink:0;}
+.inv-stat-val{font-size:1.25rem;font-weight:900;line-height:1;background:var(--grad-main);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;}
+.inv-stat-lbl{font-size:.73rem;color:var(--color-text-muted);margin-top:.15rem;}
+.pg-btn{width:32px;height:32px;border-radius:var(--radius-sm);border:1.5px solid var(--color-border);background:var(--color-surface);color:var(--color-text-muted);display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:.8rem;transition:all var(--dur-fast);font-family:var(--font-primary);}
+.pg-btn.active,.pg-btn:not(:disabled):hover{background:var(--main-500);border-color:var(--main-500);color:#fff;}
+.pg-btn:disabled{opacity:.4;cursor:not-allowed;}
+.inv-item-row{display:flex;gap:.5rem;margin-bottom:.5rem;}
+</style>
+<script>
+document.getElementById('invSearch').addEventListener('input', function(){
+  const q = this.value.toLowerCase();
+  document.querySelectorAll('#invTable tbody tr').forEach(function(row){
+    row.style.display = row.textContent.toLowerCase().includes(q) ? '' : 'none';
+  });
+});
+document.getElementById('addInvItem').addEventListener('click', function(){
+  const row = document.createElement('div');
+  row.className = 'inv-item-row';
+  row.innerHTML = '<input class="sol-input" type="text" placeholder="شرح خدمات" style="flex:2;"><input class="sol-input" type="number" placeholder="تعداد" style="flex:0.5;"><input class="sol-input" type="text" placeholder="مبلغ واحد" style="flex:1;"><button class="btn-danger-sm" style="padding:.45rem .6rem;flex-shrink:0;" onclick="this.closest(\'.inv-item-row\').remove()"><i class="bi bi-trash"></i></button>';
+  document.getElementById('invItems').appendChild(row);
+});
+</script>
+`}) %>

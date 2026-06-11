@@ -1,6 +1,7 @@
 const express = require('express')
 const app = express()
-
+const mongoose = require('mongoose')
+const bcrypt = require('bcryptjs')
 
 // midellwer
 app.set('view engine' , 'ejs')
@@ -8,12 +9,18 @@ app.use(express.static('public'))
 app.use(express.urlencoded({extended: true}))
 app.use(express.json())
 
-// listin app
-app.listen(3000 , () => {
-    console.log('server is runing ...');
+// listin app & DB conection
+const DBurl = ""
+const PORT = process.env.PORT || 3000
+mongoose.connect(DBurl)
+.then(() => {
+    console.log('DB is connected ✅')
+    app.listen(PORT , () => {
+        console.log(`Server running on port ${PORT} 🚀`)
+    })
 })
 
-
+// router
 app.get('/' , (req , res) => {
     res.render('index')
 })

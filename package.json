@@ -18,8 +18,10 @@
   "homepage": "https://github.com/holiness86/SoulWeb#readme",
   "description": "",
   "dependencies": {
+    "bcryptjs": "^3.0.3",
     "ejs": "^6.0.1",
     "express": "^5.2.1",
+    "mongoose": "^9.7.0",
     "nodemon": "^3.1.14"
   }
 }

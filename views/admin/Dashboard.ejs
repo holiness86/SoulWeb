@@ -1,1345 +1,21 @@
-<!DOCTYPE html>
-<html lang="fa" dir="rtl" data-bs-theme="light">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>سُل وب — پنل مدیریت</title>
-  <link rel="stylesheet" href="../assets/css/bootstrap.rtl.min.css">
-  <link rel="stylesheet" href="../assets/css/icons-1.13.1/font/bootstrap-icons.min.css">
-  <!-- <link rel="stylesheet" href="assets/css/admin.css"> -->
-  <style>
-    /* ═══════════════════════════════════════
-       DESIGN TOKENS — همگام با style.css
-    ═══════════════════════════════════════ */
-    @font-face {
-      font-family: YekanBakh;
-      src: url("assets/fonts/YekanBakh-VF.ttf");
-    }
+<%- include('partials/_head', { title: 'پنل مدیریت' }) %>
 
-    :root {
-      --font-primary : 'YekanBakh', 'Tahoma', sans-serif;
-
-      --main-50   : #f0eeff;
-      --main-100  : #ddd9fe;
-      --main-200  : #c4bcfd;
-      --main-300  : #a394fb;
-      --main-400  : #836af8;
-      --main-500  : #6447f4;
-      --main-600  : #5236d6;
-      --main-700  : #4028b8;
-      --main-800  : #2f1d95;
-      --main-900  : #1e1274;
-
-      --accent-400 : #17aaff;
-      --accent-500 : #0090e8;
-      --accent-600 : #0073bf;
-
-      --neutral-0   : #ffffff;
-      --neutral-50  : #f7f7fb;
-      --neutral-100 : #eeeff7;
-      --neutral-200 : #dcddf0;
-      --neutral-300 : #c3c4de;
-      --neutral-400 : #9899bc;
-      --neutral-500 : #6d6e94;
-      --neutral-600 : #505175;
-      --neutral-700 : #393a5c;
-      --neutral-800 : #232441;
-      --neutral-900 : #10102a;
-
-      --color-bg           : #f5f5fb;
-      --color-surface      : #ffffff;
-      --color-surface-alt  : #f0eeff;
-      --color-border       : #e2e2f0;
-      --color-text-primary : #10102a;
-      --color-text-muted   : #6d6e94;
-      --color-text-light   : #9899bc;
-
-      --grad-main   : linear-gradient(135deg, #6447f4 0%, #0090e8 100%);
-      --grad-hero   : linear-gradient(145deg, #1e1274 0%, #4028b8 40%, #0073bf 100%);
-      --grad-soft   : linear-gradient(135deg, #f0eeff 0%, #e8f8ff 100%);
-
-      --shadow-xs   : 0 1px 3px rgba(16,16,42,.06);
-      --shadow-sm   : 0 2px 8px rgba(16,16,42,.08);
-      --shadow-md   : 0 4px 20px rgba(16,16,42,.10);
-      --shadow-lg   : 0 8px 40px rgba(16,16,42,.12);
-      --shadow-main : 0 8px 32px rgba(100,71,244,.28);
-
-      --radius-sm  : .75rem;
-      --radius-md  : 1.1rem;
-      --radius-lg  : 1.5rem;
-      --radius-xl  : 2rem;
-      --radius-full: 9999px;
-
-      --ease-spring : cubic-bezier(.34, 1.56, .64, 1);
-      --ease-smooth : cubic-bezier(.4, 0, .2, 1);
-      --dur-fast    : 150ms;
-      --dur-normal  : 280ms;
-
-      /* Layout */
-      --sidebar-w      : 260px;
-      --sidebar-w-mini : 72px;
-      --header-h       : 60px;
-    }
-
-    [data-bs-theme="dark"] {
-      --color-bg           : #0d0d22;
-      --color-surface      : #14142e;
-      --color-surface-alt  : #1a1a38;
-      --color-border       : rgba(255,255,255,.08);
-      --color-text-primary : #e8e8f5;
-      --color-text-muted   : #9899bc;
-      --color-text-light   : #505175;
-    }
-
-    /* ═══════════════════════════════════════
-       BASE
-    ═══════════════════════════════════════ */
-    *, *::before, *::after { box-sizing: border-box; }
-    html { scroll-behavior: smooth; }
-
-    body {
-      font-family : var(--font-primary);
-      font-size   : .9rem;
-      line-height : 1.65;
-      color       : var(--color-text-primary);
-      background  : var(--color-bg);
-      overflow-x  : hidden;
-      direction   : rtl;
-      transition  : background var(--dur-normal) var(--ease-smooth),
-                    color var(--dur-normal) var(--ease-smooth);
-    }
-
-    ::-webkit-scrollbar       { width: 5px; height: 5px; }
-    ::-webkit-scrollbar-track { background: transparent; }
-    ::-webkit-scrollbar-thumb { background: var(--main-300); border-radius: 99px; }
-
-    /* ═══════════════════════════════════════
-       LAYOUT SHELL
-    ═══════════════════════════════════════ */
-    .admin-shell {
-      display   : flex;
-      min-height: 100vh;
-      position  : relative;
-    }
-
-    /* ═══════════════════════════════════════
-       SIDEBAR
-    ═══════════════════════════════════════ */
-    .sidebar {
-      width           : var(--sidebar-w);
-      flex-shrink     : 0;
-      position        : fixed;
-      top             : 0; right: 0; bottom: 0;
-      background      : var(--neutral-900);
-      display         : flex;
-      flex-direction  : column;
-      z-index         : 1050;
-      transition      : width var(--dur-normal) var(--ease-smooth),
-                        transform var(--dur-normal) var(--ease-smooth);
-      overflow        : hidden;
-    }
-
-    .sidebar.mini {
-      width: var(--sidebar-w-mini);
-    }
-
-    /* Sidebar gradient accent bar */
-    .sidebar::before {
-      content    : '';
-      position   : absolute;
-      top        : 0; right: 0;
-      width      : 3px;
-      height     : 100%;
-      background : var(--grad-main);
-      opacity    : .6;
-    }
-
-    /* Brand */
-    .sidebar-brand {
-      display       : flex;
-      align-items   : center;
-      gap           : .75rem;
-      padding       : 1.1rem 1.1rem 1rem;
-      border-bottom : 1px solid rgba(255,255,255,.07);
-      text-decoration: none;
-      flex-shrink   : 0;
-      min-height    : var(--header-h);
-    }
-
-    .sidebar-logo {
-      width          : 36px;
-      height         : 36px;
-      border-radius  : var(--radius-sm);
-      background     : var(--grad-main);
-      display        : flex;
-      align-items    : center;
-      justify-content: center;
-      font-size      : .8rem;
-      font-weight    : 900;
-      color          : #fff;
-      flex-shrink    : 0;
-      box-shadow     : var(--shadow-main);
-    }
-
-    .sidebar-brand-text {
-      font-size    : 1.15rem;
-      font-weight  : 900;
-      background   : var(--grad-main);
-      -webkit-background-clip: text;
-      -webkit-text-fill-color: transparent;
-      background-clip: text;
-      white-space  : nowrap;
-      transition   : opacity var(--dur-fast) var(--ease-smooth),
-                     width var(--dur-fast) var(--ease-smooth);
-    }
-
-    .sidebar.mini .sidebar-brand-text,
-    .sidebar.mini .nav-label,
-    .sidebar.mini .nav-text,
-    .sidebar.mini .nav-badge {
-      opacity : 0;
-      width   : 0;
-      overflow: hidden;
-    }
-
-    /* Nav sections */
-    .sidebar-nav {
-      flex      : 1;
-      overflow-y: auto;
-      overflow-x: hidden;
-      padding   : .75rem .7rem;
-      display   : flex;
-      flex-direction: column;
-      gap       : .25rem;
-    }
-    .sidebar-nav::-webkit-scrollbar { width: 3px; }
-
-    .nav-label {
-      font-size    : .68rem;
-      font-weight  : 700;
-      color        : rgba(255,255,255,.25);
-      text-transform: uppercase;
-      letter-spacing: .1em;
-      padding      : .8rem .5rem .3rem;
-      white-space  : nowrap;
-      transition   : opacity var(--dur-fast);
-    }
-
-    .nav-item-sol {
-      display       : flex;
-      align-items   : center;
-      gap           : .75rem;
-      padding       : .65rem .75rem;
-      border-radius : var(--radius-sm);
-      color         : rgba(255,255,255,.5);
-      text-decoration: none;
-      transition    : all var(--dur-fast) var(--ease-smooth);
-      cursor        : pointer;
-      position      : relative;
-      white-space   : nowrap;
-      font-size     : .87rem;
-      font-weight   : 500;
-    }
-
-    .nav-item-sol .nav-icon {
-      width          : 34px;
-      height         : 34px;
-      border-radius  : var(--radius-sm);
-      display        : flex;
-      align-items    : center;
-      justify-content: center;
-      font-size      : 1rem;
-      flex-shrink    : 0;
-      transition     : all var(--dur-normal) var(--ease-spring);
-      background     : rgba(255,255,255,.06);
-    }
-
-    .nav-item-sol:hover {
-      color     : rgba(255,255,255,.9);
-      background: rgba(255,255,255,.07);
-    }
-    .nav-item-sol:hover .nav-icon {
-      background: rgba(100,71,244,.25);
-      color     : var(--main-300);
-    }
-
-    .nav-item-sol.active {
-      color     : #fff;
-      background: rgba(100,71,244,.2);
-    }
-    .nav-item-sol.active .nav-icon {
-      background: var(--grad-main);
-      color     : #fff;
-      box-shadow: 0 4px 16px rgba(100,71,244,.4);
-    }
-    .nav-item-sol.active::before {
-      content      : '';
-      position     : absolute;
-      right        : -0.7rem;
-      top          : 50%;
-      transform    : translateY(-50%);
-      width        : 3px;
-      height       : 60%;
-      border-radius: 99px;
-      background   : var(--grad-main);
-    }
-
-    .nav-text { transition: opacity var(--dur-fast), width var(--dur-fast); }
-
-    .nav-badge {
-      margin-right : auto;
-      background   : var(--main-500);
-      color        : #fff;
-      font-size    : .65rem;
-      font-weight  : 700;
-      padding      : .1rem .45rem;
-      border-radius: 99px;
-      transition   : opacity var(--dur-fast), width var(--dur-fast);
-    }
-
-    /* Sidebar footer */
-    .sidebar-footer {
-      padding      : .85rem .7rem;
-      border-top   : 1px solid rgba(255,255,255,.07);
-      flex-shrink  : 0;
-    }
-
-    .sidebar-user {
-      display     : flex;
-      align-items : center;
-      gap         : .65rem;
-      padding     : .6rem .75rem;
-      border-radius: var(--radius-sm);
-      transition  : background var(--dur-fast);
-      cursor      : pointer;
-    }
-    .sidebar-user:hover { background: rgba(255,255,255,.06); }
-
-    .user-avatar {
-      width          : 34px;
-      height         : 34px;
-      border-radius  : var(--radius-sm);
-      background     : var(--grad-main);
-      color          : #fff;
-      font-size      : .72rem;
-      font-weight    : 800;
-      display        : flex;
-      align-items    : center;
-      justify-content: center;
-      flex-shrink    : 0;
-    }
-
-    .user-info { overflow: hidden; }
-    .user-name {
-      font-size  : .82rem;
-      font-weight: 700;
-      color      : rgba(255,255,255,.9);
-      white-space: nowrap;
-    }
-    .user-role {
-      font-size : .7rem;
-      color     : rgba(255,255,255,.35);
-      white-space: nowrap;
-    }
-
-    /* ═══════════════════════════════════════
-       MAIN CONTENT
-    ═══════════════════════════════════════ */
-    .main-content {
-      flex       : 1;
-      margin-right: var(--sidebar-w);
-      min-height : 100vh;
-      display    : flex;
-      flex-direction: column;
-      transition : margin-right var(--dur-normal) var(--ease-smooth);
-    }
-    .main-content.mini { margin-right: var(--sidebar-w-mini); }
-
-    /* ═══════════════════════════════════════
-       HEADER
-    ═══════════════════════════════════════ */
-    .admin-header {
-      height          : var(--header-h);
-      background      : var(--color-surface);
-      border-bottom   : 1px solid var(--color-border);
-      display         : flex;
-      align-items     : center;
-      padding         : 0 1.5rem;
-      gap             : 1rem;
-      position        : sticky;
-      top             : 0;
-      z-index         : 100;
-      transition      : background var(--dur-normal) var(--ease-smooth),
-                        border-color var(--dur-normal);
-      backdrop-filter : blur(20px);
-    }
-
-    .header-toggle {
-      width         : 34px;
-      height        : 34px;
-      border-radius : var(--radius-sm);
-      border        : 1.5px solid var(--color-border);
-      background    : var(--color-bg);
-      color         : var(--color-text-muted);
-      display       : flex;
-      align-items   : center;
-      justify-content: center;
-      cursor        : pointer;
-      transition    : all var(--dur-fast) var(--ease-smooth);
-      font-size     : 1rem;
-      flex-shrink   : 0;
-    }
-    .header-toggle:hover {
-      background   : var(--main-50);
-      border-color : var(--main-300);
-      color        : var(--main-500);
-    }
-    [data-bs-theme="dark"] .header-toggle:hover { background: rgba(100,71,244,.15); }
-
-    /* Breadcrumb */
-    .header-breadcrumb {
-      flex      : 1;
-      display   : flex;
-      align-items: center;
-      gap       : .4rem;
-      font-size : .8rem;
-      color     : var(--color-text-muted);
-    }
-    .header-breadcrumb .current {
-      font-weight: 700;
-      color      : var(--color-text-primary);
-    }
-    .header-breadcrumb .sep { color: var(--color-text-light); }
-
-    /* Search */
-    .header-search {
-      display       : flex;
-      align-items   : center;
-      gap           : .4rem;
-      background    : var(--color-bg);
-      border        : 1.5px solid var(--color-border);
-      border-radius : var(--radius-md);
-      padding       : .35rem .85rem;
-      transition    : all var(--dur-fast);
-      cursor        : text;
-    }
-    .header-search:focus-within {
-      border-color : var(--main-400);
-      box-shadow   : 0 0 0 3px rgba(100,71,244,.12);
-    }
-    .header-search i { color: var(--color-text-light); font-size: .85rem; }
-    .header-search input {
-      border    : none;
-      background: transparent;
-      outline   : none;
-      font-family: var(--font-primary);
-      font-size : .82rem;
-      color     : var(--color-text-primary);
-      width     : 160px;
-    }
-    .header-search input::placeholder { color: var(--color-text-light); }
-
-    /* Header actions */
-    .header-actions {
-      display    : flex;
-      align-items: center;
-      gap        : .5rem;
-    }
-
-    .hdr-btn {
-      width         : 34px;
-      height        : 34px;
-      border-radius : var(--radius-sm);
-      border        : 1.5px solid var(--color-border);
-      background    : var(--color-bg);
-      color         : var(--color-text-muted);
-      display       : flex;
-      align-items   : center;
-      justify-content: center;
-      cursor        : pointer;
-      transition    : all var(--dur-fast) var(--ease-smooth);
-      font-size     : .95rem;
-      position      : relative;
-      flex-shrink   : 0;
-    }
-    .hdr-btn:hover {
-      background   : var(--main-50);
-      border-color : var(--main-300);
-      color        : var(--main-500);
-      transform    : translateY(-1px);
-    }
-    [data-bs-theme="dark"] .hdr-btn:hover { background: rgba(100,71,244,.15); }
-
-    .hdr-notif-dot {
-      position     : absolute;
-      top          : 4px;
-      left         : 4px;
-      width        : 7px;
-      height       : 7px;
-      border-radius: 50%;
-      background   : #ef4444;
-      border       : 2px solid var(--color-surface);
-      animation    : dotPulse 2s ease-in-out infinite;
-    }
-    @keyframes dotPulse {
-      0%,100% { box-shadow: 0 0 0 0 rgba(239,68,68,.4); }
-      50%     { box-shadow: 0 0 0 5px rgba(239,68,68,0); }
-    }
-
-    .hdr-avatar {
-      width         : 34px;
-      height        : 34px;
-      border-radius : var(--radius-sm);
-      background    : var(--grad-main);
-      color         : #fff;
-      font-size     : .7rem;
-      font-weight   : 800;
-      display       : flex;
-      align-items   : center;
-      justify-content: center;
-      cursor        : pointer;
-      box-shadow    : var(--shadow-main);
-      flex-shrink   : 0;
-      transition    : transform var(--dur-fast) var(--ease-spring);
-    }
-    .hdr-avatar:hover { transform: scale(1.08); }
-
-    /* ═══════════════════════════════════════
-       PAGE CONTENT
-    ═══════════════════════════════════════ */
-    .page-content {
-      flex   : 1;
-      padding: 1.75rem 2rem;
-    }
-
-    /* Page title */
-    .page-header {
-      display      : flex;
-      align-items  : flex-start;
-      justify-content: space-between;
-      margin-bottom: 1.75rem;
-      gap          : 1rem;
-      flex-wrap    : wrap;
-    }
-    .page-title {
-      font-size    : 1.4rem;
-      font-weight  : 900;
-      margin-bottom: .2rem;
-      letter-spacing: -.02em;
-    }
-    .page-subtitle {
-      font-size : .82rem;
-      color     : var(--color-text-muted);
-      margin    : 0;
-    }
-
-    /* ═══════════════════════════════════════
-       STAT CARDS
-    ═══════════════════════════════════════ */
-    .stat-grid {
-      display              : grid;
-      grid-template-columns: repeat(4, 1fr);
-      gap                  : 1rem;
-      margin-bottom        : 1.5rem;
-    }
-    @media (max-width:1199px) { .stat-grid { grid-template-columns: repeat(2, 1fr); } }
-    @media (max-width:575px)  { .stat-grid { grid-template-columns: 1fr; } }
-
-    .stat-card-dash {
-      background    : var(--color-surface);
-      border        : 1px solid var(--color-border);
-      border-radius : var(--radius-lg);
-      padding       : 1.25rem 1.4rem;
-      display       : flex;
-      flex-direction: column;
-      gap           : .85rem;
-      transition    : all var(--dur-normal) var(--ease-spring);
-      position      : relative;
-      overflow      : hidden;
-      cursor        : default;
-    }
-    .stat-card-dash:hover {
-      transform  : translateY(-3px);
-      box-shadow : var(--shadow-md);
-      border-color: var(--main-200);
-    }
-    [data-bs-theme="dark"] .stat-card-dash:hover { border-color: rgba(100,71,244,.25); }
-
-    .stat-card-dash::after {
-      content  : '';
-      position : absolute;
-      bottom   : 0; right: 0; left: 0;
-      height   : 3px;
-      background: var(--grad-main);
-      transform : scaleX(0);
-      transform-origin: right;
-      transition: transform var(--dur-normal) var(--ease-spring);
-    }
-    .stat-card-dash:hover::after { transform: scaleX(1); }
-
-    .stat-header {
-      display       : flex;
-      align-items   : center;
-      justify-content: space-between;
-    }
-    .stat-icon-box {
-      width          : 40px;
-      height         : 40px;
-      border-radius  : var(--radius-sm);
-      display        : flex;
-      align-items    : center;
-      justify-content: center;
-      font-size      : 1.1rem;
-    }
-    .stat-icon-box.main    { background: rgba(100,71,244,.12); color: var(--main-500); }
-    .stat-icon-box.accent  { background: rgba(0,144,232,.12);  color: var(--accent-500); }
-    .stat-icon-box.success { background: rgba(34,197,94,.12);  color: #16a34a; }
-    .stat-icon-box.warning { background: rgba(245,158,11,.12); color: #d97706; }
-
-    .stat-trend {
-      display      : flex;
-      align-items  : center;
-      gap          : .25rem;
-      font-size    : .73rem;
-      font-weight  : 700;
-      border-radius: var(--radius-full);
-      padding      : .2rem .55rem;
-    }
-    .stat-trend.up   { background: rgba(34,197,94,.12); color: #16a34a; }
-    .stat-trend.down { background: rgba(239,68,68,.12); color: #dc2626; }
-
-    .stat-value {
-      font-size    : 1.9rem;
-      font-weight  : 900;
-      line-height  : 1;
-      letter-spacing: -.03em;
-    }
-    .stat-label {
-      font-size : .78rem;
-      color     : var(--color-text-muted);
-      margin-top: .2rem;
-    }
-    .stat-sub {
-      font-size : .73rem;
-      color     : var(--color-text-light);
-    }
-
-    /* ═══════════════════════════════════════
-       MAIN GRID
-    ═══════════════════════════════════════ */
-    .main-grid {
-      display              : grid;
-      grid-template-columns: 1fr 340px;
-      gap                  : 1.25rem;
-      margin-bottom        : 1.25rem;
-    }
-    @media (max-width:1100px) { .main-grid { grid-template-columns: 1fr; } }
-
-    /* ═══════════════════════════════════════
-       PANEL / CARD
-    ═══════════════════════════════════════ */
-    .dash-panel {
-      background    : var(--color-surface);
-      border        : 1px solid var(--color-border);
-      border-radius : var(--radius-lg);
-      overflow      : hidden;
-      transition    : border-color var(--dur-fast);
-    }
-    .dash-panel:hover { border-color: var(--main-200); }
-    [data-bs-theme="dark"] .dash-panel:hover { border-color: rgba(100,71,244,.2); }
-
-    .panel-header {
-      display       : flex;
-      align-items   : center;
-      justify-content: space-between;
-      padding       : 1rem 1.25rem;
-      border-bottom : 1px solid var(--color-border);
-    }
-    .panel-title {
-      font-size  : .9rem;
-      font-weight: 700;
-      margin     : 0;
-    }
-    .panel-action {
-      font-size      : .75rem;
-      color          : var(--main-500);
-      font-weight    : 600;
-      text-decoration: none;
-      display        : flex;
-      align-items    : center;
-      gap            : .25rem;
-      transition     : gap var(--dur-fast);
-    }
-    .panel-action:hover { gap: .5rem; color: var(--main-600); }
-
-    /* ═══════════════════════════════════════
-       CHART BAR (Pure CSS)
-    ═══════════════════════════════════════ */
-    .chart-area {
-      padding : 1.25rem;
-    }
-
-    .chart-bars {
-      display    : flex;
-      align-items: flex-end;
-      gap        : .6rem;
-      height     : 140px;
-      padding-top: .5rem;
-    }
-
-    .chart-bar-wrap {
-      flex           : 1;
-      display        : flex;
-      flex-direction : column;
-      align-items    : center;
-      gap            : .4rem;
-      height         : 100%;
-      justify-content: flex-end;
-    }
-
-    .chart-bar {
-      width          : 100%;
-      max-width      : 40px;
-      border-radius  : var(--radius-sm) var(--radius-sm) .25rem .25rem;
-      background     : var(--grad-soft);
-      border         : 1px solid var(--main-200);
-      transition     : all .4s var(--ease-spring);
-      cursor         : pointer;
-      position       : relative;
-    }
-    .chart-bar.active,
-    .chart-bar:hover {
-      background : var(--grad-main);
-      border-color: transparent;
-      box-shadow : var(--shadow-main);
-    }
-    .chart-bar-label {
-      font-size : .68rem;
-      color     : var(--color-text-light);
-      text-align: center;
-    }
-
-    .chart-legend {
-      display    : flex;
-      gap        : 1.25rem;
-      flex-wrap  : wrap;
-      margin-top : 1rem;
-    }
-    .legend-item {
-      display    : flex;
-      align-items: center;
-      gap        : .4rem;
-      font-size  : .75rem;
-      color      : var(--color-text-muted);
-    }
-    .legend-dot {
-      width: 8px; height: 8px;
-      border-radius: 50%;
-    }
-
-    /* ═══════════════════════════════════════
-       PROJECTS TABLE
-    ═══════════════════════════════════════ */
-    .proj-table {
-      width         : 100%;
-      border-collapse: collapse;
-    }
-    .proj-table th {
-      font-size    : .72rem;
-      font-weight  : 700;
-      color        : var(--color-text-light);
-      text-transform: uppercase;
-      letter-spacing: .06em;
-      padding      : .65rem 1.25rem;
-      border-bottom: 1px solid var(--color-border);
-      text-align   : right;
-    }
-    .proj-table td {
-      padding    : .85rem 1.25rem;
-      border-bottom: 1px solid var(--color-border);
-      font-size  : .84rem;
-      vertical-align: middle;
-    }
-    .proj-table tr:last-child td { border-bottom: none; }
-    .proj-table tbody tr {
-      transition: background var(--dur-fast);
-      cursor    : pointer;
-    }
-    .proj-table tbody tr:hover { background: var(--color-bg); }
-    [data-bs-theme="dark"] .proj-table tbody tr:hover { background: rgba(255,255,255,.03); }
-
-    .proj-name {
-      font-weight: 600;
-      font-size  : .85rem;
-    }
-    .proj-type {
-      font-size : .73rem;
-      color     : var(--color-text-muted);
-      margin-top: .1rem;
-    }
-
-    .badge-status {
-      display      : inline-flex;
-      align-items  : center;
-      gap          : .3rem;
-      font-size    : .7rem;
-      font-weight  : 700;
-      padding      : .2rem .65rem;
-      border-radius: var(--radius-full);
-    }
-    .badge-status::before {
-      content      : '';
-      width        : 5px;
-      height       : 5px;
-      border-radius: 50%;
-      background   : currentColor;
-    }
-    .badge-done    { background: rgba(34,197,94,.12);  color: #16a34a; }
-    .badge-inprog  { background: rgba(100,71,244,.12); color: var(--main-600); }
-    .badge-review  { background: rgba(245,158,11,.12); color: #d97706; }
-    .badge-hold    { background: rgba(239,68,68,.1);   color: #dc2626; }
-
-    .prog-bar-mini {
-      width        : 80px;
-      height       : 5px;
-      border-radius: 99px;
-      background   : var(--color-border);
-      overflow     : hidden;
-    }
-    .prog-fill {
-      height        : 100%;
-      border-radius : 99px;
-      background    : var(--grad-main);
-      transition    : width .8s var(--ease-spring);
-    }
-
-    /* ═══════════════════════════════════════
-       ACTIVITIES FEED
-    ═══════════════════════════════════════ */
-    .activity-feed { padding: .75rem 0; }
-
-    .activity-item {
-      display    : flex;
-      align-items: flex-start;
-      gap        : .85rem;
-      padding    : .7rem 1.25rem;
-      transition : background var(--dur-fast);
-      cursor     : default;
-    }
-    .activity-item:hover { background: var(--color-bg); }
-    [data-bs-theme="dark"] .activity-item:hover { background: rgba(255,255,255,.03); }
-
-    .act-icon {
-      width          : 32px;
-      height         : 32px;
-      border-radius  : var(--radius-sm);
-      display        : flex;
-      align-items    : center;
-      justify-content: center;
-      font-size      : .85rem;
-      flex-shrink    : 0;
-      margin-top     : .1rem;
-    }
-    .act-icon.main    { background: rgba(100,71,244,.12); color: var(--main-500); }
-    .act-icon.accent  { background: rgba(0,144,232,.12);  color: var(--accent-500); }
-    .act-icon.success { background: rgba(34,197,94,.12);  color: #16a34a; }
-    .act-icon.warning { background: rgba(245,158,11,.12); color: #d97706; }
-
-    .act-body { flex: 1; }
-    .act-text {
-      font-size  : .82rem;
-      margin     : 0;
-      line-height: 1.5;
-    }
-    .act-text strong { color: var(--color-text-primary); }
-    .act-time {
-      font-size : .7rem;
-      color     : var(--color-text-light);
-      margin-top: .15rem;
-    }
-
-    /* ═══════════════════════════════════════
-       QUICK STATS ROW
-    ═══════════════════════════════════════ */
-    .quick-grid {
-      display              : grid;
-      grid-template-columns: repeat(3, 1fr);
-      gap                  : 1.25rem;
-      margin-bottom        : 1.25rem;
-    }
-    @media (max-width:767px) { .quick-grid { grid-template-columns: 1fr; } }
-
-    .mini-card {
-      background    : var(--color-surface);
-      border        : 1px solid var(--color-border);
-      border-radius : var(--radius-lg);
-      padding       : 1.1rem 1.25rem;
-      display       : flex;
-      align-items   : center;
-      gap           : 1rem;
-      transition    : all var(--dur-normal) var(--ease-spring);
-    }
-    .mini-card:hover {
-      transform  : translateY(-2px);
-      box-shadow : var(--shadow-sm);
-      border-color: var(--main-200);
-    }
-    [data-bs-theme="dark"] .mini-card:hover { border-color: rgba(100,71,244,.2); }
-
-    .mini-icon {
-      width          : 44px;
-      height         : 44px;
-      border-radius  : var(--radius-md);
-      display        : flex;
-      align-items    : center;
-      justify-content: center;
-      font-size      : 1.2rem;
-      flex-shrink    : 0;
-    }
-
-    .mini-val {
-      font-size  : 1.35rem;
-      font-weight: 900;
-      line-height: 1;
-    }
-    .mini-lbl {
-      font-size  : .75rem;
-      color      : var(--color-text-muted);
-      margin-top : .15rem;
-    }
-
-    /* ═══════════════════════════════════════
-       MESSAGES LIST
-    ═══════════════════════════════════════ */
-    .msg-item {
-      display    : flex;
-      align-items: flex-start;
-      gap        : .85rem;
-      padding    : .9rem 1.25rem;
-      border-bottom: 1px solid var(--color-border);
-      cursor     : pointer;
-      transition : background var(--dur-fast);
-    }
-    .msg-item:last-child { border-bottom: none; }
-    .msg-item:hover { background: var(--color-bg); }
-    [data-bs-theme="dark"] .msg-item:hover { background: rgba(255,255,255,.03); }
-    .msg-item.unread { background: rgba(100,71,244,.04); }
-    [data-bs-theme="dark"] .msg-item.unread { background: rgba(100,71,244,.08); }
-
-    .msg-avatar {
-      width          : 36px;
-      height         : 36px;
-      border-radius  : var(--radius-sm);
-      display        : flex;
-      align-items    : center;
-      justify-content: center;
-      font-size      : .72rem;
-      font-weight    : 800;
-      color          : #fff;
-      flex-shrink    : 0;
-    }
-
-    .msg-body { flex: 1; min-width: 0; }
-    .msg-top {
-      display        : flex;
-      align-items    : center;
-      justify-content: space-between;
-      gap            : .5rem;
-      margin-bottom  : .25rem;
-    }
-    .msg-sender { font-size: .83rem; font-weight: 700; }
-    .msg-time   { font-size: .7rem; color: var(--color-text-light); white-space: nowrap; }
-    .msg-preview {
-      font-size  : .77rem;
-      color      : var(--color-text-muted);
-      overflow   : hidden;
-      text-overflow: ellipsis;
-      white-space: nowrap;
-    }
-    .msg-item.unread .msg-preview { color: var(--color-text-primary); font-weight: 500; }
-
-    /* ═══════════════════════════════════════
-       TASK LIST
-    ═══════════════════════════════════════ */
-    .task-item {
-      display    : flex;
-      align-items: center;
-      gap        : .75rem;
-      padding    : .75rem 1.25rem;
-      border-bottom: 1px solid var(--color-border);
-      transition : background var(--dur-fast);
-      cursor     : pointer;
-    }
-    .task-item:last-child { border-bottom: none; }
-    .task-item:hover { background: var(--color-bg); }
-    [data-bs-theme="dark"] .task-item:hover { background: rgba(255,255,255,.03); }
-
-    .task-check {
-      width         : 18px;
-      height        : 18px;
-      border-radius : 5px;
-      border        : 2px solid var(--color-border);
-      display       : flex;
-      align-items   : center;
-      justify-content: center;
-      flex-shrink   : 0;
-      transition    : all var(--dur-fast);
-      cursor        : pointer;
-    }
-    .task-check.done {
-      background   : var(--main-500);
-      border-color : var(--main-500);
-      color        : #fff;
-      font-size    : .65rem;
-    }
-
-    .task-text {
-      flex      : 1;
-      font-size : .83rem;
-    }
-    .task-text.done {
-      text-decoration: line-through;
-      color          : var(--color-text-muted);
-    }
-
-    .task-pri {
-      font-size    : .67rem;
-      font-weight  : 700;
-      padding      : .15rem .5rem;
-      border-radius: var(--radius-full);
-    }
-    .task-pri.high   { background: rgba(239,68,68,.1);   color: #dc2626; }
-    .task-pri.medium { background: rgba(245,158,11,.1);  color: #d97706; }
-    .task-pri.low    { background: rgba(34,197,94,.1);   color: #16a34a; }
-
-    /* ═══════════════════════════════════════
-       CLIENTS ROW
-    ═══════════════════════════════════════ */
-    .clients-grid {
-      display              : grid;
-      grid-template-columns: repeat(2, 1fr);
-      gap                  : 1.25rem;
-      margin-bottom        : 1.5rem;
-    }
-    @media (max-width:767px) { .clients-grid { grid-template-columns: 1fr; } }
-
-    .client-item {
-      display    : flex;
-      align-items: center;
-      gap        : .85rem;
-      padding    : .85rem 1.25rem;
-      border-bottom: 1px solid var(--color-border);
-      transition : background var(--dur-fast);
-      cursor     : pointer;
-    }
-    .client-item:last-child { border-bottom: none; }
-    .client-item:hover { background: var(--color-bg); }
-    [data-bs-theme="dark"] .client-item:hover { background: rgba(255,255,255,.03); }
-
-    .client-avatar {
-      width          : 38px;
-      height         : 38px;
-      border-radius  : var(--radius-sm);
-      display        : flex;
-      align-items    : center;
-      justify-content: center;
-      font-size      : .78rem;
-      font-weight    : 800;
-      color          : #fff;
-      flex-shrink    : 0;
-    }
-
-    .client-name { font-size: .84rem; font-weight: 700; }
-    .client-proj { font-size: .73rem; color: var(--color-text-muted); }
-    .client-tag  {
-      margin-right : auto;
-      font-size    : .68rem;
-      font-weight  : 700;
-      padding      : .15rem .55rem;
-      border-radius: var(--radius-full);
-    }
-
-    /* ═══════════════════════════════════════
-       SIDEBAR MOBILE OVERLAY
-    ═══════════════════════════════════════ */
-    .sidebar-overlay {
-      display : none;
-      position: fixed;
-      inset   : 0;
-      background: rgba(16,16,42,.6);
-      backdrop-filter: blur(4px);
-      z-index : 1049;
-      opacity : 0;
-      transition: opacity var(--dur-normal);
-    }
-    .sidebar-overlay.show { opacity: 1; }
-
-    @media (max-width:768px) {
-      .sidebar {
-        transform   : translateX(100%);
-        width       : var(--sidebar-w) !important;
-      }
-      .sidebar.mobile-open {
-        transform: translateX(0);
-      }
-      .sidebar-overlay { display: block; }
-      .main-content { margin-right: 0 !important; }
-      .page-content { padding: 1.25rem 1rem; }
-    }
-
-    /* ═══════════════════════════════════════
-       ANIMATIONS
-    ═══════════════════════════════════════ */
-    .fade-up {
-      opacity  : 0;
-      transform: translateY(16px);
-      animation: fadeUp .4s var(--ease-smooth) forwards;
-    }
-    @keyframes fadeUp {
-      to { opacity: 1; transform: translateY(0); }
-    }
-
-    .fade-up-1 { animation-delay: .05s; }
-    .fade-up-2 { animation-delay: .10s; }
-    .fade-up-3 { animation-delay: .15s; }
-    .fade-up-4 { animation-delay: .20s; }
-    .fade-up-5 { animation-delay: .25s; }
-    .fade-up-6 { animation-delay: .30s; }
-
-    /* ═══════════════════════════════════════
-       UTILS
-    ═══════════════════════════════════════ */
-    .g-6 { background: var(--grad-main); }
-    .text-grad {
-      background: var(--grad-main);
-      -webkit-background-clip: text;
-      -webkit-text-fill-color: transparent;
-      background-clip: text;
-    }
-    .btn-sol-sm {
-      display       : inline-flex;
-      align-items   : center;
-      gap           : .35rem;
-      background    : var(--grad-main);
-      color         : #fff;
-      border        : none;
-      border-radius : var(--radius-sm);
-      padding       : .45rem 1.1rem;
-      font-family   : var(--font-primary);
-      font-size     : .8rem;
-      font-weight   : 700;
-      cursor        : pointer;
-      transition    : all var(--dur-normal) var(--ease-spring);
-      box-shadow    : var(--shadow-main);
-      white-space   : nowrap;
-    }
-    .btn-sol-sm:hover {
-      transform  : translateY(-2px);
-      box-shadow : 0 10px 32px rgba(100,71,244,.4);
-    }
-
-    .btn-ghost-sm {
-      display       : inline-flex;
-      align-items   : center;
-      gap           : .35rem;
-      background    : transparent;
-      color         : var(--main-500);
-      border        : 1.5px solid var(--main-200);
-      border-radius : var(--radius-sm);
-      padding       : .42rem 1rem;
-      font-family   : var(--font-primary);
-      font-size     : .8rem;
-      font-weight   : 600;
-      cursor        : pointer;
-      transition    : all var(--dur-fast) var(--ease-smooth);
-    }
-    .btn-ghost-sm:hover {
-      background  : var(--main-50);
-      border-color: var(--main-400);
-    }
-    [data-bs-theme="dark"] .btn-ghost-sm:hover { background: rgba(100,71,244,.12); }
-
-    /* Donut placeholder */
-    .donut-wrap {
-      position: relative;
-      width   : 120px;
-      height  : 120px;
-      margin  : 0 auto;
-    }
-    .donut-svg circle { transition: stroke-dashoffset 1s var(--ease-spring); }
-
-    .donut-center {
-      position       : absolute;
-      inset          : 0;
-      display        : flex;
-      align-items    : center;
-      justify-content: center;
-      flex-direction : column;
-    }
-    .donut-val {
-      font-size  : 1.3rem;
-      font-weight: 900;
-      line-height: 1;
-    }
-    .donut-sub {
-      font-size : .65rem;
-      color     : var(--color-text-muted);
-      margin-top: .15rem;
-    }
-
-  </style>
-</head>
-<body>
-
-<!-- Mobile Overlay -->
 <div class="sidebar-overlay" id="sidebarOverlay"></div>
 
 <div class="admin-shell">
 
-  <!-- ═══════════════════════════════════
-       SIDEBAR
-  ═══════════════════════════════════ -->
-  <aside class="sidebar" id="sidebar">
+  <%- include('partials/_sidebar', {
+    activePage: 'dashboard',
+    adminUser: { name: 'علی مدیری', role: 'مدیر کل سیستم', initials: 'ادم' }
+  }) %>
 
-    <!-- Brand -->
-    <a class="sidebar-brand" href="#">
-      <div class="sidebar-logo">سل</div>
-      <span class="sidebar-brand-text">سُل وب — پنل</span>
-    </a>
-
-    <!-- Nav -->
-    <nav class="sidebar-nav">
-
-      <span class="nav-label">اصلی</span>
-
-      <a href="#" class="nav-item-sol active">
-        <span class="nav-icon"><i class="bi bi-grid-1x2-fill"></i></span>
-        <span class="nav-text">داشبورد</span>
-      </a>
-
-      <a href="#" class="nav-item-sol">
-        <span class="nav-icon"><i class="bi bi-kanban-fill"></i></span>
-        <span class="nav-text">پروژه‌ها</span>
-        <span class="nav-badge">۱۲</span>
-      </a>
-
-      <a href="#" class="nav-item-sol">
-        <span class="nav-icon"><i class="bi bi-people-fill"></i></span>
-        <span class="nav-text">مشتریان</span>
-      </a>
-
-      <a href="#" class="nav-item-sol">
-        <span class="nav-icon"><i class="bi bi-chat-dots-fill"></i></span>
-        <span class="nav-text">پیام‌ها</span>
-        <span class="nav-badge">۵</span>
-      </a>
-
-      <a href="#" class="nav-item-sol">
-        <span class="nav-icon"><i class="bi bi-receipt"></i></span>
-        <span class="nav-text">فاکتورها</span>
-      </a>
-
-      <span class="nav-label">محتوا</span>
-
-      <a href="#" class="nav-item-sol">
-        <span class="nav-icon"><i class="bi bi-collection-fill"></i></span>
-        <span class="nav-text">پورتفولیو</span>
-      </a>
-
-      <a href="#" class="nav-item-sol">
-        <span class="nav-icon"><i class="bi bi-box-seam-fill"></i></span>
-        <span class="nav-text">پکیج‌ها</span>
-      </a>
-
-      <a href="#" class="nav-item-sol">
-        <span class="nav-icon"><i class="bi bi-star-fill"></i></span>
-        <span class="nav-text">نظرات</span>
-      </a>
-
-      <a href="#" class="nav-item-sol">
-        <span class="nav-icon"><i class="bi bi-journal-text"></i></span>
-        <span class="nav-text">وبلاگ</span>
-      </a>
-
-      <span class="nav-label">سیستم</span>
-
-      <a href="#" class="nav-item-sol">
-        <span class="nav-icon"><i class="bi bi-bar-chart-line-fill"></i></span>
-        <span class="nav-text">گزارش‌ها</span>
-      </a>
-
-      <a href="#" class="nav-item-sol">
-        <span class="nav-icon"><i class="bi bi-gear-fill"></i></span>
-        <span class="nav-text">تنظیمات</span>
-      </a>
-
-    </nav>
-
-    <!-- Footer User -->
-    <div class="sidebar-footer">
-      <div class="sidebar-user">
-        <div class="user-avatar">ادم</div>
-        <div class="user-info">
-          <div class="user-name">علی مدیری</div>
-          <div class="user-role">مدیر کل سیستم</div>
-        </div>
-        <i class="bi bi-three-dots-vertical" style="color:rgba(255,255,255,.3);font-size:.85rem;flex-shrink:0;"></i>
-      </div>
-    </div>
-
-  </aside><!-- /sidebar -->
-
-
-  <!-- ═══════════════════════════════════
-       MAIN CONTENT
-  ═══════════════════════════════════ -->
   <div class="main-content" id="mainContent">
 
-    <!-- HEADER -->
-    <header class="admin-header">
+    <%- include('partials/_header', {
+      breadcrumbs: [{ label: 'داشبورد' }],
+      searchPlaceholder: 'جستجو در پنل…'
+    }) %>
 
-      <!-- Toggle -->
-      <button class="header-toggle" id="sidebarToggle" title="بستن/باز کردن منو">
-        <i class="bi bi-layout-sidebar-reverse"></i>
-      </button>
-
-      <!-- Breadcrumb -->
-      <div class="header-breadcrumb">
-        <i class="bi bi-house-fill" style="font-size:.8rem; color:var(--color-text-light);"></i>
-        <span class="sep">/</span>
-        <span class="current">داشبورد</span>
-      </div>
-
-      <!-- Search -->
-      <div class="header-search d-none d-md-flex">
-        <i class="bi bi-search"></i>
-        <input type="text" placeholder="جستجو در پنل…">
-        <kbd style="font-size:.65rem; color:var(--color-text-light); background:var(--color-border); border-radius:4px; padding:.1rem .35rem;">⌘K</kbd>
-      </div>
-
-      <!-- Actions -->
-      <div class="header-actions">
-
-        <button class="hdr-btn" title="اعلان‌ها">
-          <i class="bi bi-bell-fill"></i>
-          <span class="hdr-notif-dot"></span>
-        </button>
-
-        <button class="hdr-btn" title="تغییر تم" id="themeToggle">
-          <i class="bi bi-moon-stars-fill"></i>
-        </button>
-
-        <button class="hdr-btn d-none d-md-flex" title="تمام‌صفحه" id="fullscreenBtn">
-          <i class="bi bi-fullscreen"></i>
-        </button>
-
-        <div class="hdr-avatar" title="پروفایل من">ادم</div>
-
-      </div>
-    </header><!-- /header -->
-
-
-    <!-- PAGE CONTENT -->
     <main class="page-content">
 
       <!-- Page Header -->
@@ -1354,407 +30,199 @@
         </div>
       </div>
 
-
-      <!-- ── STAT CARDS ── -->
-      <div class="stat-grid">
+      <!-- Stat Cards -->
+      <div class="stat-grid" style="display:grid;grid-template-columns:repeat(4,1fr);gap:1rem;margin-bottom:1.5rem;">
 
         <div class="stat-card-dash fade-up fade-up-1">
-          <div class="stat-header">
-            <div class="stat-icon-box main"><i class="bi bi-kanban-fill"></i></div>
-            <span class="stat-trend up"><i class="bi bi-arrow-up-short"></i>۱۲٪</span>
+          <div class="stat-header" style="display:flex;align-items:center;justify-content:space-between;">
+            <div class="stat-icon-box main" style="width:40px;height:40px;border-radius:var(--radius-sm);background:rgba(100,71,244,.12);color:var(--main-500);display:flex;align-items:center;justify-content:center;font-size:1.1rem;"><i class="bi bi-kanban-fill"></i></div>
+            <span class="stat-trend up" style="display:flex;align-items:center;gap:.25rem;font-size:.73rem;font-weight:700;background:rgba(34,197,94,.12);color:#16a34a;border-radius:var(--radius-full);padding:.2rem .55rem;"><i class="bi bi-arrow-up-short"></i>۱۲٪</span>
           </div>
           <div>
-            <div class="stat-value text-grad">۲۴</div>
-            <div class="stat-label">پروژه فعال</div>
-            <div class="stat-sub">۸ پروژه در مرحله ریویو</div>
+            <div class="stat-value text-grad" data-count="24" data-suffix="">۲۴</div>
+            <div style="font-size:.78rem;color:var(--color-text-muted);margin-top:.2rem;">پروژه فعال</div>
+            <div style="font-size:.73rem;color:var(--color-text-light);">۸ پروژه در مرحله ریویو</div>
           </div>
         </div>
 
         <div class="stat-card-dash fade-up fade-up-2">
-          <div class="stat-header">
-            <div class="stat-icon-box accent"><i class="bi bi-people-fill"></i></div>
-            <span class="stat-trend up"><i class="bi bi-arrow-up-short"></i>۸٪</span>
+          <div class="stat-header" style="display:flex;align-items:center;justify-content:space-between;">
+            <div class="stat-icon-box accent" style="width:40px;height:40px;border-radius:var(--radius-sm);background:rgba(0,144,232,.12);color:var(--accent-500);display:flex;align-items:center;justify-content:center;font-size:1.1rem;"><i class="bi bi-people-fill"></i></div>
+            <span class="stat-trend up" style="display:flex;align-items:center;gap:.25rem;font-size:.73rem;font-weight:700;background:rgba(34,197,94,.12);color:#16a34a;border-radius:var(--radius-full);padding:.2rem .55rem;"><i class="bi bi-arrow-up-short"></i>۸٪</span>
           </div>
           <div>
-            <div class="stat-value text-grad">۸۶</div>
-            <div class="stat-label">مشتری فعال</div>
-            <div class="stat-sub">۳ مشتری جدید این هفته</div>
+            <div class="stat-value text-grad" data-count="86" data-suffix="">۸۶</div>
+            <div style="font-size:.78rem;color:var(--color-text-muted);margin-top:.2rem;">مشتری فعال</div>
+            <div style="font-size:.73rem;color:var(--color-text-light);">۳ مشتری جدید این هفته</div>
           </div>
         </div>
 
         <div class="stat-card-dash fade-up fade-up-3">
-          <div class="stat-header">
-            <div class="stat-icon-box success"><i class="bi bi-check-circle-fill"></i></div>
-            <span class="stat-trend up"><i class="bi bi-arrow-up-short"></i>۲۲٪</span>
+          <div class="stat-header" style="display:flex;align-items:center;justify-content:space-between;">
+            <div style="width:40px;height:40px;border-radius:var(--radius-sm);background:rgba(34,197,94,.12);color:#16a34a;display:flex;align-items:center;justify-content:center;font-size:1.1rem;"><i class="bi bi-check-circle-fill"></i></div>
+            <span style="display:flex;align-items:center;gap:.25rem;font-size:.73rem;font-weight:700;background:rgba(34,197,94,.12);color:#16a34a;border-radius:var(--radius-full);padding:.2rem .55rem;"><i class="bi bi-arrow-up-short"></i>۲۲٪</span>
           </div>
           <div>
-            <div class="stat-value text-grad">۱۵۳</div>
-            <div class="stat-label">پروژه تحویل‌داده‌شده</div>
-            <div class="stat-sub">۹۸٪ رضایت مشتری</div>
+            <div class="stat-value text-grad" data-count="153" data-suffix="">۱۵۳</div>
+            <div style="font-size:.78rem;color:var(--color-text-muted);margin-top:.2rem;">پروژه تحویل‌داده‌شده</div>
+            <div style="font-size:.73rem;color:var(--color-text-light);">۹۸٪ رضایت مشتری</div>
           </div>
         </div>
 
         <div class="stat-card-dash fade-up fade-up-4">
-          <div class="stat-header">
-            <div class="stat-icon-box warning"><i class="bi bi-chat-dots-fill"></i></div>
-            <span class="stat-trend down"><i class="bi bi-arrow-down-short"></i>۳٪</span>
+          <div class="stat-header" style="display:flex;align-items:center;justify-content:space-between;">
+            <div style="width:40px;height:40px;border-radius:var(--radius-sm);background:rgba(245,158,11,.12);color:#d97706;display:flex;align-items:center;justify-content:center;font-size:1.1rem;"><i class="bi bi-chat-dots-fill"></i></div>
+            <span style="display:flex;align-items:center;gap:.25rem;font-size:.73rem;font-weight:700;background:rgba(239,68,68,.12);color:#dc2626;border-radius:var(--radius-full);padding:.2rem .55rem;"><i class="bi bi-arrow-down-short"></i>۳٪</span>
           </div>
           <div>
-            <div class="stat-value text-grad">۵</div>
-            <div class="stat-label">پیام خوانده‌نشده</div>
-            <div class="stat-sub">آخرین پیام: ۲ ساعت پیش</div>
+            <div class="stat-value text-grad" data-count="5" data-suffix="">۵</div>
+            <div style="font-size:.78rem;color:var(--color-text-muted);margin-top:.2rem;">پیام خوانده‌نشده</div>
+            <div style="font-size:.73rem;color:var(--color-text-light);">آخرین پیام: ۲ ساعت پیش</div>
           </div>
         </div>
 
       </div><!-- /stat-grid -->
 
-
-      <!-- ── QUICK MINI CARDS ── -->
-      <div class="quick-grid fade-up fade-up-5">
-
-        <div class="mini-card">
-          <div class="mini-icon" style="background:rgba(100,71,244,.1); color:var(--main-500);">
-            <i class="bi bi-clock-history"></i>
-          </div>
-          <div>
-            <div class="mini-val">۱۴۲ ساعت</div>
-            <div class="mini-lbl">کل ساعات کاری این ماه</div>
-          </div>
+      <!-- Quick Mini Cards -->
+      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:1.25rem;margin-bottom:1.5rem;" class="fade-up fade-up-5">
+        <div class="mini-card" style="background:var(--color-surface);border:1px solid var(--color-border);border-radius:var(--radius-lg);padding:1.1rem 1.25rem;display:flex;align-items:center;gap:1rem;">
+          <div style="width:44px;height:44px;border-radius:var(--radius-md);background:rgba(100,71,244,.1);color:var(--main-500);display:flex;align-items:center;justify-content:center;font-size:1.2rem;flex-shrink:0;"><i class="bi bi-clock-history"></i></div>
+          <div><div style="font-size:1.35rem;font-weight:900;line-height:1;">۱۴۲ ساعت</div><div style="font-size:.75rem;color:var(--color-text-muted);margin-top:.15rem;">کل ساعات کاری این ماه</div></div>
         </div>
-
-        <div class="mini-card">
-          <div class="mini-icon" style="background:rgba(0,144,232,.1); color:var(--accent-500);">
-            <i class="bi bi-stars"></i>
-          </div>
-          <div>
-            <div class="mini-val">۴.۹ / ۵</div>
-            <div class="mini-lbl">میانگین امتیاز مشتریان</div>
-          </div>
+        <div class="mini-card" style="background:var(--color-surface);border:1px solid var(--color-border);border-radius:var(--radius-lg);padding:1.1rem 1.25rem;display:flex;align-items:center;gap:1rem;">
+          <div style="width:44px;height:44px;border-radius:var(--radius-md);background:rgba(0,144,232,.1);color:var(--accent-500);display:flex;align-items:center;justify-content:center;font-size:1.2rem;flex-shrink:0;"><i class="bi bi-stars"></i></div>
+          <div><div style="font-size:1.35rem;font-weight:900;line-height:1;">۴.۹ / ۵</div><div style="font-size:.75rem;color:var(--color-text-muted);margin-top:.15rem;">میانگین امتیاز مشتریان</div></div>
         </div>
-
-        <div class="mini-card">
-          <div class="mini-icon" style="background:rgba(34,197,94,.1); color:#16a34a;">
-            <i class="bi bi-lightning-charge-fill"></i>
-          </div>
-          <div>
-            <div class="mini-val">۷ روز</div>
-            <div class="mini-lbl">میانگین زمان تحویل پروژه</div>
-          </div>
+        <div class="mini-card" style="background:var(--color-surface);border:1px solid var(--color-border);border-radius:var(--radius-lg);padding:1.1rem 1.25rem;display:flex;align-items:center;gap:1rem;">
+          <div style="width:44px;height:44px;border-radius:var(--radius-md);background:rgba(34,197,94,.1);color:#16a34a;display:flex;align-items:center;justify-content:center;font-size:1.2rem;flex-shrink:0;"><i class="bi bi-lightning-charge-fill"></i></div>
+          <div><div style="font-size:1.35rem;font-weight:900;line-height:1;">۷ روز</div><div style="font-size:.75rem;color:var(--color-text-muted);margin-top:.15rem;">میانگین زمان تحویل پروژه</div></div>
         </div>
+      </div>
 
-      </div><!-- /quick-grid -->
+      <!-- Main Grid: Chart + Activity -->
+      <div style="display:grid;grid-template-columns:1fr 340px;gap:1.25rem;margin-bottom:1.25rem;" class="fade-up fade-up-5">
 
-
-      <!-- ── MAIN GRID (Chart + Activity) ── -->
-      <div class="main-grid fade-up fade-up-5">
-
-        <!-- Left: Chart -->
+        <!-- Chart Panel -->
         <div class="dash-panel">
           <div class="panel-header">
             <h6 class="panel-title"><i class="bi bi-bar-chart-fill me-1" style="color:var(--main-500);"></i> پروژه‌های ماهانه</h6>
-            <div class="d-flex gap-2 align-items-center">
-              <select style="border:none;background:var(--color-bg);border-radius:var(--radius-sm);padding:.25rem .6rem;font-family:var(--font-primary);font-size:.75rem;color:var(--color-text-muted);cursor:pointer;border:1px solid var(--color-border);">
-                <option>۶ ماه اخیر</option>
-                <option>۱۲ ماه اخیر</option>
-                <option>امسال</option>
-              </select>
-              <a href="#" class="panel-action">جزئیات <i class="bi bi-arrow-left"></i></a>
+            <a href="#" class="panel-action">جزئیات <i class="bi bi-arrow-left"></i></a>
+          </div>
+          <div style="padding:1.25rem;">
+            <div style="display:flex;align-items:flex-end;gap:.6rem;height:140px;">
+              <% const bars = [
+                { h:'55%', label:'دی',       val:'۱۱' },
+                { h:'70%', label:'بهمن',     val:'۱۴' },
+                { h:'45%', label:'اسفند',    val:'۹'  },
+                { h:'85%', label:'فروردین',  val:'۱۷' },
+                { h:'65%', label:'اردیبهشت', val:'۱۳' },
+                { h:'90%', label:'خرداد',    val:'۱۸', active: true }
+              ]; %>
+              <% bars.forEach(function(bar){ %>
+                <div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:.4rem;height:100%;justify-content:flex-end;">
+                  <div class="chart-bar <%= bar.active ? 'active' : '' %>"
+                       style="width:100%;max-width:40px;height:<%= bar.h %>;border-radius:var(--radius-sm) var(--radius-sm) .25rem .25rem;cursor:pointer;"
+                       data-val="<%= bar.val %>"></div>
+                  <span style="font-size:.68rem;color:var(--color-text-light);text-align:center;"><%= bar.label %></span>
+                </div>
+              <% }); %>
+            </div>
+            <div style="display:flex;gap:1.25rem;flex-wrap:wrap;margin-top:1rem;">
+              <div style="display:flex;align-items:center;gap:.4rem;font-size:.75rem;color:var(--color-text-muted);">
+                <div style="width:8px;height:8px;border-radius:50%;background:var(--main-500);"></div>تحویل‌شده
+              </div>
+              <div style="display:flex;align-items:center;gap:.4rem;font-size:.75rem;color:var(--color-text-muted);">
+                <div style="width:8px;height:8px;border-radius:50%;background:var(--main-200);"></div>در جریان
+              </div>
             </div>
           </div>
-          <div class="chart-area">
+        </div>
 
-            <!-- Bar Chart -->
-            <div class="chart-bars" id="chartBars">
-              <div class="chart-bar-wrap">
-                <div class="chart-bar" style="height:55%;" data-val="۱۱"></div>
-                <span class="chart-bar-label">دی</span>
-              </div>
-              <div class="chart-bar-wrap">
-                <div class="chart-bar" style="height:70%;" data-val="۱۴"></div>
-                <span class="chart-bar-label">بهمن</span>
-              </div>
-              <div class="chart-bar-wrap">
-                <div class="chart-bar" style="height:45%;" data-val="۹"></div>
-                <span class="chart-bar-label">اسفند</span>
-              </div>
-              <div class="chart-bar-wrap">
-                <div class="chart-bar" style="height:85%;" data-val="۱۷"></div>
-                <span class="chart-bar-label">فروردین</span>
-              </div>
-              <div class="chart-bar-wrap">
-                <div class="chart-bar" style="height:65%;" data-val="۱۳"></div>
-                <span class="chart-bar-label">اردیبهشت</span>
-              </div>
-              <div class="chart-bar-wrap">
-                <div class="chart-bar active" style="height:90%;" data-val="۱۸"></div>
-                <span class="chart-bar-label">خرداد</span>
-              </div>
-            </div>
-
-            <!-- Legend -->
-            <div class="chart-legend">
-              <div class="legend-item">
-                <div class="legend-dot" style="background:var(--main-500);"></div>
-                پروژه‌های تحویل‌شده
-              </div>
-              <div class="legend-item">
-                <div class="legend-dot" style="background:var(--main-200);"></div>
-                پروژه‌های در جریان
-              </div>
-            </div>
-
-            <!-- Donut Charts Row -->
-            <div class="d-flex gap-4 mt-4 justify-content-center flex-wrap">
-
-              <div class="text-center">
-                <div class="donut-wrap">
-                  <svg viewBox="0 0 42 42" width="120" height="120">
-                    <circle cx="21" cy="21" r="15.9" fill="none" stroke="var(--color-border)" stroke-width="3.5"/>
-                    <circle cx="21" cy="21" r="15.9" fill="none" stroke="url(#g1)" stroke-width="3.5"
-                            stroke-dasharray="82 18" stroke-dashoffset="25" stroke-linecap="round"/>
-                    <defs>
-                      <linearGradient id="g1" x1="0%" y1="0%" x2="100%" y2="100%">
-                        <stop offset="0%" stop-color="#6447f4"/>
-                        <stop offset="100%" stop-color="#0090e8"/>
-                      </linearGradient>
-                    </defs>
-                  </svg>
-                  <div class="donut-center">
-                    <div class="donut-val">۸۲٪</div>
-                    <div class="donut-sub">تکمیل</div>
-                  </div>
-                </div>
-                <div style="font-size:.75rem; color:var(--color-text-muted); margin-top:.5rem;">نرخ موفقیت پروژه</div>
-              </div>
-
-              <div class="text-center">
-                <div class="donut-wrap">
-                  <svg viewBox="0 0 42 42" width="120" height="120">
-                    <circle cx="21" cy="21" r="15.9" fill="none" stroke="var(--color-border)" stroke-width="3.5"/>
-                    <circle cx="21" cy="21" r="15.9" fill="none" stroke="url(#g2)" stroke-width="3.5"
-                            stroke-dasharray="68 32" stroke-dashoffset="25" stroke-linecap="round"/>
-                    <defs>
-                      <linearGradient id="g2" x1="0%" y1="0%" x2="100%" y2="100%">
-                        <stop offset="0%" stop-color="#22c55e"/>
-                        <stop offset="100%" stop-color="#0090e8"/>
-                      </linearGradient>
-                    </defs>
-                  </svg>
-                  <div class="donut-center">
-                    <div class="donut-val">۶۸٪</div>
-                    <div class="donut-sub">رشد</div>
-                  </div>
-                </div>
-                <div style="font-size:.75rem; color:var(--color-text-muted); margin-top:.5rem;">رشد نسبت به پارسال</div>
-              </div>
-
-              <div class="text-center">
-                <div class="donut-wrap">
-                  <svg viewBox="0 0 42 42" width="120" height="120">
-                    <circle cx="21" cy="21" r="15.9" fill="none" stroke="var(--color-border)" stroke-width="3.5"/>
-                    <circle cx="21" cy="21" r="15.9" fill="none" stroke="url(#g3)" stroke-width="3.5"
-                            stroke-dasharray="95 5" stroke-dashoffset="25" stroke-linecap="round"/>
-                    <defs>
-                      <linearGradient id="g3" x1="0%" y1="0%" x2="100%" y2="100%">
-                        <stop offset="0%" stop-color="#f59e0b"/>
-                        <stop offset="100%" stop-color="#ef4444"/>
-                      </linearGradient>
-                    </defs>
-                  </svg>
-                  <div class="donut-center">
-                    <div class="donut-val">۹۵٪</div>
-                    <div class="donut-sub">رضایت</div>
-                  </div>
-                </div>
-                <div style="font-size:.75rem; color:var(--color-text-muted); margin-top:.5rem;">رضایت‌مندی مشتریان</div>
-              </div>
-
-            </div><!-- /donut row -->
-
-          </div>
-        </div><!-- /chart panel -->
-
-        <!-- Right: Activity Feed -->
+        <!-- Activity Feed -->
         <div class="dash-panel">
           <div class="panel-header">
             <h6 class="panel-title"><i class="bi bi-activity me-1" style="color:var(--main-500);"></i> فعالیت‌های اخیر</h6>
             <a href="#" class="panel-action">همه <i class="bi bi-arrow-left"></i></a>
           </div>
-          <div class="activity-feed">
-
-            <div class="activity-item">
-              <div class="act-icon main"><i class="bi bi-check-circle-fill"></i></div>
-              <div class="act-body">
-                <p class="act-text"><strong>پروژه آتین‌دیزاین</strong> به مرحله تحویل رسید</p>
-                <div class="act-time"><i class="bi bi-clock me-1"></i>۱۵ دقیقه پیش</div>
+          <div>
+            <% const activities = [
+              { icon:'bi-check-circle-fill', type:'main',    text:'<strong>پروژه آتین‌دیزاین</strong> به مرحله تحویل رسید', time:'۱۵ دقیقه پیش' },
+              { icon:'bi-person-plus-fill',  type:'accent',  text:'<strong>مشتری جدید</strong> ثبت‌نام کرد — محسن رضایی',  time:'۴۵ دقیقه پیش' },
+              { icon:'bi-chat-left-dots-fill',type:'warning', text:'<strong>۳ پیام جدید</strong> از طریق فرم تماس',         time:'۱ ساعت پیش' },
+              { icon:'bi-file-earmark-plus-fill', type:'main', text:'<strong>پروژه جدید</strong> ثبت شد — فروشگاه پرتو',  time:'۳ ساعت پیش' },
+              { icon:'bi-receipt-cutoff',    type:'success', text:'<strong>فاکتور #۱۰۴۸</strong> پرداخت شد',              time:'دیروز' },
+              { icon:'bi-star-fill',         type:'accent',  text:'<strong>نظر جدید</strong> ۵ ستاره از سارا طاهری',      time:'دیروز' },
+              { icon:'bi-exclamation-triangle-fill', type:'warning', text:'<strong>ددلاین</strong> پروژه پارسیان فرداست', time:'۲ روز پیش' }
+            ]; %>
+            <% activities.forEach(function(act){ %>
+              <div style="display:flex;align-items:flex-start;gap:.85rem;padding:.7rem 1.25rem;transition:background var(--dur-fast);">
+                <div style="width:32px;height:32px;border-radius:var(--radius-sm);display:flex;align-items:center;justify-content:center;font-size:.85rem;flex-shrink:0;margin-top:.1rem;
+                  background:<%= act.type==='main' ? 'rgba(100,71,244,.12)' : act.type==='accent' ? 'rgba(0,144,232,.12)' : act.type==='success' ? 'rgba(34,197,94,.12)' : 'rgba(245,158,11,.12)' %>;
+                  color:<%= act.type==='main' ? 'var(--main-500)' : act.type==='accent' ? 'var(--accent-500)' : act.type==='success' ? '#16a34a' : '#d97706' %>;">
+                  <i class="bi <%= act.icon %>"></i>
+                </div>
+                <div style="flex:1;">
+                  <p style="font-size:.82rem;margin:0;line-height:1.5;"><%- act.text %></p>
+                  <div style="font-size:.7rem;color:var(--color-text-light);margin-top:.15rem;"><i class="bi bi-clock me-1"></i><%= act.time %></div>
+                </div>
               </div>
-            </div>
-
-            <div class="activity-item">
-              <div class="act-icon accent"><i class="bi bi-person-plus-fill"></i></div>
-              <div class="act-body">
-                <p class="act-text"><strong>مشتری جدید</strong> ثبت‌نام کرد — محسن رضایی</p>
-                <div class="act-time"><i class="bi bi-clock me-1"></i>۴۵ دقیقه پیش</div>
-              </div>
-            </div>
-
-            <div class="activity-item">
-              <div class="act-icon warning"><i class="bi bi-chat-left-dots-fill"></i></div>
-              <div class="act-body">
-                <p class="act-text"><strong>۳ پیام جدید</strong> از طریق فرم تماس</p>
-                <div class="act-time"><i class="bi bi-clock me-1"></i>۱ ساعت پیش</div>
-              </div>
-            </div>
-
-            <div class="activity-item">
-              <div class="act-icon main"><i class="bi bi-file-earmark-plus-fill"></i></div>
-              <div class="act-body">
-                <p class="act-text"><strong>پروژه جدید</strong> ثبت شد — فروشگاه پرتو</p>
-                <div class="act-time"><i class="bi bi-clock me-1"></i>۳ ساعت پیش</div>
-              </div>
-            </div>
-
-            <div class="activity-item">
-              <div class="act-icon success"><i class="bi bi-receipt-cutoff"></i></div>
-              <div class="act-body">
-                <p class="act-text"><strong>فاکتور #۱۰۴۸</strong> پرداخت شد توسط کیانی لباس</p>
-                <div class="act-time"><i class="bi bi-clock me-1"></i>دیروز</div>
-              </div>
-            </div>
-
-            <div class="activity-item">
-              <div class="act-icon accent"><i class="bi bi-star-fill"></i></div>
-              <div class="act-body">
-                <p class="act-text"><strong>نظر جدید</strong> ۵ ستاره از سارا طاهری</p>
-                <div class="act-time"><i class="bi bi-clock me-1"></i>دیروز</div>
-              </div>
-            </div>
-
-            <div class="activity-item">
-              <div class="act-icon warning"><i class="bi bi-exclamation-triangle-fill"></i></div>
-              <div class="act-body">
-                <p class="act-text"><strong>ددلاین</strong> پروژه پارسیان فردا است</p>
-                <div class="act-time"><i class="bi bi-clock me-1"></i>۲ روز پیش</div>
-              </div>
-            </div>
-
+            <% }); %>
           </div>
-        </div><!-- /activity panel -->
+        </div>
 
       </div><!-- /main-grid -->
 
-
-      <!-- ── PROJECTS TABLE ── -->
+      <!-- Projects Table -->
       <div class="dash-panel fade-up fade-up-6 mb-4">
         <div class="panel-header">
           <h6 class="panel-title"><i class="bi bi-kanban-fill me-1" style="color:var(--main-500);"></i> پروژه‌های جاری</h6>
-          <div class="d-flex gap-2">
-            <input type="text" placeholder="فیلتر…"
-              style="border:1px solid var(--color-border);background:var(--color-bg);border-radius:var(--radius-sm);padding:.28rem .75rem;font-family:var(--font-primary);font-size:.78rem;color:var(--color-text-primary);outline:none;width:130px;">
-            <a href="#" class="panel-action">همه پروژه‌ها <i class="bi bi-arrow-left"></i></a>
-          </div>
+          <a href="/sw-admin/projects" class="panel-action">همه پروژه‌ها <i class="bi bi-arrow-left"></i></a>
         </div>
         <div style="overflow-x:auto;">
-          <table class="proj-table">
+          <table class="sol-table">
             <thead>
               <tr>
-                <th>پروژه</th>
-                <th>مشتری</th>
-                <th>نوع</th>
-                <th>وضعیت</th>
-                <th>پیشرفت</th>
-                <th>ددلاین</th>
+                <th>پروژه</th><th>مشتری</th><th>نوع</th>
+                <th>وضعیت</th><th>پیشرفت</th><th>ددلاین</th>
               </tr>
             </thead>
             <tbody>
-              <tr>
-                <td>
-                  <div class="proj-name">وب‌سایت شرکتی آتین‌دیزاین</div>
-                  <div class="proj-type">طراحی وب — PHP</div>
-                </td>
-                <td><span style="font-size:.83rem;">امیر حسینی</span></td>
-                <td><span style="font-size:.78rem; color:var(--color-text-muted);">وب</span></td>
-                <td><span class="badge-status badge-done">تحویل داده شد</span></td>
-                <td>
-                  <div class="d-flex align-items-center gap-2">
-                    <div class="prog-bar-mini"><div class="prog-fill" style="width:100%;"></div></div>
-                    <span style="font-size:.73rem; color:var(--color-text-muted);">۱۰۰٪</span>
-                  </div>
-                </td>
-                <td><span style="font-size:.78rem; color:var(--color-text-muted);">۱ خرداد</span></td>
-              </tr>
-              <tr>
-                <td>
-                  <div class="proj-name">فروشگاه آنلاین کیانی لباس</div>
-                  <div class="proj-type">فروشگاه — WooCommerce</div>
-                </td>
-                <td><span style="font-size:.83rem;">کیانی لباس</span></td>
-                <td><span style="font-size:.78rem; color:var(--color-text-muted);">فروشگاه</span></td>
-                <td><span class="badge-status badge-inprog">در حال انجام</span></td>
-                <td>
-                  <div class="d-flex align-items-center gap-2">
-                    <div class="prog-bar-mini"><div class="prog-fill" style="width:68%;"></div></div>
-                    <span style="font-size:.73rem; color:var(--color-text-muted);">۶۸٪</span>
-                  </div>
-                </td>
-                <td><span style="font-size:.78rem; color:var(--color-text-muted);">۱۵ خرداد</span></td>
-              </tr>
-              <tr>
-                <td>
-                  <div class="proj-name">اپلیکیشن مدیریت مالی</div>
-                  <div class="proj-type">UI/UX — Figma + React</div>
-                </td>
-                <td><span style="font-size:.83rem;">استارتاپ آفیلیو</span></td>
-                <td><span style="font-size:.78rem; color:var(--color-text-muted);">UI/UX</span></td>
-                <td><span class="badge-status badge-review">در ریویو</span></td>
-                <td>
-                  <div class="d-flex align-items-center gap-2">
-                    <div class="prog-bar-mini"><div class="prog-fill" style="width:85%;"></div></div>
-                    <span style="font-size:.73rem; color:var(--color-text-muted);">۸۵٪</span>
-                  </div>
-                </td>
-                <td><span style="font-size:.78rem; color:var(--color-text-muted);">۲۲ خرداد</span></td>
-              </tr>
-              <tr>
-                <td>
-                  <div class="proj-name">پورتال سازمانی پارسیان</div>
-                  <div class="proj-type">وب اپ — Laravel</div>
-                </td>
-                <td><span style="font-size:.83rem;">گروه پارسیان</span></td>
-                <td><span style="font-size:.78rem; color:var(--color-text-muted);">وب اپ</span></td>
-                <td><span class="badge-status badge-inprog">در حال انجام</span></td>
-                <td>
-                  <div class="d-flex align-items-center gap-2">
-                    <div class="prog-bar-mini"><div class="prog-fill" style="width:42%;"></div></div>
-                    <span style="font-size:.73rem; color:var(--color-text-muted);">۴۲٪</span>
-                  </div>
-                </td>
-                <td><span style="font-size:.78rem; color:#dc2626; font-weight:600;">فردا! ⚠️</span></td>
-              </tr>
-              <tr>
-                <td>
-                  <div class="proj-name">فروشگاه دیجیتال پرتو</div>
-                  <div class="proj-type">فروشگاه — Node.js</div>
-                </td>
-                <td><span style="font-size:.83rem;">شرکت پرتو</span></td>
-                <td><span style="font-size:.78rem; color:var(--color-text-muted);">فروشگاه</span></td>
-                <td><span class="badge-status badge-hold">متوقف</span></td>
-                <td>
-                  <div class="d-flex align-items-center gap-2">
-                    <div class="prog-bar-mini"><div class="prog-fill" style="width:30%;"></div></div>
-                    <span style="font-size:.73rem; color:var(--color-text-muted);">۳۰٪</span>
-                  </div>
-                </td>
-                <td><span style="font-size:.78rem; color:var(--color-text-muted);">نامشخص</span></td>
-              </tr>
+              <% const projects = [
+                { name:'وب‌سایت شرکتی آتین‌دیزاین', type:'طراحی وب — PHP',       client:'امیر حسینی', cat:'وب',     status:'done',   prog:100, deadline:'۱ خرداد',    urgent:false },
+                { name:'فروشگاه آنلاین کیانی لباس',  type:'فروشگاه — WooCommerce', client:'کیانی لباس',  cat:'فروشگاه', status:'inprog', prog:68,  deadline:'۱۵ خرداد',   urgent:false },
+                { name:'اپلیکیشن مدیریت مالی',       type:'UI/UX — React',         client:'آفیلیو',      cat:'UI/UX',   status:'review', prog:85,  deadline:'۲۲ خرداد',   urgent:false },
+                { name:'پورتال سازمانی پارسیان',      type:'وب اپ — Laravel',       client:'گروه پارسیان',cat:'وب اپ',   status:'inprog', prog:42,  deadline:'فردا! ⚠️',   urgent:true  },
+                { name:'فروشگاه دیجیتال پرتو',       type:'فروشگاه — Node.js',     client:'شرکت پرتو',  cat:'فروشگاه', status:'hold',   prog:30,  deadline:'نامشخص',      urgent:false }
+              ]; %>
+              <% projects.forEach(function(p){ %>
+                <tr>
+                  <td>
+                    <div style="font-weight:600;font-size:.85rem;"><%= p.name %></div>
+                    <div style="font-size:.73rem;color:var(--color-text-muted);"><%= p.type %></div>
+                  </td>
+                  <td style="font-size:.83rem;"><%= p.client %></td>
+                  <td style="font-size:.78rem;color:var(--color-text-muted);"><%= p.cat %></td>
+                  <td>
+                    <span class="badge-status badge-<%= p.status %>">
+                      <%= p.status==='done' ? 'تحویل داده شد' : p.status==='inprog' ? 'در حال انجام' : p.status==='review' ? 'در ریویو' : 'متوقف' %>
+                    </span>
+                  </td>
+                  <td>
+                    <div style="display:flex;align-items:center;gap:.5rem;">
+                      <div class="prog-bar-mini"><div class="prog-fill" style="width:<%= p.prog %>%;"></div></div>
+                      <span style="font-size:.73rem;color:<%= p.urgent ? '#dc2626' : 'var(--color-text-muted)' %>;font-weight:<%= p.urgent ? '700' : 'normal' %>;"><%= p.prog %>٪</span>
+                    </div>
+                  </td>
+                  <td style="font-size:.78rem;color:<%= p.urgent ? '#dc2626' : 'var(--color-text-muted)' %>;font-weight:<%= p.urgent ? '600' : 'normal' %>;"><%= p.deadline %></td>
+                </tr>
+              <% }); %>
             </tbody>
           </table>
         </div>
       </div>
 
-
-      <!-- ── BOTTOM ROW: Messages + Tasks ── -->
-      <div class="clients-grid fade-up fade-up-6">
+      <!-- Bottom: Messages + Tasks -->
+      <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:1.25rem;margin-bottom:1.5rem;" class="fade-up fade-up-6">
 
         <!-- Messages -->
         <div class="dash-panel">
@@ -1762,295 +230,94 @@
             <h6 class="panel-title"><i class="bi bi-chat-dots-fill me-1" style="color:var(--main-500);"></i> پیام‌های اخیر</h6>
             <a href="#" class="panel-action">همه <i class="bi bi-arrow-left"></i></a>
           </div>
-
-          <div class="msg-item unread">
-            <div class="msg-avatar" style="background:var(--grad-main);">محر</div>
-            <div class="msg-body">
-              <div class="msg-top">
-                <span class="msg-sender">محسن رضایی</span>
-                <span class="msg-time">الان</span>
+          <% const messages = [
+            { name:'محسن رضایی',  initials:'محر', color:'var(--grad-main)',                            preview:'سلام، میخواستم درباره پروژه فروشگاه صحبت کنیم…', time:'الان',   unread:true  },
+            { name:'سارا طاهری',  initials:'سار', color:'linear-gradient(135deg,#0090e8,#4dc3ff)',    preview:'ممنونم از طراحی عالی، فقط یه تغییر کوچیک داشتم', time:'۲۰ د',  unread:true  },
+            { name:'رضا محمدی',   initials:'رضا', color:'linear-gradient(135deg,#a394fb,#6447f4)',    preview:'پیش‌فاکتور رو دیدم، تأیید می‌کنم. بریم جلو!',    time:'۱ س',   unread:true  },
+            { name:'علی امینی',   initials:'علی', color:'linear-gradient(135deg,#22c55e,#0090e8)',    preview:'سایت فروشگاه رو لانچ کردیم، عالیه! ممنون',       time:'دیروز',  unread:false },
+            { name:'نگار صادقی',  initials:'نگر', color:'linear-gradient(135deg,#f59e0b,#ef4444)',    preview:'آیا امکان اضافه کردن بلاگ به سایت هست؟',          time:'دیروز',  unread:false }
+          ]; %>
+          <% messages.forEach(function(msg){ %>
+            <div style="display:flex;align-items:flex-start;gap:.85rem;padding:.9rem 1.25rem;border-bottom:1px solid var(--color-border);cursor:pointer;background:<%= msg.unread ? 'rgba(100,71,244,.04)' : 'transparent' %>;">
+              <div style="width:36px;height:36px;border-radius:var(--radius-sm);background:<%= msg.color %>;display:flex;align-items:center;justify-content:center;font-size:.72rem;font-weight:800;color:#fff;flex-shrink:0;"><%= msg.initials %></div>
+              <div style="flex:1;min-width:0;">
+                <div style="display:flex;align-items:center;justify-content:space-between;gap:.5rem;margin-bottom:.25rem;">
+                  <span style="font-size:.83rem;font-weight:700;"><%= msg.name %></span>
+                  <span style="font-size:.7rem;color:var(--color-text-light);white-space:nowrap;"><%= msg.time %></span>
+                </div>
+                <div style="font-size:.77rem;color:var(--color-text-muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:<%= msg.unread ? '500' : 'normal' %>;"><%= msg.preview %></div>
               </div>
-              <div class="msg-preview">سلام، میخواستم درباره پروژه فروشگاه صحبت کنیم…</div>
             </div>
-          </div>
-
-          <div class="msg-item unread">
-            <div class="msg-avatar" style="background:linear-gradient(135deg,#0090e8,#4dc3ff);">سار</div>
-            <div class="msg-body">
-              <div class="msg-top">
-                <span class="msg-sender">سارا طاهری</span>
-                <span class="msg-time">۲۰ د</span>
-              </div>
-              <div class="msg-preview">ممنونم از طراحی عالی، فقط یه تغییر کوچیک داشتم</div>
-            </div>
-          </div>
-
-          <div class="msg-item unread">
-            <div class="msg-avatar" style="background:linear-gradient(135deg,#a394fb,#6447f4);">رضا</div>
-            <div class="msg-body">
-              <div class="msg-top">
-                <span class="msg-sender">رضا محمدی</span>
-                <span class="msg-time">۱ س</span>
-              </div>
-              <div class="msg-preview">پیش‌فاکتور رو دیدم، تأیید می‌کنم. بریم جلو!</div>
-            </div>
-          </div>
-
-          <div class="msg-item">
-            <div class="msg-avatar" style="background:linear-gradient(135deg,#22c55e,#0090e8);">علی</div>
-            <div class="msg-body">
-              <div class="msg-top">
-                <span class="msg-sender">علی امینی</span>
-                <span class="msg-time">دیروز</span>
-              </div>
-              <div class="msg-preview">سایت فروشگاه رو لانچ کردیم، عالیه! ممنون</div>
-            </div>
-          </div>
-
-          <div class="msg-item">
-            <div class="msg-avatar" style="background:linear-gradient(135deg,#f59e0b,#ef4444);">نگر</div>
-            <div class="msg-body">
-              <div class="msg-top">
-                <span class="msg-sender">نگار صادقی</span>
-                <span class="msg-time">دیروز</span>
-              </div>
-              <div class="msg-preview">آیا امکان اضافه کردن بلاگ به سایت هست؟</div>
-            </div>
-          </div>
-
-        </div><!-- /messages -->
-
+          <% }); %>
+        </div>
 
         <!-- Tasks -->
         <div class="dash-panel">
           <div class="panel-header">
             <h6 class="panel-title"><i class="bi bi-list-check me-1" style="color:var(--main-500);"></i> وظایف امروز</h6>
-            <button class="btn-sol-sm" style="padding:.3rem .8rem; font-size:.74rem;">
-              <i class="bi bi-plus"></i> جدید
-            </button>
+            <button class="btn-sol-sm" style="padding:.3rem .8rem;font-size:.74rem;"><i class="bi bi-plus"></i> جدید</button>
           </div>
+          <% const tasks = [
+            { text:'ریویو طراحی اپ مالی',             pri:'low',    done:true  },
+            { text:'جلسه مشاوره با کیانی لباس',       pri:'medium', done:true  },
+            { text:'ارسال پیش‌فاکتور به پرتو',        pri:'high',   done:false },
+            { text:'بروزرسانی صفحه خدمات سُل وب',    pri:'medium', done:false },
+            { text:'تکمیل مرحله سوم پورتال پارسیان', pri:'high',   done:false },
+            { text:'پاسخ به پیام‌های ریسپانسیو',      pri:'low',    done:false },
+            { text:'آپلود نمونه کار جدید در پورتفولیو',pri:'medium', done:false }
+          ]; %>
+          <% tasks.forEach(function(task){ %>
+            <div class="task-item" style="display:flex;align-items:center;gap:.75rem;padding:.75rem 1.25rem;border-bottom:1px solid var(--color-border);cursor:pointer;">
+              <div class="task-check <%= task.done ? 'done' : '' %>" style="width:18px;height:18px;border-radius:5px;border:2px solid var(--color-border);display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:all var(--dur-fast);cursor:pointer;background:<%= task.done ? 'var(--main-500)' : 'transparent' %>;border-color:<%= task.done ? 'var(--main-500)' : 'var(--color-border)' %>;color:#fff;font-size:.65rem;">
+                <%= task.done ? '<i class="bi bi-check-lg"></i>' : '' %>
+              </div>
+              <span class="task-text <%= task.done ? 'done' : '' %>" style="flex:1;font-size:.83rem;<%= task.done ? 'text-decoration:line-through;color:var(--color-text-muted);' : '' %>"><%= task.text %></span>
+              <span style="font-size:.67rem;font-weight:700;padding:.15rem .5rem;border-radius:var(--radius-full);
+                background:<%= task.pri==='high' ? 'rgba(239,68,68,.1)' : task.pri==='medium' ? 'rgba(245,158,11,.1)' : 'rgba(34,197,94,.1)' %>;
+                color:<%= task.pri==='high' ? '#dc2626' : task.pri==='medium' ? '#d97706' : '#16a34a' %>;">
+                <%= task.pri==='high' ? 'بالا' : task.pri==='medium' ? 'متوسط' : 'کم' %>
+              </span>
+            </div>
+          <% }); %>
+        </div>
 
-          <div class="task-item">
-            <div class="task-check done"><i class="bi bi-check-lg"></i></div>
-            <span class="task-text done">ریویو طراحی اپ مالی</span>
-            <span class="task-pri low">کم</span>
-          </div>
-
-          <div class="task-item">
-            <div class="task-check done"><i class="bi bi-check-lg"></i></div>
-            <span class="task-text done">جلسه مشاوره با کیانی لباس</span>
-            <span class="task-pri medium">متوسط</span>
-          </div>
-
-          <div class="task-item">
-            <div class="task-check"></div>
-            <span class="task-text">ارسال پیش‌فاکتور به پرتو</span>
-            <span class="task-pri high">بالا</span>
-          </div>
-
-          <div class="task-item">
-            <div class="task-check"></div>
-            <span class="task-text">بروزرسانی صفحه خدمات سُل وب</span>
-            <span class="task-pri medium">متوسط</span>
-          </div>
-
-          <div class="task-item">
-            <div class="task-check"></div>
-            <span class="task-text">تکمیل مرحله سوم پورتال پارسیان</span>
-            <span class="task-pri high">بالا</span>
-          </div>
-
-          <div class="task-item">
-            <div class="task-check"></div>
-            <span class="task-text">پاسخ به پیام‌های ریسپانسیو</span>
-            <span class="task-pri low">کم</span>
-          </div>
-
-          <div class="task-item">
-            <div class="task-check"></div>
-            <span class="task-text">آپلود نمونه کار جدید در پورتفولیو</span>
-            <span class="task-pri medium">متوسط</span>
-          </div>
-
-        </div><!-- /tasks -->
-
-      </div><!-- /bottom row -->
-
+      </div>
 
     </main><!-- /page-content -->
-
   </div><!-- /main-content -->
-
 </div><!-- /admin-shell -->
 
-
-<!-- ════════════════════════════════════
-     SCRIPT
-════════════════════════════════════ -->
-<script>
-(function () {
-  'use strict';
-
-  /* ── Theme Toggle ── */
-  const html        = document.documentElement;
-  const themeBtn    = document.getElementById('themeToggle');
-  const THEME_KEY   = 'sol-admin-theme';
-
-  const saved = localStorage.getItem(THEME_KEY) || 'light';
-  applyTheme(saved);
-
-  themeBtn.addEventListener('click', function () {
-    const next = html.getAttribute('data-bs-theme') === 'dark' ? 'light' : 'dark';
-    applyTheme(next);
-    localStorage.setItem(THEME_KEY, next);
-  });
-
-  function applyTheme(t) {
-    html.setAttribute('data-bs-theme', t);
-    themeBtn.innerHTML = t === 'dark'
-      ? '<i class="bi bi-sun-fill"></i>'
-      : '<i class="bi bi-moon-stars-fill"></i>';
-  }
-
-  /* ── Sidebar Toggle ── */
-  const sidebar     = document.getElementById('sidebar');
-  const mainContent = document.getElementById('mainContent');
-  const toggleBtn   = document.getElementById('sidebarToggle');
-  const overlay     = document.getElementById('sidebarOverlay');
-
-  let isMini    = false;
-  let isMobile  = window.innerWidth <= 768;
-
-  toggleBtn.addEventListener('click', function () {
-    if (isMobile) {
-      sidebar.classList.toggle('mobile-open');
-      overlay.classList.toggle('show');
-    } else {
-      isMini = !isMini;
-      sidebar.classList.toggle('mini', isMini);
-      mainContent.classList.toggle('mini', isMini);
+<%- include('partials/_scripts', {
+  extraScripts: `
+  <style>
+    .stat-card-dash {
+      background: var(--color-surface);
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius-lg);
+      padding: 1.25rem 1.4rem;
+      display: flex; flex-direction: column; gap: .85rem;
+      transition: all var(--dur-normal) var(--ease-spring);
+      position: relative; overflow: hidden; cursor: default;
     }
-  });
-
-  overlay.addEventListener('click', function () {
-    sidebar.classList.remove('mobile-open');
-    overlay.classList.remove('show');
-  });
-
-  window.addEventListener('resize', function () {
-    isMobile = window.innerWidth <= 768;
-    if (!isMobile) {
-      sidebar.classList.remove('mobile-open');
-      overlay.classList.remove('show');
+    .stat-card-dash:hover { transform: translateY(-3px); box-shadow: var(--shadow-md); border-color: var(--main-200); }
+    .stat-card-dash::after {
+      content:''; position:absolute; bottom:0; right:0; left:0; height:3px;
+      background: var(--grad-main); transform:scaleX(0); transform-origin:right;
+      transition: transform var(--dur-normal) var(--ease-spring);
     }
-  });
-
-  /* ── Nav items ── */
-  document.querySelectorAll('.nav-item-sol').forEach(function (item) {
-    item.addEventListener('click', function (e) {
-      e.preventDefault();
-      document.querySelectorAll('.nav-item-sol').forEach(function (i) { i.classList.remove('active'); });
-      item.classList.add('active');
-    });
-  });
-
-  /* ── Chart Bars tooltip ── */
-  document.querySelectorAll('.chart-bar').forEach(function (bar) {
-    bar.addEventListener('mouseenter', function () {
-      const val = bar.getAttribute('data-val');
-      bar.setAttribute('title', 'پروژه: ' + val);
-    });
-    bar.addEventListener('click', function () {
-      document.querySelectorAll('.chart-bar').forEach(function (b) { b.classList.remove('active'); });
-      bar.classList.add('active');
-    });
-  });
-
-  /* ── Task checkboxes ── */
-  document.querySelectorAll('.task-check').forEach(function (check) {
-    check.addEventListener('click', function () {
-      const isDone = check.classList.toggle('done');
-      if (isDone) check.innerHTML = '<i class="bi bi-check-lg"></i>';
-      else check.innerHTML = '';
-
-      const textEl = check.nextElementSibling;
-      if (textEl && textEl.classList.contains('task-text')) {
-        textEl.classList.toggle('done', isDone);
-      }
-    });
-  });
-
-  /* ── Fullscreen ── */
-  const fsBtn = document.getElementById('fullscreenBtn');
-  if (fsBtn) {
-    fsBtn.addEventListener('click', function () {
-      if (!document.fullscreenElement) {
-        document.documentElement.requestFullscreen().catch(function () {});
-        fsBtn.innerHTML = '<i class="bi bi-fullscreen-exit"></i>';
-      } else {
-        document.exitFullscreen();
-        fsBtn.innerHTML = '<i class="bi bi-fullscreen"></i>';
-      }
-    });
-  }
-
-  /* ── Counter Animation ── */
-  function animateCounters() {
-    document.querySelectorAll('.stat-value').forEach(function (el) {
-      const text = el.textContent.trim();
-      const num  = parseInt(text.replace(/[^0-9]/g, ''), 10);
-      if (!num || isNaN(num)) return;
-
-      let cur   = 0;
-      const dur = 1200;
-      const steps = Math.ceil(dur / 16);
-
-      const timer = setInterval(function () {
-        cur++;
-        const v = Math.round(easeOut(cur, 0, num, steps));
-        el.textContent = text.replace(/[0-9]+/, v.toLocaleString('fa-IR'));
-        if (cur >= steps) {
-          el.textContent = text;
-          clearInterval(timer);
-        }
-      }, 16);
-    });
-  }
-
-  function easeOut(t, b, c, d) {
-    t /= d; return -c * t * (t - 2) + b;
-  }
-
-  /* Run counter once visible */
-  if ('IntersectionObserver' in window) {
-    const obs = new IntersectionObserver(function (entries) {
-      if (entries[0].isIntersecting) { animateCounters(); obs.disconnect(); }
-    }, { threshold: 0.2 });
-    const sg = document.querySelector('.stat-grid');
-    if (sg) obs.observe(sg);
-  } else {
-    animateCounters();
-  }
-
-  /* ── Scroll reveal for sections ── */
-  const revealEls = document.querySelectorAll('.fade-up');
-  if ('IntersectionObserver' in window) {
-    const rObs = new IntersectionObserver(function (entries) {
-      entries.forEach(function (e) {
-        if (e.isIntersecting) {
-          e.target.style.animationPlayState = 'running';
-          rObs.unobserve(e.target);
-        }
-      });
-    }, { threshold: 0.08 });
-    revealEls.forEach(function (el) {
-      el.style.animationPlayState = 'paused';
-      rObs.observe(el);
-    });
-  }
-
-})();
-</script>
-<!-- <script src="assets/js/admin.js"></script> -->
-</body>
-</html>
+    .stat-card-dash:hover::after { transform: scaleX(1); }
+    .chart-bar {
+      background: var(--grad-soft);
+      border: 1px solid var(--main-200);
+      transition: all .4s var(--ease-spring);
+      cursor: pointer;
+    }
+    .chart-bar.active, .chart-bar:hover {
+      background: var(--grad-main); border-color: transparent;
+      box-shadow: var(--shadow-main);
+    }
+    .mini-card { transition: all var(--dur-normal) var(--ease-spring); }
+    .mini-card:hover { transform: translateY(-2px); box-shadow: var(--shadow-sm); border-color: var(--main-200); }
+  </style>
+  `
+}) %>

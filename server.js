@@ -10,7 +10,7 @@ app.use(express.urlencoded({extended: true}))
 app.use(express.json())
 
 // listin app & DB conection
-const DBurl = ""
+const DBurl = "mongodb://localhost:27017/SoulWeb"
 const PORT = process.env.PORT || 3000
 mongoose.connect(DBurl)
 .then(() => {

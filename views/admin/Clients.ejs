@@ -20,7 +20,7 @@
       <p class="page-subtitle">۸۶ مشتری ثبت‌شده · ۳ مشتری جدید این هفته</p>
     </div>
     <div style="display:flex;gap:.6rem;">
-      <button class="btn-ghost-sm"><i class="bi bi-download"></i> خروجی CSV</button>
+      <a href="/sw-admin/clients/export" class="btn-ghost-sm"><i class="bi bi-download"></i> خروجی CSV</a>
       <button class="btn-sol-sm" data-modal-open="clientModal"><i class="bi bi-person-plus-fill"></i> مشتری جدید</button>
     </div>
   </div>
@@ -29,15 +29,15 @@
   <div class="stat-grid fade-up fade-up-2" style="display:grid;grid-template-columns:repeat(4,1fr);gap:1rem;margin-bottom:1.5rem;">
     <div class="pstat">
       <div class="pstat-icon" style="background:rgba(100,71,244,.1);color:var(--main-500);"><i class="bi bi-people-fill"></i></div>
-      <div><div class="pstat-val text-grad stat-value" data-count="86" data-suffix="">۸۶</div><div class="pstat-lbl">کل مشتریان</div></div>
+      <div><div class="pstat-val text-grad stat-value" data-count="<%= clientsCount %>" data-suffix=""><%= clientsCount %></div><div class="pstat-lbl">کل مشتریان</div></div>
     </div>
     <div class="pstat">
       <div class="pstat-icon" style="background:rgba(34,197,94,.1);color:#16a34a;"><i class="bi bi-person-check-fill"></i></div>
-      <div><div class="pstat-val text-grad stat-value" data-count="72" data-suffix="">۷۲</div><div class="pstat-lbl">مشتری فعال</div></div>
+      <div><div class="pstat-val text-grad stat-value" data-count="<%= activeClientsCount %>" data-suffix=""><%= activeClientsCount %></div><div class="pstat-lbl">مشتری فعال</div></div>
     </div>
     <div class="pstat">
       <div class="pstat-icon" style="background:rgba(0,144,232,.1);color:var(--accent-500);"><i class="bi bi-person-plus-fill"></i></div>
-      <div><div class="pstat-val text-grad stat-value" data-count="3" data-suffix="">۳</div><div class="pstat-lbl">جدید این هفته</div></div>
+      <div><div class="pstat-val text-grad stat-value" data-count="<%= newClientsThisWeekCount %>" data-suffix=""><%= newClientsThisWeekCount %></div><div class="pstat-lbl">جدید این هفته</div></div>
     </div>
     <div class="pstat">
       <div class="pstat-icon" style="background:rgba(245,158,11,.1);color:#d97706;"><i class="bi bi-star-fill"></i></div>
@@ -51,184 +51,243 @@
       <i class="bi bi-search" style="color:var(--color-text-light);font-size:.85rem;"></i>
       <input type="text" placeholder="نام، ایمیل یا شرکت…" style="border:none;background:transparent;outline:none;font-family:var(--font-primary);font-size:.85rem;color:var(--color-text-primary);width:100%;" id="clientSearch">
     </div>
-    <select class="sol-select" style="width:auto;">
-      <option>همه وضعیت‌ها</option><option>فعال</option><option>غیرفعال</option>
-    </select>
-    <select class="sol-select" style="width:auto;">
-      <option>همه دسته‌ها</option><option>فروشگاه</option><option>طراحی وب</option><option>UI/UX</option>
-    </select>
+<select class="sol-select" style="width:auto;" id="statusFilter">
+  <option value="all">همه وضعیت‌ها</option>
+  <option value="active">فعال</option>
+  <option value="inactive">غیرفعال</option>
+</select>
+
+<select class="sol-select" style="width:auto;" id="categoryFilter">
+  <option value="all">همه دسته‌ها</option>
+  <option value="فروشگاه">فروشگاه</option>
+  <option value="طراحی وب">طراحی وب</option>
+  <option value="UI/UX">UI/UX</option>
+  <option value="نگه‌داری">نگه‌داری</option>
+</select>
+
   </div>
 
   <!-- Clients Table -->
-  <div class="dash-panel fade-up fade-up-3">
-    <div style="overflow-x:auto;">
-      <table class="sol-table" id="clientsTable">
-        <thead>
-          <tr>
-            <th>مشتری</th>
-            <th>ایمیل / تلفن</th>
-            <th>پروژه‌ها</th>
-            <th>آخرین پروژه</th>
-            <th>وضعیت</th>
-            <th>رضایت</th>
-            <th>عملیات</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr>
-            <td>
-              <div style="display:flex;align-items:center;gap:.75rem;">
-                <div class="cl-av" style="background:var(--grad-main);">علی</div>
-                <div>
-                  <div style="font-weight:700;font-size:.85rem;">علی امینی</div>
-                  <div style="font-size:.72rem;color:var(--color-text-muted);">فروشگاه اسیل</div>
+<div class="dash-panel fade-up fade-up-3">
+  <div style="overflow-x:auto;">
+    <table class="sol-table" id="clientsTable">
+      <thead>
+        <tr>
+          <th>مشتری</th>
+          <th>ایمیل / تلفن</th>
+          <th>پروژه‌ها</th>
+          <th>آخرین پروژه</th>
+          <th>وضعیت</th>
+          <th>رضایت</th>
+          <th>عملیات</th>
+        </tr>
+      </thead>
+
+      <tbody>
+        <% if (clients && clients.length > 0) { %>
+
+          <% clients.forEach((client, index) => { %>
+
+            <%
+              const gradients = [
+                'var(--grad-main)',
+                'linear-gradient(135deg,#0090e8,#4dc3ff)',
+                'linear-gradient(135deg,#a394fb,#6447f4)',
+                'linear-gradient(135deg,#22c55e,#0090e8)',
+                'linear-gradient(135deg,#f59e0b,#ef4444)',
+                'linear-gradient(135deg,#6447f4,#1e1274)'
+              ];
+
+              const avatarText = client.avatar
+                ? client.avatar
+                : (client.name || '؟')
+                    .split(' ')
+                    .map(part => part[0])
+                    .join('')
+                    .substring(0, 3);
+
+              const bg = gradients[index % gradients.length];
+            %>
+
+            <tr 
+              data-status="<%= client.isActive ? 'active' : 'inactive' %>"
+              data-category="<%= client.avatar || '' %>"
+            >
+              <td>
+                <div style="display:flex;align-items:center;gap:.75rem;">
+                  <div class="cl-av" style="background:<%= bg %>;">
+                    <%= avatarText %>
+                  </div>
+
+                  <div>
+                    <div style="font-weight:700;font-size:.85rem;">
+                      <%= client.name || '-' %>
+                    </div>
+
+                    <div style="font-size:.72rem;color:var(--color-text-muted);">
+                      <%= client.company || '-' %>
+                    </div>
+                  </div>
                 </div>
-              </div>
-            </td>
-            <td><div style="font-size:.8rem;">ali@asil.ir</div><div style="font-size:.73rem;color:var(--color-text-muted);">۰۹۱۲۱۲۳۴۵۶۷</div></td>
-            <td><span style="font-size:.85rem;font-weight:700;">۳</span></td>
-            <td><span style="font-size:.8rem;">فروشگاه آنلاین اسیل</span></td>
-            <td><span class="badge-status badge-done">فعال</span></td>
-            <td><span style="color:#f59e0b;letter-spacing:.1em;">★★★★★</span></td>
-            <td>
-              <div style="display:flex;gap:.4rem;">
-                <button class="btn-ghost-sm" style="padding:.28rem .6rem;" data-modal-open="clientDetail"><i class="bi bi-eye"></i></button>
-                <button class="btn-ghost-sm" style="padding:.28rem .6rem;"><i class="bi bi-pencil"></i></button>
-                <button class="btn-danger-sm" style="padding:.28rem .6rem;"><i class="bi bi-trash"></i></button>
-              </div>
-            </td>
-          </tr>
-          <tr>
-            <td>
-              <div style="display:flex;align-items:center;gap:.75rem;">
-                <div class="cl-av" style="background:linear-gradient(135deg,#0090e8,#4dc3ff);">محس</div>
-                <div>
-                  <div style="font-weight:700;font-size:.85rem;">محسن مظاهر</div>
-                  <div style="font-size:.72rem;color:var(--color-text-muted);">استارتاپ آفیلیو</div>
+              </td>
+
+              <td>
+                <div style="font-size:.8rem;">
+                  <%= client.email || '-' %>
                 </div>
-              </div>
-            </td>
-            <td><div style="font-size:.8rem;">mohsen@afilio.io</div><div style="font-size:.73rem;color:var(--color-text-muted);">۰۹۱۳۹۸۷۶۵۴۳</div></td>
-            <td><span style="font-size:.85rem;font-weight:700;">۲</span></td>
-            <td><span style="font-size:.8rem;">اپ مدیریت مالی</span></td>
-            <td><span class="badge-status badge-inprog">در حال کار</span></td>
-            <td><span style="color:#f59e0b;letter-spacing:.1em;">★★★★★</span></td>
-            <td>
-              <div style="display:flex;gap:.4rem;">
-                <button class="btn-ghost-sm" style="padding:.28rem .6rem;" data-modal-open="clientDetail"><i class="bi bi-eye"></i></button>
-                <button class="btn-ghost-sm" style="padding:.28rem .6rem;"><i class="bi bi-pencil"></i></button>
-                <button class="btn-danger-sm" style="padding:.28rem .6rem;"><i class="bi bi-trash"></i></button>
-              </div>
-            </td>
-          </tr>
-          <tr>
-            <td>
-              <div style="display:flex;align-items:center;gap:.75rem;">
-                <div class="cl-av" style="background:linear-gradient(135deg,#a394fb,#6447f4);">سار</div>
-                <div>
-                  <div style="font-weight:700;font-size:.85rem;">سارا طاهری</div>
-                  <div style="font-size:.72rem;color:var(--color-text-muted);">استودیو نگاه</div>
+
+                <div style="font-size:.73rem;color:var(--color-text-muted);">
+                  <%= client.phone || '-' %>
                 </div>
-              </div>
-            </td>
-            <td><div style="font-size:.8rem;">sara@negah.studio</div><div style="font-size:.73rem;color:var(--color-text-muted);">۰۹۱۵۱۱۲۳۴۵۶</div></td>
-            <td><span style="font-size:.85rem;font-weight:700;">۱</span></td>
-            <td><span style="font-size:.8rem;">سایت شرکتی نگاه</span></td>
-            <td><span class="badge-status badge-done">فعال</span></td>
-            <td><span style="color:#f59e0b;letter-spacing:.1em;">★★★★★</span></td>
-            <td>
-              <div style="display:flex;gap:.4rem;">
-                <button class="btn-ghost-sm" style="padding:.28rem .6rem;" data-modal-open="clientDetail"><i class="bi bi-eye"></i></button>
-                <button class="btn-ghost-sm" style="padding:.28rem .6rem;"><i class="bi bi-pencil"></i></button>
-                <button class="btn-danger-sm" style="padding:.28rem .6rem;"><i class="bi bi-trash"></i></button>
-              </div>
-            </td>
-          </tr>
-          <tr>
-            <td>
-              <div style="display:flex;align-items:center;gap:.75rem;">
-                <div class="cl-av" style="background:linear-gradient(135deg,#22c55e,#0090e8);">رضا</div>
-                <div>
-                  <div style="font-weight:700;font-size:.85rem;">رضا محمدی</div>
-                  <div style="font-size:.72rem;color:var(--color-text-muted);">شرکت فناوری آوا</div>
+              </td>
+
+              <td>
+                <span style="font-size:.85rem;font-weight:700;">
+                  <%= client.projectsCount || 0 %>
+                </span>
+              </td>
+
+              <td>
+                <span style="font-size:.8rem;">
+                  <%= client.lastProject || '—' %>
+                </span>
+              </td>
+
+              <td>
+                <% if (client.isActive) { %>
+                  <span class="badge-status badge-done">فعال</span>
+                <% } else { %>
+                  <span class="badge-status badge-inprog">غیرفعال</span>
+                <% } %>
+              </td>
+
+              <td>
+                <span style="color:#f59e0b;letter-spacing:.1em;">
+                  <%= client.rating || '★★★★★' %>
+                </span>
+              </td>
+
+              <td>
+                <div style="display:flex;gap:.4rem;">
+                  <button
+                    class="btn-ghost-sm btn-view-client"
+                    type="button"
+                    style="padding:.28rem .6rem;"
+                    data-modal-open="clientDetail"
+
+                    data-id="<%= client._id %>"
+                    data-name="<%= client.name || '' %>"
+                    data-company="<%= client.company || '' %>"
+                    data-email="<%= client.email || '' %>"
+                    data-phone="<%= client.phone || '' %>"
+                    data-address="<%= client.address || '' %>"
+                    data-notes="<%= client.notes || '' %>"
+                    data-active="<%= client.isActive ? 'true' : 'false' %>"
+                    data-category="<%= client.avatar || '' %>"
+                    data-created-at="<%= client.createdAt ? client.createdAt.toISOString() : '' %>"
+                    data-projects-count="<%= client.projectsCount || 0 %>"
+                    data-rating="<%= client.rating || '★★★★★' %>"
+                  >
+                    <i class="bi bi-eye"></i>
+                  </button>
+
+
+
+                  <button
+                    class="btn-ghost-sm"
+                    style="padding:.28rem .6rem;"
+                    data-id="<%= client._id %>"
+                    data-name="<%= client.name || '' %>"
+                    data-company="<%= client.company || '' %>"
+                    data-email="<%= client.email || '' %>"
+                    data-phone="<%= client.phone || '' %>"
+                    data-address="<%= client.address || '' %>"
+                    data-notes="<%= client.notes || '' %>"
+                    data-active="<%= client.isActive %>"
+                    data-category="<%= client.avatar || '' %>"
+                  >
+                    <i class="bi bi-pencil"></i>
+                  </button>
+
+                  <form
+                    action="/sw-admin/clients/<%= client._id %>/delete"
+                    method="POST"
+                    onsubmit="return confirm('مطمئنی می‌خوای این مشتری حذف بشه؟')"
+                    style="margin:0;"
+                  >
+                    <button class="btn-danger-sm" style="padding:.28rem .6rem;" type="submit">
+                      <i class="bi bi-trash"></i>
+                    </button>
+                  </form>
                 </div>
-              </div>
-            </td>
-            <td><div style="font-size:.8rem;">reza@ava-tech.ir</div><div style="font-size:.73rem;color:var(--color-text-muted);">۰۲۱۸۸۰۰۱۲۳۴</div></td>
-            <td><span style="font-size:.85rem;font-weight:700;">۵</span></td>
-            <td><span style="font-size:.8rem;">پورتال سازمانی آوا</span></td>
-            <td><span class="badge-status badge-inprog">در حال کار</span></td>
-            <td><span style="color:#f59e0b;letter-spacing:.1em;">★★★★☆</span></td>
-            <td>
-              <div style="display:flex;gap:.4rem;">
-                <button class="btn-ghost-sm" style="padding:.28rem .6rem;" data-modal-open="clientDetail"><i class="bi bi-eye"></i></button>
-                <button class="btn-ghost-sm" style="padding:.28rem .6rem;"><i class="bi bi-pencil"></i></button>
-                <button class="btn-danger-sm" style="padding:.28rem .6rem;"><i class="bi bi-trash"></i></button>
-              </div>
-            </td>
-          </tr>
+              </td>
+            </tr>
+
+          <% }) %>
+
+        <% } else { %>
+
           <tr>
-            <td>
-              <div style="display:flex;align-items:center;gap:.75rem;">
-                <div class="cl-av" style="background:linear-gradient(135deg,#f59e0b,#ef4444);">نگر</div>
-                <div>
-                  <div style="font-weight:700;font-size:.85rem;">نگار صادقی</div>
-                  <div style="font-size:.72rem;color:var(--color-text-muted);">برند لوستا</div>
-                </div>
-              </div>
-            </td>
-            <td><div style="font-size:.8rem;">negar@lusta.ir</div><div style="font-size:.73rem;color:var(--color-text-muted);">۰۹۱۶۷۶۵۴۳۲۱</div></td>
-            <td><span style="font-size:.85rem;font-weight:700;">۲</span></td>
-            <td><span style="font-size:.8rem;">فروشگاه آرایشی لوستا</span></td>
-            <td><span class="badge-status badge-done">فعال</span></td>
-            <td><span style="color:#f59e0b;letter-spacing:.1em;">★★★★★</span></td>
-            <td>
-              <div style="display:flex;gap:.4rem;">
-                <button class="btn-ghost-sm" style="padding:.28rem .6rem;" data-modal-open="clientDetail"><i class="bi bi-eye"></i></button>
-                <button class="btn-ghost-sm" style="padding:.28rem .6rem;"><i class="bi bi-pencil"></i></button>
-                <button class="btn-danger-sm" style="padding:.28rem .6rem;"><i class="bi bi-trash"></i></button>
-              </div>
+            <td colspan="7" style="text-align:center;padding:2rem;color:var(--color-text-muted);">
+              هنوز هیچ مشتری‌ای ثبت نشده است.
             </td>
           </tr>
-          <tr>
-            <td>
-              <div style="display:flex;align-items:center;gap:.75rem;">
-                <div class="cl-av" style="background:linear-gradient(135deg,#6447f4,#1e1274);">کیا</div>
-                <div>
-                  <div style="font-weight:700;font-size:.85rem;">کیانی لباس</div>
-                  <div style="font-size:.72rem;color:var(--color-text-muted);">برند پوشاک کیانی</div>
-                </div>
-              </div>
-            </td>
-            <td><div style="font-size:.8rem;">info@kiani.fashion</div><div style="font-size:.73rem;color:var(--color-text-muted);">۰۲۱۴۴۱۲۳۴۵۶</div></td>
-            <td><span style="font-size:.85rem;font-weight:700;">۱</span></td>
-            <td><span style="font-size:.8rem;">فروشگاه مد و پوشاک</span></td>
-            <td><span class="badge-status badge-inprog">در حال کار</span></td>
-            <td><span style="color:#f59e0b;letter-spacing:.1em;">★★★★☆</span></td>
-            <td>
-              <div style="display:flex;gap:.4rem;">
-                <button class="btn-ghost-sm" style="padding:.28rem .6rem;" data-modal-open="clientDetail"><i class="bi bi-eye"></i></button>
-                <button class="btn-ghost-sm" style="padding:.28rem .6rem;"><i class="bi bi-pencil"></i></button>
-                <button class="btn-danger-sm" style="padding:.28rem .6rem;"><i class="bi bi-trash"></i></button>
-              </div>
-            </td>
-          </tr>
-        </tbody>
-      </table>
-    </div>
+
+        <% } %>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+
     <!-- Pagination -->
-    <div style="display:flex;align-items:center;justify-content:space-between;padding:1rem 1.25rem;border-top:1px solid var(--color-border);flex-wrap:wrap;gap:.75rem;">
-      <span style="font-size:.78rem;color:var(--color-text-muted);">نمایش ۱–۶ از ۸۶ مشتری</span>
-      <div style="display:flex;gap:.35rem;">
-        <button class="pg-btn" disabled><i class="bi bi-chevron-right"></i></button>
-        <button class="pg-btn active">۱</button>
-        <button class="pg-btn">۲</button>
-        <button class="pg-btn">۳</button>
-        <span style="color:var(--color-text-light);align-self:center;font-size:.8rem;">…</span>
-        <button class="pg-btn">۱۵</button>
-        <button class="pg-btn"><i class="bi bi-chevron-left"></i></button>
-      </div>
+<div style="display:flex;align-items:center;justify-content:space-between;padding:1rem 1.25rem;border-top:1px solid var(--color-border);flex-wrap:wrap;gap:.75rem;">
+
+  <span style="font-size:.78rem;color:var(--color-text-muted);">
+    نمایش 
+    <%= startItem.toLocaleString('fa-IR') %>–<%= endItem.toLocaleString('fa-IR') %>
+    از
+    <%= clientsCount.toLocaleString('fa-IR') %>
+    مشتری
+  </span>
+
+  <% if (totalPages > 1) { %>
+    <div style="display:flex;gap:.35rem;align-items:center;">
+
+      <% if (currentPage > 1) { %>
+        <a class="pg-btn" href="/sw-admin/clients?page=<%= currentPage - 1 %>">
+          <i class="bi bi-chevron-right"></i>
+        </a>
+      <% } else { %>
+        <button class="pg-btn" disabled>
+          <i class="bi bi-chevron-right"></i>
+        </button>
+      <% } %>
+
+      <% for (let i = 1; i <= totalPages; i++) { %>
+        <a
+          class="pg-btn <%= currentPage === i ? 'active' : '' %>"
+          href="/sw-admin/clients?page=<%= i %>"
+        >
+          <%= i.toLocaleString('fa-IR') %>
+        </a>
+      <% } %>
+
+      <% if (currentPage < totalPages) { %>
+        <a class="pg-btn" href="/sw-admin/clients?page=<%= currentPage + 1 %>">
+          <i class="bi bi-chevron-left"></i>
+        </a>
+      <% } else { %>
+        <button class="pg-btn" disabled>
+          <i class="bi bi-chevron-left"></i>
+        </button>
+      <% } %>
+
     </div>
+  <% } %>
+
+</div>
+
   </div>
 
 </main>
@@ -236,116 +295,436 @@
 </div>
 
 <!-- Modal: مشتری جدید -->
-<div class="modal-overlay" id="clientModal">
-  <div class="modal-box">
-    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1.5rem;">
-      <div class="modal-title" style="margin:0;">مشتری جدید</div>
-      <button data-modal-close style="background:transparent;border:none;font-size:1.2rem;color:var(--color-text-muted);cursor:pointer;"><i class="bi bi-x-lg"></i></button>
-    </div>
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;">
-      <div class="form-row">
-        <label class="sol-label">نام</label>
-        <input class="sol-input" type="text" placeholder="نام مشتری">
+<form method="post" action="/sw-admin/clients">
+  <div class="modal-overlay" id="clientModal">
+    <div class="modal-box">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1.5rem;">
+        <div class="modal-title" style="margin:0;">مشتری جدید</div>
+        <button data-modal-close style="background:transparent;border:none;font-size:1.2rem;color:var(--color-text-muted);cursor:pointer;"><i class="bi bi-x-lg"></i></button>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;">
+        <div class="form-row">
+          <label class="sol-label">نام</label>
+          <input class="sol-input" type="text" placeholder="نام مشتری" name="name">
+        </div>
+        <div class="form-row">
+          <label class="sol-label">نام شرکت</label>
+          <input class="sol-input" type="text" placeholder="نام شرکت یا برند" name="company">
+        </div>
       </div>
       <div class="form-row">
-        <label class="sol-label">نام شرکت</label>
-        <input class="sol-input" type="text" placeholder="نام شرکت یا برند">
+        <label class="sol-label">ایمیل</label>
+        <input class="sol-input" type="email" placeholder="example@domain.com" name="email">
       </div>
-    </div>
-    <div class="form-row">
-      <label class="sol-label">ایمیل</label>
-      <input class="sol-input" type="email" placeholder="example@domain.com">
-    </div>
-    <div class="form-row">
-      <label class="sol-label">شماره تماس</label>
-      <input class="sol-input" type="tel" placeholder="۰۹۱۲۱۲۳۴۵۶۷">
-    </div>
-    <div class="form-row">
-      <label class="sol-label">نوع همکاری</label>
-      <select class="sol-select" style="width:100%">
-        <option>طراحی وب</option><option>فروشگاه</option><option>UI/UX</option><option>نگه‌داری</option>
-      </select>
-    </div>
-    <div class="form-row">
-      <label class="sol-label">یادداشت</label>
-      <textarea class="sol-input" rows="2" placeholder="یادداشت اختیاری…" style="resize:vertical;"></textarea>
-    </div>
-    <div style="display:flex;gap:.75rem;justify-content:flex-end;margin-top:1.5rem;">
-      <button class="btn-ghost-sm" data-modal-close>انصراف</button>
-      <button class="btn-sol-sm"><i class="bi bi-check-lg"></i> ثبت مشتری</button>
+      <div class="form-row">
+        <label class="sol-label">شماره تماس</label>
+        <input class="sol-input" type="tel" placeholder="۰۹۱۲۱۲۳۴۵۶۷" name="phone">
+      </div>
+      <div class="form-row">
+        <label class="sol-label">نوع همکاری</label>
+        <select class="sol-select" style="width:100%" name="avatar">
+          <option value="طراحی وب">طراحی وب</option><option value="فروشگاه">فروشگاه</option><option value="UI/UX">UI/UX</option><option value="نگه‌داری">نگه‌داری</option>
+        </select>
+      </div>
+      <div class="form-row">
+        <label class="sol-label">یادداشت</label>
+        <textarea class="sol-input" rows="2" placeholder="یادداشت اختیاری…" style="resize:vertical;" name="notes"></textarea>
+      </div>
+      <div style="display:flex;gap:.75rem;justify-content:flex-end;margin-top:1.5rem;">
+        <button class="btn-ghost-sm" data-modal-close>انصراف</button>
+        <button class="btn-sol-sm"><i class="bi bi-check-lg"></i> ثبت مشتری</button>
+      </div>
     </div>
   </div>
-</div>
-
+</form>
 <!-- Modal: جزئیات مشتری -->
 <div class="modal-overlay" id="clientDetail">
   <div class="modal-box" style="width:min(620px,92vw);">
+
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1.5rem;">
       <div class="modal-title" style="margin:0;">پروفایل مشتری</div>
-      <button data-modal-close style="background:transparent;border:none;font-size:1.2rem;color:var(--color-text-muted);cursor:pointer;"><i class="bi bi-x-lg"></i></button>
+
+      <button
+        data-modal-close
+        type="button"
+        style="background:transparent;border:none;font-size:1.2rem;color:var(--color-text-muted);cursor:pointer;"
+      >
+        <i class="bi bi-x-lg"></i>
+      </button>
     </div>
+
     <div style="display:flex;align-items:center;gap:1rem;padding:1.25rem;background:var(--color-bg);border-radius:var(--radius-lg);margin-bottom:1.5rem;">
-      <div style="width:56px;height:56px;border-radius:var(--radius-md);background:var(--grad-main);display:flex;align-items:center;justify-content:center;font-size:.9rem;font-weight:800;color:#fff;flex-shrink:0;">علی</div>
-      <div style="flex:1;">
-        <div style="font-size:1rem;font-weight:800;margin-bottom:.2rem;">علی امینی</div>
-        <div style="font-size:.8rem;color:var(--color-text-muted);">فروشگاه اسیل · ali@asil.ir · ۰۹۱۲۱۲۳۴۵۶۷</div>
+
+      <div
+        id="detailAvatar"
+        style="width:56px;height:56px;border-radius:var(--radius-md);background:var(--grad-main);display:flex;align-items:center;justify-content:center;font-size:.9rem;font-weight:800;color:#fff;flex-shrink:0;"
+      >
+        -
       </div>
-      <span class="badge-status badge-done">فعال</span>
+
+      <div style="flex:1;">
+        <div
+          id="detailName"
+          style="font-size:1rem;font-weight:800;margin-bottom:.2rem;"
+        >
+          -
+        </div>
+
+        <div
+          id="detailMeta"
+          style="font-size:.8rem;color:var(--color-text-muted);"
+        >
+          -
+        </div>
+      </div>
+
+      <span id="detailStatus" class="badge-status badge-done">فعال</span>
     </div>
+
     <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:1rem;margin-bottom:1.5rem;">
+
       <div style="text-align:center;padding:.85rem;background:var(--color-bg);border-radius:var(--radius-md);">
-        <div style="font-size:1.4rem;font-weight:900;" class="text-grad">۳</div>
+        <div
+          id="detailProjectsCount"
+          style="font-size:1.4rem;font-weight:900;"
+          class="text-grad"
+        >
+          ۰
+        </div>
         <div style="font-size:.75rem;color:var(--color-text-muted);">پروژه</div>
       </div>
+
       <div style="text-align:center;padding:.85rem;background:var(--color-bg);border-radius:var(--radius-md);">
-        <div style="font-size:1.4rem;font-weight:900;" class="text-grad">۵★</div>
+        <div
+          id="detailSatisfaction"
+          style="font-size:1.4rem;font-weight:900;"
+          class="text-grad"
+        >
+          ۵★
+        </div>
         <div style="font-size:.75rem;color:var(--color-text-muted);">رضایت</div>
       </div>
+
       <div style="text-align:center;padding:.85rem;background:var(--color-bg);border-radius:var(--radius-md);">
-        <div style="font-size:1.4rem;font-weight:900;" class="text-grad">۲ سال</div>
+        <div
+          id="detailCooperationTime"
+          style="font-size:1.4rem;font-weight:900;"
+          class="text-grad"
+       >
+          -
+        </div>
         <div style="font-size:.75rem;color:var(--color-text-muted);">همکاری</div>
       </div>
+
     </div>
-    <div style="font-size:.82rem;font-weight:700;margin-bottom:.75rem;color:var(--color-text-muted);">پروژه‌های این مشتری</div>
+
+    <div style="font-size:.82rem;font-weight:700;margin-bottom:.75rem;color:var(--color-text-muted);">
+      اطلاعات تکمیلی مشتری
+    </div>
+
     <div style="display:flex;flex-direction:column;gap:.5rem;">
-      <div style="display:flex;align-items:center;justify-content:space-between;padding:.7rem .9rem;background:var(--color-bg);border-radius:var(--radius-md);">
-        <span style="font-size:.83rem;font-weight:600;">فروشگاه آنلاین اسیل</span>
-        <span class="badge-status badge-done">تحویل‌شد</span>
+
+      <div style="display:flex;align-items:center;justify-content:space-between;padding:.7rem .9rem;background:var(--color-bg);border-radius:var(--radius-md);gap:1rem;">
+        <span style="font-size:.83rem;font-weight:600;">نوع همکاری</span>
+        <span id="detailCategory" style="font-size:.8rem;color:var(--color-text-muted);">-</span>
       </div>
-      <div style="display:flex;align-items:center;justify-content:space-between;padding:.7rem .9rem;background:var(--color-bg);border-radius:var(--radius-md);">
-        <span style="font-size:.83rem;font-weight:600;">وب‌سایت معرفی اسیل</span>
-        <span class="badge-status badge-done">تحویل‌شد</span>
+
+      <div style="display:flex;align-items:center;justify-content:space-between;padding:.7rem .9rem;background:var(--color-bg);border-radius:var(--radius-md);gap:1rem;">
+        <span style="font-size:.83rem;font-weight:600;">آدرس</span>
+        <span id="detailAddress" style="font-size:.8rem;color:var(--color-text-muted);text-align:left;direction:rtl;">-</span>
       </div>
-      <div style="display:flex;align-items:center;justify-content:space-between;padding:.7rem .9rem;background:var(--color-bg);border-radius:var(--radius-md);">
-        <span style="font-size:.83rem;font-weight:600;">نگه‌داری ماهانه</span>
-        <span class="badge-status badge-inprog">فعال</span>
+
+      <div style="display:flex;align-items:flex-start;justify-content:space-between;padding:.7rem .9rem;background:var(--color-bg);border-radius:var(--radius-md);gap:1rem;">
+        <span style="font-size:.83rem;font-weight:600;white-space:nowrap;">یادداشت</span>
+        <span id="detailNotes" style="font-size:.8rem;color:var(--color-text-muted);line-height:1.8;text-align:right;">-</span>
       </div>
+
     </div>
+
     <div style="display:flex;gap:.75rem;justify-content:flex-end;margin-top:1.5rem;">
-      <button class="btn-ghost-sm" data-modal-close>بستن</button>
-      <button class="btn-sol-sm"><i class="bi bi-pencil"></i> ویرایش اطلاعات</button>
+      <button class="btn-ghost-sm" type="button" data-modal-close>
+        بستن
+      </button>
+
+      <button class="btn-sol-sm" type="button" id="editClientFromDetail">
+        <i class="bi bi-pencil"></i> ویرایش اطلاعات
+      </button>
     </div>
+
   </div>
 </div>
 
+
 <%- include('partials/_scripts', { extraScripts: `
 <style>
-.pstat{background:var(--color-surface);border:1px solid var(--color-border);border-radius:var(--radius-lg);padding:1.1rem 1.25rem;display:flex;align-items:center;gap:.85rem;transition:all var(--dur-normal) var(--ease-spring)}
-.pstat:hover{transform:translateY(-2px);box-shadow:var(--shadow-sm);border-color:var(--main-200)}
-.pstat-icon{width:40px;height:40px;border-radius:var(--radius-sm);display:flex;align-items:center;justify-content:center;font-size:1.1rem;flex-shrink:0}
-.pstat-val{font-size:1.5rem;font-weight:900;line-height:1}
-.pstat-lbl{font-size:.73rem;color:var(--color-text-muted);margin-top:.15rem}
-.cl-av{width:36px;height:36px;border-radius:var(--radius-sm);display:flex;align-items:center;justify-content:center;font-size:.72rem;font-weight:800;color:#fff;flex-shrink:0}
-.pg-btn{width:32px;height:32px;border-radius:var(--radius-sm);border:1.5px solid var(--color-border);background:var(--color-surface);color:var(--color-text-muted);display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:.8rem;transition:all var(--dur-fast);font-family:var(--font-primary)}
-.pg-btn:disabled{opacity:.4;cursor:not-allowed}
-.pg-btn.active,.pg-btn:not(:disabled):hover{background:var(--main-500);border-color:var(--main-500);color:#fff}
+  
+.pstat{
+  background:var(--color-surface);
+  border:1px solid var(--color-border);
+  border-radius:var(--radius-lg);
+  padding:1.1rem 1.25rem;
+  display:flex;
+  align-items:center;
+  gap:.85rem;
+  transition:all var(--dur-normal) var(--ease-spring)
+}
+
+.pstat:hover{
+  transform:translateY(-2px);
+  box-shadow:var(--shadow-sm);
+  border-color:var(--main-200)
+}
+
+.pstat-icon{
+  width:40px;
+  height:40px;
+  border-radius:var(--radius-sm);
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  font-size:1.1rem;
+  flex-shrink:0
+}
+
+.pstat-val{
+  font-size:1.5rem;
+  font-weight:900;
+  line-height:1
+}
+
+.pstat-lbl{
+  font-size:.73rem;
+  color:var(--color-text-muted);
+  margin-top:.15rem
+}
+
+.cl-av{
+  width:36px;
+  height:36px;
+  border-radius:var(--radius-sm);
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  font-size:.72rem;
+  font-weight:800;
+  color:#fff;
+  flex-shrink:0
+}
+
+.pg-btn{
+  width:32px;
+  height:32px;
+  border-radius:var(--radius-sm);
+  border:1.5px solid var(--color-border);
+  background:var(--color-surface);
+  color:var(--color-text-muted);
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  cursor:pointer;
+  font-size:.8rem;
+  transition:all var(--dur-fast);
+  font-family:var(--font-primary)
+}
+
+.pg-btn:disabled{
+  opacity:.4;
+  cursor:not-allowed
+}
+
+.pg-btn.active,
+.pg-btn:not(:disabled):hover{
+  background:var(--main-500);
+  border-color:var(--main-500);
+  color:#fff
+}
 </style>
+
 <script>
-// جستجو در جدول مشتریان
-document.getElementById('clientSearch').addEventListener('input', function(){
-  const q = this.value.toLowerCase();
-  document.querySelectorAll('#clientsTable tbody tr').forEach(function(row){
-    row.style.display = row.textContent.toLowerCase().includes(q) ? '' : 'none';
+/* =========================
+   Persian Helpers
+========================= */
+
+function toPersianDigits(value) {
+  if (value === null || value === undefined || value === '') return '-';
+
+  return String(value).replace(/[0-9]/g, function(digit) {
+    return '۰۱۲۳۴۵۶۷۸۹'[Number(digit)];
+  });
+}
+
+function normalizeText(value) {
+  return String(value || '')
+    .trim()
+    .toLowerCase()
+    .replace(/ي/g, 'ی')
+    .replace(/ك/g, 'ک')
+    .replace(/‌/g, ' ');
+}
+
+function getClientInitials(name) {
+  if (!name || name === '-') return '-';
+
+  const parts = name.trim().split(/\\s+/);
+
+  if (parts.length === 1) {
+    return parts[0].charAt(0);
+  }
+
+  return parts[0].charAt(0) + parts[1].charAt(0);
+}
+
+function calculateCooperationTime(createdAt) {
+  if (!createdAt) return '-';
+
+  const createdDate = new Date(createdAt);
+
+  if (Number.isNaN(createdDate.getTime())) return '-';
+
+  const now = new Date();
+  const diffMs = now - createdDate;
+  const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+
+  if (diffDays < 1) return 'امروز';
+  if (diffDays < 30) return toPersianDigits(diffDays) + ' روز';
+
+  const diffMonths = Math.floor(diffDays / 30);
+  if (diffMonths < 12) return toPersianDigits(diffMonths) + ' ماه';
+
+  const diffYears = Math.floor(diffDays / 365);
+  return toPersianDigits(diffYears) + ' سال';
+}
+
+function getRatingNumber(rating) {
+  if (!rating) return '۵';
+
+  const starsCount = String(rating).split('★').length - 1;
+
+  if (starsCount > 0) {
+    return toPersianDigits(starsCount);
+  }
+
+  return toPersianDigits(rating);
+}
+
+/* =========================
+   Clients Table Filter
+========================= */
+
+const clientSearch = document.getElementById('clientSearch');
+const statusFilter = document.getElementById('statusFilter');
+const categoryFilter = document.getElementById('categoryFilter');
+const clientRows = document.querySelectorAll('#clientsTable tbody tr');
+
+function filterClientsTable() {
+  const searchValue = normalizeText(clientSearch ? clientSearch.value : '');
+  const statusValue = statusFilter ? statusFilter.value : 'all';
+  const categoryValue = categoryFilter ? categoryFilter.value : 'all';
+
+  clientRows.forEach(function(row) {
+    const rowText = normalizeText(row.textContent);
+    const rowStatus = row.dataset.status || '';
+    const rowCategory = row.dataset.category || '';
+
+    const matchesSearch = rowText.includes(searchValue);
+    const matchesStatus = statusValue === 'all' || rowStatus === statusValue;
+    const matchesCategory = categoryValue === 'all' || rowCategory === categoryValue;
+
+    row.style.display = matchesSearch && matchesStatus && matchesCategory ? '' : 'none';
+  });
+}
+
+if (clientSearch) {
+  clientSearch.addEventListener('input', filterClientsTable);
+}
+
+if (statusFilter) {
+  statusFilter.addEventListener('change', filterClientsTable);
+}
+
+if (categoryFilter) {
+  categoryFilter.addEventListener('change', filterClientsTable);
+}
+
+/* =========================
+   Client Detail Modal
+========================= */
+
+const viewClientButtons = document.querySelectorAll('.btn-view-client');
+
+viewClientButtons.forEach(function(button) {
+  button.addEventListener('click', function() {
+    const name = this.dataset.name || '-';
+    const company = this.dataset.company || '-';
+    const email = this.dataset.email || '-';
+    const phone = this.dataset.phone || '-';
+    const address = this.dataset.address || '-';
+    const notes = this.dataset.notes || '-';
+    const category = this.dataset.category || '-';
+    const isActive = this.dataset.active === 'true';
+    const createdAt = this.dataset.createdAt || '';
+    const projectsCount = this.dataset.projectsCount || '0';
+    const rating = this.dataset.rating || '★★★★★';
+    const clientId = this.dataset.id || '';
+
+    const detailAvatar = document.getElementById('detailAvatar');
+    const detailName = document.getElementById('detailName');
+    const detailMeta = document.getElementById('detailMeta');
+    const detailStatus = document.getElementById('detailStatus');
+    const detailProjectsCount = document.getElementById('detailProjectsCount');
+    const detailSatisfaction = document.getElementById('detailSatisfaction');
+    const detailCooperationTime = document.getElementById('detailCooperationTime');
+    const detailCategory = document.getElementById('detailCategory');
+    const detailAddress = document.getElementById('detailAddress');
+    const detailNotes = document.getElementById('detailNotes');
+    const editClientFromDetail = document.getElementById('editClientFromDetail');
+
+    if (detailAvatar) {
+      detailAvatar.textContent = getClientInitials(name);
+    }
+
+    if (detailName) {
+      detailName.textContent = name;
+    }
+
+    if (detailMeta) {
+      detailMeta.textContent = company + ' · ' + email + ' · ' + toPersianDigits(phone);
+    }
+
+    if (detailStatus) {
+      detailStatus.textContent = isActive ? 'فعال' : 'غیرفعال';
+      detailStatus.className = isActive
+        ? 'badge-status badge-done'
+        : 'badge-status badge-inprog';
+    }
+
+    if (detailProjectsCount) {
+      detailProjectsCount.textContent = toPersianDigits(projectsCount);
+    }
+
+    if (detailSatisfaction) {
+      detailSatisfaction.textContent = getRatingNumber(rating) + '★';
+    }
+
+    if (detailCooperationTime) {
+      detailCooperationTime.textContent = calculateCooperationTime(createdAt);
+    }
+
+    if (detailCategory) {
+      detailCategory.textContent = category;
+    }
+
+    if (detailAddress) {
+      detailAddress.textContent = address;
+    }
+
+    if (detailNotes) {
+      detailNotes.textContent = notes;
+    }
+
+    if (editClientFromDetail) {
+      editClientFromDetail.dataset.clientId = clientId;
+    }
   });
 });
 <\/script>

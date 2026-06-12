@@ -178,22 +178,76 @@ app.post('/sw-admin/projects/:id/delete', async (req, res) => {
 // ─────────────────────────────────────────
 app.get('/sw-admin/clients', async (req, res) => {
   try {
-    const clients = await Client.find().sort({ createdAt: -1 })
-    res.render('admin/Clients', { clients })
+    const page = Math.max(parseInt(req.query.page) || 1, 1)
+    const limit = 6
+    const skip = (page - 1) * limit
+
+    const clientsCount = await Client.countDocuments()
+
+    const clients = await Client.find()
+      .sort({ createdAt: -1 })
+      .skip(skip)
+      .limit(limit)
+
+    const activeClientsCount = await Client.countDocuments({
+      isActive: true
+    })
+
+    const sevenDaysAgo = new Date()
+    sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7)
+
+    const newClientsThisWeekCount = await Client.countDocuments({
+      createdAt: { $gte: sevenDaysAgo }
+    })
+
+    const totalPages = Math.ceil(clientsCount / limit)
+
+    const startItem = clientsCount === 0 ? 0 : skip + 1
+    const endItem = Math.min(skip + limit, clientsCount)
+
+    res.render('admin/Clients', {
+      clients,
+      clientsCount,
+      activeClientsCount,
+      newClientsThisWeekCount,
+
+      currentPage: page,
+      totalPages,
+      limit,
+      startItem,
+      endItem
+    })
   } catch (err) {
+    console.error(err)
     res.status(500).send('خطا در بارگذاری مشتریان')
   }
 })
 
+
+
+
+
 app.post('/sw-admin/clients', async (req, res) => {
   try {
-    const { name, company, email, phone, address, notes } = req.body
-    await Client.create({ name, company, email, phone, address, notes })
+    const { name, company, email, phone, address, notes, avatar } = req.body
+
+    await Client.create({
+      name,
+      company,
+      email,
+      phone,
+      address,
+      notes,
+      avatar
+    })
+
     res.redirect('/sw-admin/clients')
   } catch (err) {
+    console.error(err)
     res.status(500).send('خطا در ثبت مشتری')
   }
 })
+
 
 app.post('/sw-admin/clients/:id/delete', async (req, res) => {
   try {
@@ -203,6 +257,27 @@ app.post('/sw-admin/clients/:id/delete', async (req, res) => {
     res.status(500).send('خطا در حذف مشتری')
   }
 })
+
+app.get('/sw-admin/clients/export', async (req, res) => {
+  try {
+    const clients = await Client.find().sort({ createdAt: -1 })
+
+    let csv = 'نام,شرکت,ایمیل,تلفن,آدرس,وضعیت\n'
+
+    clients.forEach(client => {
+      csv += `"${client.name || ''}","${client.company || ''}","${client.email || ''}","${client.phone || ''}","${client.address || ''}","${client.isActive ? 'فعال' : 'غیرفعال'}"\n`
+    })
+
+    res.setHeader('Content-Type', 'text/csv; charset=utf-8')
+    res.setHeader('Content-Disposition', 'attachment; filename=clients.csv')
+
+    res.send('\uFEFF' + csv) // برای درست نمایش فارسی در Excel
+  } catch (err) {
+    console.error(err)
+    res.status(500).send('خطا در خروجی CSV')
+  }
+})
+
 
 // ─────────────────────────────────────────
 //  ADMIN — MESSAGES

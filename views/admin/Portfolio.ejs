@@ -1,5 +1,29 @@
 <%- include('partials/_head', { title: 'پورتفولیو' }) %>
 
+<%
+/* ── helper maps (server-side, no extra DB fields needed) ─────────── */
+const catLabel = { web:'طراحی وب', store:'فروشگاه', ui_ux:'UI/UX', webapp:'وب اپ', branding:'برندینگ', other:'سایر' };
+const catGrad  = {
+  web     : 'linear-gradient(135deg,#6447f4,#0090e8)',
+  store   : 'linear-gradient(135deg,#0090e8,#4dc3ff)',
+  ui_ux   : 'linear-gradient(135deg,#a394fb,#6447f4)',
+  webapp  : 'linear-gradient(135deg,#1e1274,#4028b8)',
+  branding: 'linear-gradient(135deg,#f59e0b,#ef4444)',
+  other   : 'linear-gradient(135deg,#22c55e,#0090e8)'
+};
+const catIcon  = {
+  web     : 'bi-laptop',
+  store   : 'bi-bag-heart',
+  ui_ux   : 'bi-palette2',
+  webapp  : 'bi-building',
+  branding: 'bi-vector-pen',
+  other   : 'bi-grid'
+};
+
+const publishedCount = items.filter(i => i.isPublished).length;
+const draftCount     = items.length - publishedCount;
+%>
+
 <div class="sidebar-overlay" id="sidebarOverlay"></div>
 <div class="admin-shell">
 
@@ -10,153 +34,421 @@
 
 <div class="main-content" id="mainContent">
 <%- include('partials/_header', {
-  breadcrumbs: [{ label: 'داشبورد', href: '/sw-admin' }, { label: 'محتوا' }, { label: 'پورتفولیو' }],
+  breadcrumbs: [
+    { label: 'داشبورد', href: '/sw-admin' },
+    { label: 'محتوا' },
+    { label: 'پورتفولیو' }
+  ],
   searchPlaceholder: 'جستجو در پورتفولیو…'
 }) %>
 
 <main class="page-content">
 
+  <!-- ── Page Header ──────────────────────────────── -->
   <div class="page-header fade-up fade-up-1">
     <div>
       <h1 class="page-title">مدیریت پورتفولیو</h1>
-      <p class="page-subtitle">۶ نمونه کار منتشر‌شده · ۲ پیش‌نویس</p>
+      <p class="page-subtitle">
+        <%= publishedCount %> نمونه کار منتشر‌شده · <%= draftCount %> پیش‌نویس
+      </p>
     </div>
-    <button class="btn-sol-sm" data-modal-open="portfolioModal"><i class="bi bi-plus-lg"></i> نمونه کار جدید</button>
+    <button class="btn-sol-sm" id="openAddModal">
+      <i class="bi bi-plus-lg"></i> نمونه کار جدید
+    </button>
   </div>
 
-  <!-- Filter -->
-  <div class="filter-bar fade-up fade-up-2" data-filter-group style="display:flex;gap:.6rem;flex-wrap:wrap;margin-bottom:1.25rem;">
-    <button class="filter-chip active">همه</button>
-    <button class="filter-chip">طراحی وب</button>
-    <button class="filter-chip">فروشگاه</button>
-    <button class="filter-chip">UI/UX</button>
-    <button class="filter-chip">وب اپ</button>
+  <!-- ── Flash messages ───────────────────────────── -->
+  <% if (typeof flash !== 'undefined' && flash.success) { %>
+  <div class="sol-alert sol-alert-success fade-up fade-up-1">
+    <i class="bi bi-check-circle-fill"></i> <%= flash.success %>
   </div>
+  <% } %>
+  <% if (typeof flash !== 'undefined' && flash.error) { %>
+  <div class="sol-alert sol-alert-error fade-up fade-up-1">
+    <i class="bi bi-x-circle-fill"></i> <%= flash.error %>
+  </div>
+  <% } %>
 
-  <!-- Portfolio Grid -->
-  <div class="port-grid fade-up fade-up-3">
-    <% const items = [
-      { title:'وب‌سایت شرکتی آتین‌دیزاین', cat:'طراحی وب', client:'آتین‌دیزاین', tech:'PHP',               grad:'linear-gradient(135deg,#6447f4,#0090e8)',   icon:'bi-laptop',         views:'۲,۳۱۴', published:true  },
-      { title:'فروشگاه آنلاین مد کیانی',    cat:'فروشگاه',  client:'کیانی لباس',  tech:'WooCommerce',       grad:'linear-gradient(135deg,#0090e8,#4dc3ff)',   icon:'bi-bag-heart',      views:'۱,۸۹۷', published:true  },
-      { title:'اپلیکیشن مدیریت مالی',       cat:'UI/UX',    client:'آفیلیو',       tech:'React + Figma',     grad:'linear-gradient(135deg,#a394fb,#6447f4)',   icon:'bi-palette2',       views:'۳,۱۲۰', published:true  },
-      { title:'پورتال سازمانی پارسیان',      cat:'وب اپ',   client:'گروه پارسیان', tech:'Laravel',           grad:'linear-gradient(135deg,#1e1274,#4028b8)',   icon:'bi-building',       views:'۹۸۰',   published:true  },
-      { title:'فروشگاه دیجیتال پرتو',       cat:'فروشگاه',  client:'شرکت پرتو',   tech:'Node.js',           grad:'linear-gradient(135deg,#005896,#0090e8)',   icon:'bi-cart3',          views:'۱,۵۴۳', published:true  },
-      { title:'داشبورد تحلیل داده هوشمند',   cat:'UI/UX',    client:'آرسون',        tech:'Vue + D3',          grad:'linear-gradient(135deg,#4028b8,#836af8)',   icon:'bi-bar-chart-fill', views:'۲,۷۶۱', published:true  },
-      { title:'اپ رستوران‌یاب کافه‌نت',     cat:'طراحی وب', client:'کافه‌نت',      tech:'React Native',      grad:'linear-gradient(135deg,#22c55e,#0090e8)',   icon:'bi-phone',          views:'–',     published:false },
-      { title:'سایت شخصی طراح مهدی',        cat:'طراحی وب', client:'مهدی رضایی',   tech:'Next.js',           grad:'linear-gradient(135deg,#f59e0b,#ef4444)',   icon:'bi-person-badge',   views:'–',     published:false },
-    ]; %>
-    <% items.forEach(function(item){ %>
-    <div class="port-card">
-      <div class="port-thumb" style="background:<%= item.grad %>;">
-        <i class="bi <%= item.icon %>" style="font-size:3rem;color:rgba(255,255,255,.7);"></i>
-        <div class="port-thumb-overlay">
-          <button class="btn-ghost-sm" style="background:rgba(255,255,255,.9);" data-modal-open="portfolioModal"><i class="bi bi-pencil"></i> ویرایش</button>
-        </div>
-        <% if(!item.published){ %>
-        <span class="port-draft-badge">پیش‌نویس</span>
-        <% } %>
-      </div>
-      <div class="port-body">
-        <div class="port-cat"><%= item.cat %></div>
-        <div class="port-title"><%= item.title %></div>
-        <div class="port-meta">
-          <span><i class="bi bi-person" style="font-size:.75rem;"></i> <%= item.client %></span>
-          <span><i class="bi bi-code-slash" style="font-size:.75rem;"></i> <%= item.tech %></span>
-        </div>
-        <div class="port-footer">
-          <% if(item.published){ %>
-          <div style="display:flex;align-items:center;gap:.3rem;font-size:.73rem;color:var(--color-text-muted);">
-            <i class="bi bi-eye"></i> <%= item.views %> بازدید
-          </div>
-          <span class="badge-status badge-done">منتشرشده</span>
-          <% } else { %>
-          <span class="badge-status badge-new">پیش‌نویس</span>
-          <button class="btn-sol-sm" style="padding:.28rem .75rem;font-size:.73rem;"><i class="bi bi-send"></i> انتشار</button>
-          <% } %>
-        </div>
-      </div>
-    </div>
+  <!-- ── Filter chips ──────────────────────────────── -->
+  <div class="filter-bar fade-up fade-up-2" id="filterGroup">
+    <button class="filter-chip active" data-cat="all">همه
+      <span class="filter-count"><%= items.length %></span>
+    </button>
+    <% ['web','store','ui_ux','webapp','branding','other'].forEach(function(cat){ %>
+    <% const count = items.filter(function(i){ return i.category === cat; }).length; %>
+    <% if(count > 0){ %>
+    <button class="filter-chip" data-cat="<%= cat %>">
+      <%= catLabel[cat] %>
+      <span class="filter-count"><%= count %></span>
+    </button>
+    <% } %>
     <% }); %>
   </div>
+
+  <!-- ── Portfolio Grid ────────────────────────────── -->
+  <% if (items.length === 0) { %>
+  <div class="empty-state fade-up fade-up-3">
+    <i class="bi bi-collection" style="font-size:3rem;color:var(--main-300);"></i>
+    <p>هنوز نمونه کاری ثبت نشده.</p>
+    <button class="btn-sol-sm" id="openAddModal2"><i class="bi bi-plus-lg"></i> اولین نمونه کار را اضافه کنید</button>
+  </div>
+  <% } else { %>
+  <div class="port-grid fade-up fade-up-3" id="portGrid">
+
+    <% items.forEach(function(item){ %>
+    <div class="port-card" data-cat="<%= item.category %>">
+
+      <!-- Thumbnail -->
+      <div class="port-thumb" style="background:<%= catGrad[item.category] || catGrad.other %>;">
+        <i class="bi <%= catIcon[item.category] || 'bi-grid' %>"
+          style="font-size:3rem;color:rgba(255,255,255,.7);"></i>
+
+        <div class="port-thumb-overlay">
+          <button class="btn-ghost-sm port-edit-btn"
+                  style="background:rgba(255,255,255,.9);"
+                  data-id="<%= item._id %>"
+                  data-title="<%= item.title %>"
+                  data-description="<%= item.description || '' %>"
+                  data-category="<%= item.category %>"
+                  data-tech="<%= item.techStack ? item.techStack.join(', ') : '' %>"
+                  data-liveurl="<%= item.liveUrl || '' %>"
+                  data-coverimage="<%= item.coverImage || '' %>"
+                  data-isfeatured="<%= item.isFeatured %>">
+            <i class="bi bi-pencil"></i> ویرایش
+          </button>
+        </div>
+
+        <% if (!item.isPublished) { %>
+        <span class="port-draft-badge">پیش‌نویس</span>
+        <% } %>
+
+        <% if (item.isFeatured) { %>
+        <span class="port-featured-badge"><i class="bi bi-star-fill"></i></span>
+        <% } %>
+      </div>
+
+      <!-- Body -->
+      <div class="port-body">
+        <div class="port-cat"><%= catLabel[item.category] || item.category %></div>
+        <div class="port-title"><%= item.title %></div>
+
+        <div class="port-meta">
+          <% if (item.client) { %>
+          <span>
+            <i class="bi bi-person" style="font-size:.75rem;"></i>
+            <%= item.client.name || item.client %>
+          </span>
+          <% } %>
+          <% if (item.techStack && item.techStack.length) { %>
+          <span>
+            <i class="bi bi-code-slash" style="font-size:.75rem;"></i>
+            <%= item.techStack.slice(0,2).join(' · ') %>
+          </span>
+          <% } %>
+        </div>
+
+        <div class="port-footer">
+          <% if (item.isPublished) { %>
+            <% if (item.liveUrl) { %>
+            <a href="<%= item.liveUrl %>" target="_blank" rel="noopener"
+              style="display:flex;align-items:center;gap:.3rem;font-size:.73rem;color:var(--color-text-muted);text-decoration:none;">
+              <i class="bi bi-box-arrow-up-right"></i> مشاهده
+            </a>
+            <% } else { %>
+            <span style="font-size:.73rem;color:var(--color-text-muted);">بدون لینک</span>
+            <% } %>
+            <span class="badge-status badge-done">منتشرشده</span>
+          <% } else { %>
+            <span class="badge-status badge-new">پیش‌نویس</span>
+            <form method="POST" action="/sw-admin/portfolio/<%= item._id %>/publish" style="display:inline;">
+              <button type="submit" class="btn-sol-sm" style="padding:.28rem .75rem;font-size:.73rem;">
+                <i class="bi bi-send"></i> انتشار
+              </button>
+            </form>
+          <% } %>
+        </div>
+
+        <!-- Delete -->
+        <form method="POST" action="/sw-admin/portfolio/<%= item._id %>/delete"
+              onsubmit="return confirm('این نمونه کار حذف شود؟')"
+              style="margin-top:.65rem;text-align:left;">
+          <button type="submit" class="port-delete-btn">
+            <i class="bi bi-trash3"></i>
+          </button>
+        </form>
+      </div>
+
+    </div><!-- /port-card -->
+    <% }); %>
+
+  </div><!-- /port-grid -->
+  <% } %>
 
 </main>
 </div>
 </div>
 
-<!-- Modal: نمونه کار جدید/ویرایش -->
+<!-- ════════════════════════════════════════════
+     MODAL — افزودن / ویرایش نمونه کار
+════════════════════════════════════════════ -->
 <div class="modal-overlay" id="portfolioModal">
-  <div class="modal-box" style="width:min(560px,92vw);">
+  <div class="modal-box" style="width:min(580px,92vw);">
+
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1.5rem;">
-      <div class="modal-title" style="margin:0;">نمونه کار جدید</div>
-      <button data-modal-close style="background:transparent;border:none;font-size:1.2rem;color:var(--color-text-muted);cursor:pointer;"><i class="bi bi-x-lg"></i></button>
+      <div class="modal-title" style="margin:0;" id="modalHeading">نمونه کار جدید</div>
+      <button id="closeModal" style="background:transparent;border:none;font-size:1.2rem;color:var(--color-text-muted);cursor:pointer;">
+        <i class="bi bi-x-lg"></i>
+      </button>
     </div>
-    <!-- Image Upload -->
-    <div class="port-upload-area" id="uploadArea">
-      <i class="bi bi-cloud-upload-fill" style="font-size:2rem;color:var(--main-400);"></i>
-      <div style="font-size:.85rem;font-weight:600;margin-top:.5rem;">تصویر شاخص را اینجا بکشید</div>
-      <div style="font-size:.73rem;color:var(--color-text-light);">یا کلیک کنید برای انتخاب (PNG, JPG)</div>
-      <input type="file" accept="image/*" style="display:none;" id="imgUpload">
-    </div>
-    <div class="form-row">
-      <label class="sol-label">عنوان پروژه</label>
-      <input class="sol-input" type="text" placeholder="مثال: وب‌سایت شرکتی آلفا">
-    </div>
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;">
+
+    <!-- hidden action switches between /portfolio (POST) and /portfolio/:id/update (POST) -->
+    <form method="POST" id="portfolioForm" action="/sw-admin/portfolio" enctype="multipart/form-data">
+      <input type="hidden" name="_method" id="formMethod" value="POST">
+
+      <!-- Cover Image URL -->
       <div class="form-row">
-        <label class="sol-label">دسته‌بندی</label>
-        <select class="sol-select" style="width:100%">
-          <option>طراحی وب</option><option>فروشگاه</option><option>UI/UX</option><option>وب اپ</option>
-        </select>
+        <label class="sol-label">لینک تصویر شاخص (URL)</label>
+        <input class="sol-input" type="text" name="coverImage" id="f_coverImage"
+               placeholder="https://example.com/image.jpg">
+        <div style="font-size:.72rem;color:var(--color-text-muted);margin-top:.3rem;">
+          یا آدرس مستقیم تصویر را وارد کنید
+        </div>
       </div>
+
+      <!-- Title -->
       <div class="form-row">
-        <label class="sol-label">مشتری</label>
-        <input class="sol-input" type="text" placeholder="نام مشتری">
+        <label class="sol-label">عنوان پروژه <span style="color:#ef4444;">*</span></label>
+        <input class="sol-input" type="text" name="title" id="f_title"
+               placeholder="مثال: وب‌سایت شرکتی آلفا" required>
       </div>
-    </div>
-    <div class="form-row">
-      <label class="sol-label">تکنولوژی‌های استفاده‌شده</label>
-      <input class="sol-input" type="text" placeholder="مثال: PHP · Laravel · Bootstrap">
-    </div>
-    <div class="form-row">
-      <label class="sol-label">لینک پروژه</label>
-      <input class="sol-input" type="url" placeholder="https://…">
-    </div>
-    <div class="form-row">
-      <label class="sol-label">توضیحات</label>
-      <textarea class="sol-input" rows="3" placeholder="توضیح کوتاهی از پروژه…" style="resize:vertical;"></textarea>
-    </div>
-    <div style="display:flex;gap:.75rem;justify-content:flex-end;margin-top:1.5rem;">
-      <button class="btn-ghost-sm" data-modal-close>انصراف</button>
-      <button class="btn-ghost-sm"><i class="bi bi-file-earmark"></i> پیش‌نویس</button>
-      <button class="btn-sol-sm"><i class="bi bi-send"></i> انتشار</button>
-    </div>
+
+      <!-- Category + Client -->
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;">
+        <div class="form-row">
+          <label class="sol-label">دسته‌بندی <span style="color:#ef4444;">*</span></label>
+          <select class="sol-select sol-input" name="category" id="f_category" required style="width:100%;">
+            <option value="web">طراحی وب</option>
+            <option value="store">فروشگاه</option>
+            <option value="ui_ux">UI/UX</option>
+            <option value="webapp">وب اپ</option>
+            <option value="branding">برندینگ</option>
+            <option value="other">سایر</option>
+          </select>
+        </div>
+        <div class="form-row">
+          <label class="sol-label">مشتری</label>
+          <select class="sol-input" name="client" id="f_client" style="width:100%;">
+            <option value="">انتخاب کنید</option>
+            <% if (typeof clients !== 'undefined') { %>
+            <% clients.forEach(function(c){ %>
+            <option value="<%= c._id %>"><%= c.name %> (<%= c.company || '—' %>)</option>
+            <% }); %>
+            <% } %>
+          </select>
+        </div>
+      </div>
+
+      <!-- TechStack -->
+      <div class="form-row">
+        <label class="sol-label">تکنولوژی‌ها</label>
+        <input class="sol-input" type="text" name="techStack" id="f_techStack"
+               placeholder="مثال: PHP, Laravel, Bootstrap  (با کاما جدا کنید)">
+      </div>
+
+      <!-- Live URL -->
+      <div class="form-row">
+        <label class="sol-label">لینک زنده پروژه</label>
+        <input class="sol-input" type="url" name="liveUrl" id="f_liveUrl"
+               placeholder="https://…">
+      </div>
+
+      <!-- Description -->
+      <div class="form-row">
+        <label class="sol-label">توضیحات</label>
+        <textarea class="sol-input" name="description" id="f_description"
+                  rows="3" placeholder="توضیح کوتاهی از پروژه…"
+                  style="resize:vertical;"></textarea>
+      </div>
+
+      <!-- Featured toggle -->
+      <div style="display:flex;align-items:center;gap:.65rem;margin-bottom:1rem;">
+        <input type="checkbox" name="isFeatured" id="f_isFeatured"
+               value="on" style="width:16px;height:16px;accent-color:var(--main-500);">
+        <label for="f_isFeatured" class="sol-label" style="margin:0;cursor:pointer;">
+          نمایش به عنوان نمونه کار ویژه
+        </label>
+      </div>
+
+      <!-- Buttons -->
+      <div style="display:flex;gap:.75rem;justify-content:flex-end;margin-top:1.5rem;">
+        <button type="button" id="closeModal2" class="btn-ghost-sm">انصراف</button>
+
+        <!-- save as draft -->
+        <button type="submit" name="publish" value="0" class="btn-ghost-sm">
+          <i class="bi bi-file-earmark"></i> پیش‌نویس
+        </button>
+
+        <!-- publish immediately -->
+        <button type="submit" name="publish" value="1" class="btn-sol-sm">
+          <i class="bi bi-send"></i> انتشار
+        </button>
+      </div>
+
+    </form>
   </div>
 </div>
 
+<!-- ════════════════════════════════════════════
+     STYLES + SCRIPTS
+════════════════════════════════════════════ -->
 <%- include('partials/_scripts', { extraScripts: `
 <style>
+
+/* ── Modal overlay & box ───────────────────── */
+.modal-overlay {
+  display         : none;
+  position        : fixed;
+  inset           : 0;
+  background      : rgba(16,16,42,.55);
+  backdrop-filter : blur(6px);
+  z-index         : 2000;
+  align-items     : center;
+  justify-content : center;
+  padding         : 1rem;
+}
+.modal-overlay.show { display: flex; }
+
+.modal-box {
+  background    : var(--color-surface);
+  border        : 1px solid var(--color-border);
+  border-radius : var(--radius-xl);
+  padding       : 1.75rem;
+  max-height    : 90vh;
+  overflow-y    : auto;
+  box-shadow    : var(--shadow-lg);
+  animation     : modalIn .25s var(--ease-spring);
+}
+@keyframes modalIn {
+  from { opacity:0; transform:translateY(20px) scale(.97); }
+  to   { opacity:1; transform:none; }
+}
+
+.modal-title {
+  font-size  : 1.05rem;
+  font-weight: 800;
+}
+
+/* ── بقیه استایل‌ها (فیلتر، گرید، کارت‌ها) ── */
+.filter-bar{display:flex;gap:.6rem;flex-wrap:wrap;margin-bottom:1.25rem;}
 .filter-chip{display:inline-flex;align-items:center;gap:.35rem;font-family:var(--font-primary);font-size:.78rem;font-weight:600;padding:.38rem .9rem;border-radius:var(--radius-full);border:1.5px solid var(--color-border);background:var(--color-surface);color:var(--color-text-muted);cursor:pointer;transition:all var(--dur-fast);}
 .filter-chip:hover,.filter-chip.active{background:var(--main-500);border-color:var(--main-500);color:#fff;}
+.filter-count{display:inline-flex;align-items:center;justify-content:center;min-width:18px;height:18px;font-size:.65rem;font-weight:800;padding:0 .3rem;border-radius:99px;background:rgba(255,255,255,.25);color:inherit;}
+.filter-chip:not(.active) .filter-count{background:var(--color-border);color:var(--color-text-muted);}
 .port-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:1.25rem;}
 .port-card{background:var(--color-surface);border:1px solid var(--color-border);border-radius:var(--radius-lg);overflow:hidden;transition:all var(--dur-normal) var(--ease-spring);}
 .port-card:hover{transform:translateY(-4px);box-shadow:var(--shadow-lg);border-color:var(--main-200);}
+.port-card[data-hidden]{display:none;}
 .port-thumb{height:180px;display:flex;align-items:center;justify-content:center;position:relative;overflow:hidden;}
-.port-thumb-overlay{position:absolute;inset:0;background:rgba(30,18,116,.6);backdrop-filter:blur(4px);display:flex;align-items:center;justify-content:center;opacity:0;transition:opacity var(--dur-normal);}
+.port-thumb-overlay{position:absolute;inset:0;background:rgba(30,18,116,.6);backdrop-filter:blur(4px);display:flex;align-items:center;justify-content:center;gap:.5rem;opacity:0;transition:opacity var(--dur-normal);}
 .port-card:hover .port-thumb-overlay{opacity:1;}
 .port-draft-badge{position:absolute;top:.75rem;right:.75rem;background:rgba(0,0,0,.6);color:#fff;font-size:.67rem;font-weight:700;padding:.2rem .6rem;border-radius:99px;backdrop-filter:blur(4px);}
+.port-featured-badge{position:absolute;top:.75rem;left:.75rem;background:linear-gradient(135deg,#f59e0b,#ef4444);color:#fff;font-size:.75rem;padding:.25rem .55rem;border-radius:99px;}
 .port-body{padding:1.1rem;}
 .port-cat{font-size:.7rem;font-weight:700;color:var(--main-500);text-transform:uppercase;letter-spacing:.06em;margin-bottom:.3rem;}
 .port-title{font-size:.88rem;font-weight:700;margin-bottom:.5rem;line-height:1.4;}
 .port-meta{display:flex;gap:.85rem;flex-wrap:wrap;margin-bottom:.75rem;}
 .port-meta span{font-size:.73rem;color:var(--color-text-muted);display:flex;align-items:center;gap:.25rem;}
 .port-footer{display:flex;align-items:center;justify-content:space-between;gap:.5rem;}
-.port-upload-area{border:2px dashed var(--main-200);border-radius:var(--radius-lg);padding:2rem;text-align:center;cursor:pointer;transition:all var(--dur-fast);margin-bottom:1rem;background:var(--main-50);}
-.port-upload-area:hover{border-color:var(--main-400);background:rgba(100,71,244,.08);}
-[data-bs-theme="dark"] .port-upload-area{background:rgba(100,71,244,.08);}
+.port-delete-btn{background:transparent;border:1.5px solid var(--color-border);border-radius:var(--radius-sm);padding:.25rem .65rem;font-size:.8rem;color:var(--color-text-muted);cursor:pointer;transition:all var(--dur-fast);}
+.port-delete-btn:hover{background:rgba(239,68,68,.08);border-color:#fca5a5;color:#dc2626;}
+.empty-state{display:flex;flex-direction:column;align-items:center;justify-content:center;padding:4rem 2rem;gap:1rem;color:var(--color-text-muted);text-align:center;}
+.sol-alert{display:flex;align-items:center;gap:.65rem;padding:.8rem 1.1rem;border-radius:var(--radius-md);font-size:.83rem;font-weight:600;margin-bottom:1rem;}
+.sol-alert-success{background:rgba(34,197,94,.1);color:#16a34a;border:1px solid rgba(34,197,94,.2);}
+.sol-alert-error{background:rgba(239,68,68,.08);color:#dc2626;border:1px solid rgba(239,68,68,.15);}
+.form-row{margin-bottom:1rem;}
+.sol-label{display:block;font-size:.78rem;font-weight:700;color:var(--color-text-primary);margin-bottom:.4rem;}
 </style>
+
 <script>
-document.getElementById('uploadArea').addEventListener('click', function(){
-  document.getElementById('imgUpload').click();
-});
+(function(){
+
+  /* ── Filter chips ──────────────────────── */
+  document.querySelectorAll('.filter-chip').forEach(function(chip){
+    chip.addEventListener('click', function(){
+      document.querySelectorAll('.filter-chip').forEach(function(c){ c.classList.remove('active'); });
+      chip.classList.add('active');
+      var cat = chip.dataset.cat;
+      document.querySelectorAll('.port-card').forEach(function(card){
+        if(cat === 'all' || card.dataset.cat === cat){
+          card.removeAttribute('data-hidden');
+        } else {
+          card.setAttribute('data-hidden','');
+        }
+      });
+    });
+  });
+
+  /* ── Modal helpers ─────────────────────── */
+  var modal   = document.getElementById('portfolioModal');
+  var form    = document.getElementById('portfolioForm');
+  var heading = document.getElementById('modalHeading');
+
+  function openModal(){ modal.classList.add('show'); }
+  function closeModal(){ modal.classList.remove('show'); resetForm(); }
+
+  function resetForm(){
+    form.action = '/sw-admin/portfolio';
+    heading.textContent = 'نمونه کار جدید';
+    ['title','description','techStack','liveUrl','coverImage'].forEach(function(id){
+      var el = document.getElementById('f_'+id);
+      if(el) el.value = '';
+    });
+    document.getElementById('f_category').value = 'web';
+    document.getElementById('f_client').value   = '';
+    document.getElementById('f_isFeatured').checked = false;
+  }
+
+  /* دکمه‌های باز کردن مودال */
+  document.querySelectorAll('#openAddModal, #openAddModal2').forEach(function(btn){
+    if(btn) btn.addEventListener('click', openModal);
+  });
+
+  /* دکمه‌های ویرایش */
+  document.querySelectorAll('.port-edit-btn').forEach(function(btn){
+    btn.addEventListener('click', function(){
+      var d = btn.dataset;
+      form.action = '/sw-admin/portfolio/' + d.id + '/update';
+      heading.textContent = 'ویرایش نمونه کار';
+      document.getElementById('f_title').value        = d.title       || '';
+      document.getElementById('f_description').value  = d.description || '';
+      document.getElementById('f_techStack').value    = d.tech        || '';
+      document.getElementById('f_liveUrl').value      = d.liveurl     || '';
+      document.getElementById('f_coverImage').value   = d.coverimage  || '';
+      document.getElementById('f_category').value     = d.category    || 'web';
+      document.getElementById('f_isFeatured').checked = d.isfeatured  === 'true';
+      openModal();
+    });
+  });
+
+  /* دکمه‌های بستن */
+  document.getElementById('closeModal').addEventListener('click', closeModal);
+  document.getElementById('closeModal2').addEventListener('click', closeModal);
+  modal.addEventListener('click', function(e){ if(e.target === modal) closeModal(); });
+
+  /* بستن با Escape */
+  document.addEventListener('keydown', function(e){
+    if(e.key === 'Escape' && modal.classList.contains('show')) closeModal();
+  });
+
+  /* auto-dismiss alerts */
+  document.querySelectorAll('.sol-alert').forEach(function(el){
+    setTimeout(function(){
+      el.style.transition = 'opacity .5s';
+      el.style.opacity = '0';
+      setTimeout(function(){ el.remove(); }, 500);
+    }, 3500);
+  });
+
+})();
 </script>
 `}) %>

@@ -303,45 +303,114 @@ app.post('/sw-admin/invoices/:id/paid', async (req, res) => {
   }
 })
 
-// ─────────────────────────────────────────
-//  ADMIN — PORTFOLIO
-// ─────────────────────────────────────────
+// ─────────────────────────────────────────────────────────────
+//  PORTFOLIO ROUTES
+//  در server.js جایگزین بلوک قبلی portfolio بکن
+// ─────────────────────────────────────────────────────────────
+
+// GET — list
 app.get('/sw-admin/portfolio', async (req, res) => {
   try {
-    const items = await Portfolio.find()
-      .populate('client',  'name')
-      .populate('project', 'title')
-      .sort({ order: 1, createdAt: -1 })
-    res.render('admin/Portfolio', { items })
+    const [items, clients] = await Promise.all([
+      Portfolio.find()
+        .populate('client',  'name company')
+        .populate('project', 'title')
+        .sort({ order: 1, createdAt: -1 }),
+      Client.find({ isActive: true }).sort({ name: 1 })
+    ])
+
+    res.render('admin/Portfolio', {
+      items,
+      clients,
+      flash: req.flash ? req.flash() : {}   // اگر connect-flash داری — وگرنه {} برمیگردونه
+    })
   } catch (err) {
+    console.error(err)
     res.status(500).send('خطا در بارگذاری پورتفولیو')
   }
 })
 
+// POST — create new
 app.post('/sw-admin/portfolio', async (req, res) => {
   try {
-    const { title, description, coverImage, category,
-            techStack, liveUrl, client, project, isFeatured } = req.body
-    await Portfolio.create({
+    const {
       title, description, coverImage, category,
-      techStack  : techStack ? techStack.split(',').map(t => t.trim()) : [],
-      liveUrl    : liveUrl   || '',
-      client     : client    || null,
-      project    : project   || null,
-      isFeatured : isFeatured === 'on'
+      techStack, liveUrl, client, isFeatured, publish
+    } = req.body
+
+    await Portfolio.create({
+      title       : title.trim(),
+      description : description  || '',
+      coverImage  : coverImage   || '',
+      category    : category     || 'web',
+      techStack   : techStack ? techStack.split(',').map(t => t.trim()).filter(Boolean) : [],
+      liveUrl     : liveUrl      || '',
+      client      : client       || null,
+      isFeatured  : isFeatured === 'on',
+      isPublished : publish === '1',             // دکمه «انتشار» value="1" ، «پیش‌نویس» value="0"
+      order       : await Portfolio.countDocuments()
     })
+
+    await Activity.create({
+      type        : 'project_created',
+      title       : `نمونه کار «${title}» به پورتفولیو اضافه شد`,
+      icon        : 'bi-collection-fill',
+      colorVariant: 'accent'
+    })
+
     res.redirect('/sw-admin/portfolio')
   } catch (err) {
-    res.status(500).send('خطا در ثبت نمونه‌کار')
+    console.error(err)
+    res.status(500).send('خطا در ثبت نمونه کار')
   }
 })
 
+// POST — update existing
+app.post('/sw-admin/portfolio/:id/update', async (req, res) => {
+  try {
+    const {
+      title, description, coverImage, category,
+      techStack, liveUrl, client, isFeatured, publish
+    } = req.body
+
+    await Portfolio.findByIdAndUpdate(req.params.id, {
+      title       : title.trim(),
+      description : description  || '',
+      coverImage  : coverImage   || '',
+      category    : category     || 'web',
+      techStack   : techStack ? techStack.split(',').map(t => t.trim()).filter(Boolean) : [],
+      liveUrl     : liveUrl      || '',
+      client      : client       || null,
+      isFeatured  : isFeatured === 'on',
+      ...(publish !== undefined && { isPublished: publish === '1' })
+    })
+
+    res.redirect('/sw-admin/portfolio')
+  } catch (err) {
+    console.error(err)
+    res.status(500).send('خطا در ویرایش نمونه کار')
+  }
+})
+
+// POST — publish (toggle draft → published)
+app.post('/sw-admin/portfolio/:id/publish', async (req, res) => {
+  try {
+    await Portfolio.findByIdAndUpdate(req.params.id, { isPublished: true })
+    res.redirect('/sw-admin/portfolio')
+  } catch (err) {
+    console.error(err)
+    res.status(500).send('خطا در انتشار')
+  }
+})
+
+// POST — delete
 app.post('/sw-admin/portfolio/:id/delete', async (req, res) => {
   try {
     await Portfolio.findByIdAndDelete(req.params.id)
     res.redirect('/sw-admin/portfolio')
   } catch (err) {
-    res.status(500).send('خطا')
+    console.error(err)
+    res.status(500).send('خطا در حذف نمونه کار')
   }
 })
 

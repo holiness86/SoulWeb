@@ -59,11 +59,17 @@
 
 <select class="sol-select" style="width:auto;" id="categoryFilter">
   <option value="all">همه دسته‌ها</option>
-  <option value="فروشگاه">فروشگاه</option>
-  <option value="طراحی وب">طراحی وب</option>
-  <option value="UI/UX">UI/UX</option>
-  <option value="نگه‌داری">نگه‌داری</option>
+
+  <% if (categories && categories.length) { %>
+    <% categories.forEach(category => { %>
+      <option value="<%= category._id.toString() %>">
+        <%= category.title %>
+      </option>
+    <% }) %>
+  <% } %>
 </select>
+
+
 
   </div>
 
@@ -109,10 +115,10 @@
               const bg = gradients[index % gradients.length];
             %>
 
-            <tr 
-              data-status="<%= client.isActive ? 'active' : 'inactive' %>"
-              data-category="<%= client.avatar || '' %>"
-            >
+<tr 
+  data-status="<%= client.isActive ? 'active' : 'inactive' %>"
+  data-category="<%= client.category ? client.category._id.toString() : '' %>"
+>
               <td>
                 <div style="display:flex;align-items:center;gap:.75rem;">
                   <div class="cl-av" style="background:<%= bg %>;">
@@ -169,27 +175,29 @@
 
               <td>
                 <div style="display:flex;gap:.4rem;">
-                  <button
-                    class="btn-ghost-sm btn-view-client"
-                    type="button"
-                    style="padding:.28rem .6rem;"
-                    data-modal-open="clientDetail"
+<button
+  class="btn-ghost-sm btn-view-client"
+  type="button"
+  style="padding:.28rem .6rem;"
+  data-modal-open="clientDetail"
 
-                    data-id="<%= client._id %>"
-                    data-name="<%= client.name || '' %>"
-                    data-company="<%= client.company || '' %>"
-                    data-email="<%= client.email || '' %>"
-                    data-phone="<%= client.phone || '' %>"
-                    data-address="<%= client.address || '' %>"
-                    data-notes="<%= client.notes || '' %>"
-                    data-active="<%= client.isActive ? 'true' : 'false' %>"
-                    data-category="<%= client.avatar || '' %>"
-                    data-created-at="<%= client.createdAt ? client.createdAt.toISOString() : '' %>"
-                    data-projects-count="<%= client.projectsCount || 0 %>"
-                    data-rating="<%= client.rating || '★★★★★' %>"
-                  >
-                    <i class="bi bi-eye"></i>
-                  </button>
+  data-id="<%= client._id %>"
+  data-name="<%= client.name || '' %>"
+  data-company="<%= client.company || '' %>"
+  data-email="<%= client.email || '' %>"
+  data-phone="<%= client.phone || '' %>"
+  data-address="<%= client.address || '' %>"
+  data-notes="<%= client.notes || '' %>"
+  data-active="<%= client.isActive ? 'true' : 'false' %>"
+  data-created-at="<%= client.createdAt ? client.createdAt.toISOString() : '' %>"
+  data-projects-count="<%= client.projectsCount || 0 %>"
+  data-rating="<%= client.rating || '★★★★★' %>"
+  data-category="<%= client.category ? client.category.title : '---' %>"
+  data-project="<%= client.projectTitle || '---' %>"
+>
+  <i class="bi bi-eye"></i>
+</button>
+
 
 
 
@@ -320,12 +328,19 @@
         <label class="sol-label">شماره تماس</label>
         <input class="sol-input" type="tel" placeholder="۰۹۱۲۱۲۳۴۵۶۷" name="phone">
       </div>
-      <div class="form-row">
-        <label class="sol-label">نوع همکاری</label>
-        <select class="sol-select" style="width:100%" name="avatar">
-          <option value="طراحی وب">طراحی وب</option><option value="فروشگاه">فروشگاه</option><option value="UI/UX">UI/UX</option><option value="نگه‌داری">نگه‌داری</option>
-        </select>
-      </div>
+        <div class="form-row">
+          <label class="sol-label">نوع همکاری</label>
+
+          <select class="sol-select" style="width:100%" name="category" required>
+            <option value="">انتخاب کنید</option>
+            <% categories.forEach(cat => { %>
+              <option value="<%= cat._id %>">
+                <%= cat.title %>
+              </option>
+            <% }) %>
+          </select>
+
+        </div>
       <div class="form-row">
         <label class="sol-label">یادداشت</label>
         <textarea class="sol-input" rows="2" placeholder="یادداشت اختیاری…" style="resize:vertical;" name="notes"></textarea>

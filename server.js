@@ -2,6 +2,7 @@ const express    = require('express')
 const mongoose   = require('mongoose')
 const bcrypt     = require('bcryptjs')
 const path       = require('path')
+const multer     = require('multer')
 
 const app = express()
 
@@ -29,6 +30,7 @@ const Review    = require('./models/review.model')
 const Package   = require('./models/package.model')
 const BlogPost  = require('./models/blogPost.model')
 const Setting   = require('./models/setting.model')
+const Category  = require('./models/category')
 
 // ─────────────────────────────────────────
 //  DB + SERVER START
@@ -47,6 +49,23 @@ mongoose.connect(DB_URL)
     console.error('DB connection failed ❌', err.message)
     process.exit(1)
   })
+
+
+
+// ─────────────────────────────────────────
+//  MULTER CODE
+// ─────────────────────────────────────────
+const storage = multer.diskStorage({
+  destination: function (req, file, cb) {
+    cb(null, 'public/uploads/portfolio')
+  },
+  filename: function (req, file, cb) {
+    const uniqueName = Date.now() + path.extname(file.originalname)
+    cb(null, uniqueName)
+  }
+})
+
+const upload = multer({ storage })
 
 // ─────────────────────────────────────────
 //  PUBLIC ROUTES
@@ -176,29 +195,66 @@ app.post('/sw-admin/projects/:id/delete', async (req, res) => {
 // ─────────────────────────────────────────
 //  ADMIN — CLIENTS
 // ─────────────────────────────────────────
+
 app.get('/sw-admin/clients', async (req, res) => {
   try {
     const page = Math.max(parseInt(req.query.page) || 1, 1)
     const limit = 6
     const skip = (page - 1) * limit
 
-    const clientsCount = await Client.countDocuments()
-
-    const clients = await Client.find()
-      .sort({ createdAt: -1 })
-      .skip(skip)
-      .limit(limit)
-
-    const activeClientsCount = await Client.countDocuments({
-      isActive: true
-    })
-
     const sevenDaysAgo = new Date()
     sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7)
 
-    const newClientsThisWeekCount = await Client.countDocuments({
-      createdAt: { $gte: sevenDaysAgo }
-    })
+    const [
+      clientsCount,
+      activeClientsCount,
+      newClientsThisWeekCount,
+      clients,
+      categories
+    ] = await Promise.all([
+      Client.countDocuments(),
+
+      Client.countDocuments({ isActive: true }),
+
+      Client.countDocuments({
+        createdAt: { $gte: sevenDaysAgo }
+      }),
+
+      Client.find()
+        .populate('category', 'title slug icon color gradient')
+        .sort({ createdAt: -1 })
+        .skip(skip)
+        .limit(limit)
+        .lean(),
+
+      Category.find({
+        type: 'service',
+        isActive: true
+      })
+        .sort({ order: 1 })
+        .lean()
+    ])
+
+    const clientsWithProjects = await Promise.all(
+      clients.map(async (client) => {
+        const projectsCount = await Portfolio.countDocuments({
+          client: client._id
+        })
+
+        const lastProject = await Portfolio.findOne({
+          client: client._id
+        })
+          .sort({ createdAt: -1 })
+          .select('title')
+          .lean()
+
+        return {
+          ...client,
+          projectsCount,
+          projectTitle: lastProject ? lastProject.title : '---'
+        }
+      })
+    )
 
     const totalPages = Math.ceil(clientsCount / limit)
 
@@ -206,7 +262,9 @@ app.get('/sw-admin/clients', async (req, res) => {
     const endItem = Math.min(skip + limit, clientsCount)
 
     res.render('admin/Clients', {
-      clients,
+      clients: clientsWithProjects,
+      categories,
+
       clientsCount,
       activeClientsCount,
       newClientsThisWeekCount,
@@ -227,9 +285,11 @@ app.get('/sw-admin/clients', async (req, res) => {
 
 
 
+
+
 app.post('/sw-admin/clients', async (req, res) => {
   try {
-    const { name, company, email, phone, address, notes, avatar } = req.body
+    const { name, company, email, phone, address, notes, avatar, category } = req.body
 
     await Client.create({
       name,
@@ -238,7 +298,8 @@ app.post('/sw-admin/clients', async (req, res) => {
       phone,
       address,
       notes,
-      avatar
+      avatar,
+      category: category || null
     })
 
     res.redirect('/sw-admin/clients')
@@ -247,6 +308,7 @@ app.post('/sw-admin/clients', async (req, res) => {
     res.status(500).send('خطا در ثبت مشتری')
   }
 })
+
 
 
 app.post('/sw-admin/clients/:id/delete', async (req, res) => {
@@ -386,49 +448,71 @@ app.post('/sw-admin/invoices/:id/paid', async (req, res) => {
 // GET — list
 app.get('/sw-admin/portfolio', async (req, res) => {
   try {
-    const [items, clients] = await Promise.all([
+
+    const [items, clients, categories] = await Promise.all([
+
+      // پورتفولیوها
       Portfolio.find()
-        .populate('client',  'name company')
+        .populate('client', 'name company')
         .populate('project', 'title')
-        .sort({ order: 1, createdAt: -1 }),
-      Client.find({ isActive: true }).sort({ name: 1 })
+        .populate('category', 'title slug')   // اگر category رفرنس است
+        .sort({ order: 1, createdAt: -1 })
+        .lean(),
+
+      // لیست مشتری‌ها برای select
+      Client.find({ isActive: true })
+        .sort({ name: 1 })
+        .lean(),
+
+      // دسته‌های مخصوص پورتفولیو
+      Category.find({
+        type: 'portfolio',
+        isActive: true
+      })
+        .sort({ order: 1 })
+        .lean()
     ])
 
     res.render('admin/Portfolio', {
       items,
       clients,
-      flash: req.flash ? req.flash() : {}   // اگر connect-flash داری — وگرنه {} برمیگردونه
+      categories,
+      flash: req.flash ? req.flash() : {}
     })
+
   } catch (err) {
-    console.error(err)
+    console.error('Portfolio Load Error:', err)
     res.status(500).send('خطا در بارگذاری پورتفولیو')
   }
 })
 
+
 // POST — create new
-app.post('/sw-admin/portfolio', async (req, res) => {
+app.post('/sw-admin/portfolio', upload.single('coverImage'), async (req, res) => {
   try {
     const {
-      title, description, coverImage, category,
+      title, description, category,
       techStack, liveUrl, client, isFeatured, publish
     } = req.body
 
+    const coverImage = req.file ? `/uploads/portfolio/${req.file.filename}` : ''
+
     await Portfolio.create({
-      title       : title.trim(),
-      description : description  || '',
-      coverImage  : coverImage   || '',
-      category    : category     || 'web',
+      title       : (title || '').trim(),
+      description : description || '',
+      coverImage  : coverImage,
+      category    : category || 'web',
       techStack   : techStack ? techStack.split(',').map(t => t.trim()).filter(Boolean) : [],
-      liveUrl     : liveUrl      || '',
-      client      : client       || null,
+      liveUrl     : liveUrl || '',
+      client      : client || null,
       isFeatured  : isFeatured === 'on',
-      isPublished : publish === '1',             // دکمه «انتشار» value="1" ، «پیش‌نویس» value="0"
+      isPublished : publish === '1',
       order       : await Portfolio.countDocuments()
     })
 
     await Activity.create({
       type        : 'project_created',
-      title       : `نمونه کار «${title}» به پورتفولیو اضافه شد`,
+      title       : `نمونه کار «${(title || '').trim()}» به پورتفولیو اضافه شد`,
       icon        : 'bi-collection-fill',
       colorVariant: 'accent'
     })
@@ -440,32 +524,48 @@ app.post('/sw-admin/portfolio', async (req, res) => {
   }
 })
 
+
 // POST — update existing
-app.post('/sw-admin/portfolio/:id/update', async (req, res) => {
+app.post('/sw-admin/portfolio/:id/update', upload.single('coverImage'), async (req, res) => {
+
   try {
+
+    const portfolio = await Portfolio.findById(req.params.id)
+
+    if(!portfolio){
+      return res.status(404).send('پروژه پیدا نشد')
+    }
+
     const {
-      title, description, coverImage, category,
+      title, description, category,
       techStack, liveUrl, client, isFeatured, publish
     } = req.body
 
-    await Portfolio.findByIdAndUpdate(req.params.id, {
-      title       : title.trim(),
-      description : description  || '',
-      coverImage  : coverImage   || '',
-      category    : category     || 'web',
-      techStack   : techStack ? techStack.split(',').map(t => t.trim()).filter(Boolean) : [],
-      liveUrl     : liveUrl      || '',
-      client      : client       || null,
-      isFeatured  : isFeatured === 'on',
-      ...(publish !== undefined && { isPublished: publish === '1' })
-    })
+    const coverImage = req.file
+      ? '/uploads/portfolio/' + req.file.filename
+      : portfolio.coverImage   // اگر عکس جدید نبود قبلی بماند
+
+    portfolio.title = title.trim()
+    portfolio.description = description || ''
+    portfolio.coverImage = coverImage
+    portfolio.category = category || 'web'
+    portfolio.techStack = techStack ? techStack.split(',').map(t=>t.trim()).filter(Boolean) : []
+    portfolio.liveUrl = liveUrl || ''
+    portfolio.client = client || null
+    portfolio.isFeatured = isFeatured === 'on'
+    portfolio.isPublished = publish === '1'
+
+    await portfolio.save()
 
     res.redirect('/sw-admin/portfolio')
-  } catch (err) {
+
+  } catch(err){
     console.error(err)
-    res.status(500).send('خطا در ویرایش نمونه کار')
+    res.status(500).send('خطا در ویرایش')
   }
+
 })
+
 
 // POST — publish (toggle draft → published)
 app.post('/sw-admin/portfolio/:id/publish', async (req, res) => {

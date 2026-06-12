@@ -6,6 +6,11 @@ const clientSchema = new mongoose.Schema({
     required: true,
     trim: true
   },
+  category: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Category',
+    default: null
+  },
   company: { type: String, trim: true },
   email: {
     type: String,
@@ -16,7 +21,6 @@ const clientSchema = new mongoose.Schema({
   },
   phone: { type: String, trim: true },
   avatar: { type: String },
-  address: { type: String },
   notes: { type: String },
   isActive: { type: Boolean, default: true }
 }, { timestamps: true });

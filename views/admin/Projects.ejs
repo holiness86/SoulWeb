@@ -66,271 +66,394 @@
     </div>
   </div>
 
-  <!-- Kanban View -->
-  <div id="kanbanView">
-    <div class="kanban-board fade-up fade-up-3">
 
-      <!-- در انتظار -->
+  <%
+  const safeProjects = Array.isArray(projects) ? projects : [];
+
+  const toFaDigits = (value) => {
+    if (value === null || value === undefined) return '';
+    return String(value).replace(/\d/g, d => '۰۱۲۳۴۵۶۷۸۹'[d]);
+  };
+
+  const formatDateFa = (date) => {
+    if (!date) return 'نامشخص';
+
+    try {
+      return new Date(date).toLocaleDateString('fa-IR', {
+        day: 'numeric',
+        month: 'long'
+      });
+    } catch (e) {
+      return 'نامشخص';
+    }
+  };
+
+  const getClientName = (project) => {
+    if (!project.client) return 'بدون مشتری';
+    return project.client.company || project.client.name || 'بدون مشتری';
+  };
+
+  const getCategoryTitle = (project) => {
+    if (!project.category) return 'بدون نوع';
+    return project.category.title || 'بدون نوع';
+  };
+
+  const getTechText = (project) => {
+    if (Array.isArray(project.techStack) && project.techStack.length) {
+      return project.techStack.join(' · ');
+    }
+
+    return 'بدون تکنولوژی';
+  };
+
+  const statusMap = {
+    active: {
+      title: 'در حال انجام',
+      badge: 'badge-inprog',
+      dot: '#6447f4'
+    },
+    review: {
+      title: 'در ریویو',
+      badge: 'badge-review',
+      dot: '#f59e0b'
+    },
+    done: {
+      title: 'تحویل‌شده',
+      badge: 'badge-done',
+      dot: '#22c55e'
+    },
+    hold: {
+      title: 'متوقف',
+      badge: 'badge-hold',
+      dot: '#9899bc'
+    },
+    cancelled: {
+      title: 'لغوشده',
+      badge: 'badge-hold',
+      dot: '#dc2626'
+    }
+  };
+
+  const kanbanColumns = [
+    {
+      key: 'active',
+      title: 'در حال انجام',
+      dot: '#6447f4'
+    },
+    {
+      key: 'review',
+      title: 'در ریویو',
+      dot: '#f59e0b'
+    },
+    {
+      key: 'done',
+      title: 'تحویل‌شده',
+      dot: '#22c55e'
+    },
+    {
+      key: 'hold',
+      title: 'متوقف',
+      dot: '#9899bc'
+    },
+    {
+      key: 'cancelled',
+      title: 'لغوشده',
+      dot: '#dc2626'
+    }
+  ];
+
+  const getStatusTitle = (status) => {
+    return statusMap[status]?.title || 'نامشخص';
+  };
+
+  const getStatusBadge = (status) => {
+    return statusMap[status]?.badge || 'badge-new';
+  };
+
+  const getDueText = (project) => {
+    return formatDateFa(project.deadline);
+  };
+
+  const isDeadlineNear = (project) => {
+    if (!project.deadline || project.status === 'done' || project.status === 'cancelled') return false;
+
+    const now = new Date();
+    const deadline = new Date(project.deadline);
+
+    const diffTime = deadline.getTime() - now.getTime();
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+
+    return diffDays <= 1;
+  };
+
+  const getInitials = (project) => {
+    const name = getClientName(project).trim();
+
+    if (!name || name === 'بدون مشتری') return '؟';
+
+    return name
+      .split(' ')
+      .filter(Boolean)
+      .slice(0, 2)
+      .map(part => part[0])
+      .join('');
+  };
+%>
+
+<!-- Kanban View -->
+<div id="kanbanView">
+  <div class="kanban-board fade-up fade-up-3">
+
+    <% kanbanColumns.forEach(column => { %>
+      <%
+        const columnProjects = safeProjects.filter(project => project.status === column.key);
+      %>
+
       <div class="kanban-col">
         <div class="kanban-head">
-          <div class="kanban-head-title"><div class="kanban-dot" style="background:#9899bc;"></div>در انتظار</div>
-          <span class="kanban-count">۳</span>
+          <div class="kanban-head-title">
+            <div class="kanban-dot" style="background:<%= column.dot %>;"></div>
+            <%= column.title %>
+          </div>
+
+          <span class="kanban-count">
+            <%= toFaDigits(columnProjects.length) %>
+          </span>
         </div>
+
         <div class="kanban-cards">
-          <div class="kcard">
-            <div class="kcard-title">طراحی وب‌سایت استارتاپ ویستا</div>
-            <div class="kcard-prog"><div class="kcard-prog-fill" style="width:0%"></div></div>
-            <div class="kcard-meta">
-              <span class="badge-status badge-new">جدید</span>
-              <span class="kcard-due"><i class="bi bi-calendar3"></i>۵ تیر</span>
-            </div>
-            <div style="margin-top:.6rem;display:flex;justify-content:space-between;align-items:center;">
-              <div class="kcard-avatars">
-                <div class="kcard-av" style="background:var(--grad-main);">علی</div>
-                <div class="kcard-av" style="background:linear-gradient(135deg,#0090e8,#4dc3ff);">مح</div>
+
+          <% if (columnProjects.length === 0) { %>
+            <div class="kcard" style="opacity:.65;text-align:center;">
+              <div class="kcard-title" style="font-size:.8rem;color:var(--color-text-muted);">
+                پروژه‌ای وجود ندارد
               </div>
-              <span style="font-size:.68rem;color:var(--color-text-light);">PHP · ۰٪</span>
             </div>
-          </div>
-          <div class="kcard">
-            <div class="kcard-title">اپلیکیشن مدیریت انبار سورنا</div>
-            <div class="kcard-prog"><div class="kcard-prog-fill" style="width:0%"></div></div>
-            <div class="kcard-meta">
-              <span class="badge-status badge-new">جدید</span>
-              <span class="kcard-due"><i class="bi bi-calendar3"></i>۱۲ تیر</span>
-            </div>
-          </div>
-          <div class="kcard">
-            <div class="kcard-title">رابط کاربری اپ سلامت پلاس</div>
-            <div class="kcard-prog"><div class="kcard-prog-fill" style="width:0%"></div></div>
-            <div class="kcard-meta">
-              <span class="badge-status badge-new">جدید</span>
-              <span class="kcard-due"><i class="bi bi-calendar3"></i>۲۰ تیر</span>
-            </div>
-          </div>
-        </div>
-      </div>
+          <% } %>
 
-      <!-- در حال انجام -->
-      <div class="kanban-col">
-        <div class="kanban-head">
-          <div class="kanban-head-title"><div class="kanban-dot" style="background:#6447f4;"></div>در حال انجام</div>
-          <span class="kanban-count">۵</span>
-        </div>
-        <div class="kanban-cards">
-          <div class="kcard">
-            <div class="kcard-title">فروشگاه کیانی لباس</div>
-            <div class="kcard-prog"><div class="kcard-prog-fill" style="width:68%"></div></div>
-            <div class="kcard-meta">
-              <span class="badge-status badge-inprog">در انجام</span>
-              <span class="kcard-due"><i class="bi bi-calendar3"></i>۱۵ خرداد</span>
-            </div>
-            <div style="margin-top:.6rem;display:flex;justify-content:space-between;align-items:center;">
-              <div class="kcard-avatars"><div class="kcard-av" style="background:linear-gradient(135deg,#a394fb,#6447f4);">سار</div></div>
-              <span style="font-size:.68rem;color:var(--color-text-light);">WooCommerce · ۶۸٪</span>
-            </div>
-          </div>
-          <div class="kcard">
-            <div class="kcard-title">پورتال سازمانی پارسیان</div>
-            <div class="kcard-prog"><div class="kcard-prog-fill" style="width:42%"></div></div>
-            <div class="kcard-meta">
-              <span class="badge-status badge-inprog">در انجام</span>
-              <span class="kcard-due" style="color:#dc2626;font-weight:700;"><i class="bi bi-exclamation-triangle"></i>فردا!</span>
-            </div>
-            <div style="margin-top:.6rem;display:flex;justify-content:space-between;align-items:center;">
-              <div class="kcard-avatars">
-                <div class="kcard-av" style="background:var(--grad-main);">علی</div>
-                <div class="kcard-av" style="background:linear-gradient(135deg,#22c55e,#0090e8);">رضا</div>
+          <% columnProjects.forEach(project => { %>
+            <%
+              const progress = Number(project.progress || 0);
+              const progressWidth = Math.max(0, Math.min(100, progress));
+              const doneStyle = project.status === 'done'
+                ? 'opacity:.7;'
+                : '';
+
+              const progressFillStyle = project.status === 'done'
+                ? `width:${progressWidth}%;background:linear-gradient(135deg,#22c55e,#16a34a)`
+                : `width:${progressWidth}%`;
+
+              const deadlineDanger = isDeadlineNear(project);
+            %>
+
+            <div class="kcard" style="<%= doneStyle %>">
+              <div class="kcard-title">
+                <%= project.title %>
               </div>
-              <span style="font-size:.68rem;color:var(--color-text-light);">Laravel · ۴۲٪</span>
+
+              <div class="kcard-prog">
+                <div class="kcard-prog-fill" style="<%= progressFillStyle %>"></div>
+              </div>
+
+              <div class="kcard-meta">
+                <span class="badge-status <%= getStatusBadge(project.status) %>">
+                  <%= getStatusTitle(project.status) %>
+                </span>
+
+                <span
+                  class="kcard-due"
+                  style="<%= deadlineDanger ? 'color:#dc2626;font-weight:700;' : '' %>"
+                >
+                  <% if (deadlineDanger) { %>
+                    <i class="bi bi-exclamation-triangle"></i>
+                  <% } else { %>
+                    <i class="bi bi-calendar3"></i>
+                  <% } %>
+
+                  <%= getDueText(project) %>
+                </span>
+              </div>
+
+              <div style="margin-top:.6rem;display:flex;justify-content:space-between;align-items:center;gap:.75rem;">
+                <div class="kcard-avatars">
+                  <div class="kcard-av" style="background:var(--grad-main);">
+                    <%= getInitials(project) %>
+                  </div>
+                </div>
+
+                <span style="font-size:.68rem;color:var(--color-text-light);text-align:left;direction:ltr;">
+                  <%= getTechText(project) %> · <%= toFaDigits(progressWidth) %>٪
+                </span>
+              </div>
+
+              <div style="margin-top:.55rem;font-size:.7rem;color:var(--color-text-muted);display:flex;justify-content:space-between;gap:.5rem;">
+                <span>
+                  <i class="bi bi-person"></i>
+                  <%= getClientName(project) %>
+                </span>
+
+                <span>
+                  <i class="bi bi-folder"></i>
+                  <%= getCategoryTitle(project) %>
+                </span>
+              </div>
             </div>
-          </div>
-          <div class="kcard">
-            <div class="kcard-title">فروشگاه دیجیتال آذرنت</div>
-            <div class="kcard-prog"><div class="kcard-prog-fill" style="width:55%"></div></div>
-            <div class="kcard-meta">
-              <span class="badge-status badge-inprog">در انجام</span>
-              <span class="kcard-due"><i class="bi bi-calendar3"></i>۸ تیر</span>
-            </div>
-          </div>
-          <div class="kcard">
-            <div class="kcard-title">سایت شرکتی پردیس‌گستر</div>
-            <div class="kcard-prog"><div class="kcard-prog-fill" style="width:78%"></div></div>
-            <div class="kcard-meta">
-              <span class="badge-status badge-inprog">در انجام</span>
-              <span class="kcard-due"><i class="bi bi-calendar3"></i>۲۵ خرداد</span>
-            </div>
-          </div>
+          <% }) %>
+
         </div>
       </div>
+    <% }) %>
 
-      <!-- ریویو -->
-      <div class="kanban-col">
-        <div class="kanban-head">
-          <div class="kanban-head-title"><div class="kanban-dot" style="background:#f59e0b;"></div>در ریویو</div>
-          <span class="kanban-count">۸</span>
-        </div>
-        <div class="kanban-cards">
-          <div class="kcard">
-            <div class="kcard-title">اپلیکیشن مدیریت مالی آفیلیو</div>
-            <div class="kcard-prog"><div class="kcard-prog-fill" style="width:85%"></div></div>
-            <div class="kcard-meta">
-              <span class="badge-status badge-review">ریویو</span>
-              <span class="kcard-due"><i class="bi bi-calendar3"></i>۲۲ خرداد</span>
-            </div>
-            <div style="margin-top:.6rem;display:flex;justify-content:space-between;align-items:center;">
-              <div class="kcard-avatars"><div class="kcard-av" style="background:linear-gradient(135deg,#f59e0b,#ef4444);">نگر</div></div>
-              <span style="font-size:.68rem;color:var(--color-text-light);">React · ۸۵٪</span>
-            </div>
-          </div>
-          <div class="kcard">
-            <div class="kcard-title">داشبورد تحلیل داده هوشمند</div>
-            <div class="kcard-prog"><div class="kcard-prog-fill" style="width:92%"></div></div>
-            <div class="kcard-meta">
-              <span class="badge-status badge-review">ریویو</span>
-              <span class="kcard-due"><i class="bi bi-calendar3"></i>۱۸ خرداد</span>
-            </div>
-          </div>
-          <div class="kcard">
-            <div class="kcard-title">وب‌سایت پزشکی دکتر رضایی</div>
-            <div class="kcard-prog"><div class="kcard-prog-fill" style="width:95%"></div></div>
-            <div class="kcard-meta">
-              <span class="badge-status badge-review">ریویو</span>
-              <span class="kcard-due"><i class="bi bi-calendar3"></i>۱۶ خرداد</span>
-            </div>
-          </div>
-        </div>
-      </div>
+  </div>
+</div>
+<!-- /kanbanView -->
 
-      <!-- تحویل‌شده -->
-      <div class="kanban-col">
-        <div class="kanban-head">
-          <div class="kanban-head-title"><div class="kanban-dot" style="background:#22c55e;"></div>تحویل‌شده</div>
-          <span class="kanban-count">۸</span>
-        </div>
-        <div class="kanban-cards">
-          <div class="kcard" style="opacity:.7;">
-            <div class="kcard-title">وب‌سایت شرکتی آتین‌دیزاین</div>
-            <div class="kcard-prog"><div class="kcard-prog-fill" style="width:100%;background:linear-gradient(135deg,#22c55e,#16a34a)"></div></div>
-            <div class="kcard-meta">
-              <span class="badge-status badge-done">تحویل‌شد</span>
-              <span class="kcard-due"><i class="bi bi-calendar3"></i>۱ خرداد</span>
-            </div>
-          </div>
-          <div class="kcard" style="opacity:.7;">
-            <div class="kcard-title">اپ رستوران‌یاب کافه‌نت</div>
-            <div class="kcard-prog"><div class="kcard-prog-fill" style="width:100%;background:linear-gradient(135deg,#22c55e,#16a34a)"></div></div>
-            <div class="kcard-meta">
-              <span class="badge-status badge-done">تحویل‌شد</span>
-              <span class="kcard-due"><i class="bi bi-calendar3"></i>۲۰ اردیبهشت</span>
-            </div>
-          </div>
-          <div class="kcard" style="opacity:.7;">
-            <div class="kcard-title">سایت خدمات پاک‌سرویس</div>
-            <div class="kcard-prog"><div class="kcard-prog-fill" style="width:100%;background:linear-gradient(135deg,#22c55e,#16a34a)"></div></div>
-            <div class="kcard-meta">
-              <span class="badge-status badge-done">تحویل‌شد</span>
-              <span class="kcard-due"><i class="bi bi-calendar3"></i>۱۰ اردیبهشت</span>
-            </div>
-          </div>
-        </div>
-      </div>
 
+<!-- Table View -->
+<div id="tableView" style="display:none;">
+  <div class="dash-panel fade-up fade-up-3">
+    <div style="overflow-x:auto;">
+      <table class="sol-table">
+        <thead>
+          <tr>
+            <th>#</th>
+            <th>نام پروژه</th>
+            <th>مشتری</th>
+            <th>نوع</th>
+            <th>وضعیت</th>
+            <th>پیشرفت</th>
+            <th>ددلاین</th>
+            <th>عملیات</th>
+          </tr>
+        </thead>
+
+        <tbody>
+          <% if (safeProjects.length === 0) { %>
+            <tr>
+              <td colspan="8" style="text-align:center;padding:2rem;color:var(--color-text-muted);">
+                هیچ پروژه‌ای پیدا نشد.
+              </td>
+            </tr>
+          <% } %>
+
+          <% safeProjects.forEach((project, index) => { %>
+            <%
+              const progress = Number(project.progress || 0);
+              const progressWidth = Math.max(0, Math.min(100, progress));
+              const deadlineDanger = isDeadlineNear(project);
+            %>
+
+            <tr>
+              <td>
+                <span style="font-size:.75rem;color:var(--color-text-light);">
+                  #<%= toFaDigits(index + 1) %>
+                </span>
+              </td>
+
+              <td>
+                <div style="font-weight:600;">
+                  <%= project.title %>
+                </div>
+
+                <div style="font-size:.73rem;color:var(--color-text-muted);direction:ltr;text-align:right;">
+                  <%= getTechText(project) %>
+                </div>
+              </td>
+
+              <td>
+                <%= getClientName(project) %>
+              </td>
+
+              <td>
+                <%= getCategoryTitle(project) %>
+              </td>
+
+              <td>
+                <span class="badge-status <%= getStatusBadge(project.status) %>">
+                  <%= getStatusTitle(project.status) %>
+                </span>
+              </td>
+
+              <td>
+                <div style="display:flex;align-items:center;gap:.5rem;">
+                  <div class="prog-bar-mini">
+                    <div class="prog-fill" style="width:<%= progressWidth %>%"></div>
+                  </div>
+
+                  <span style="font-size:.73rem;color:<%= deadlineDanger ? '#dc2626' : 'var(--color-text-muted)' %>;font-weight:<%= deadlineDanger ? '700' : '400' %>;">
+                    <%= toFaDigits(progressWidth) %>٪
+                  </span>
+                </div>
+              </td>
+
+              <td
+                style="font-size:.78rem;<%= deadlineDanger ? 'color:#dc2626;font-weight:700;' : '' %>"
+              >
+                <% if (deadlineDanger) { %>
+                  ⚠️
+                <% } %>
+
+                <%= getDueText(project) %>
+              </td>
+
+              <td>
+                <div style="display:flex;gap:.4rem;">
+                  <a
+                    href="/sw-admin/projects/<%= project._id %>"
+                    class="btn-ghost-sm"
+                    style="padding:.28rem .6rem;"
+                    title="مشاهده"
+                  >
+                    <i class="bi bi-eye"></i>
+                  </a>
+
+                  <a
+                    href="/sw-admin/projects/<%= project._id %>/edit"
+                    class="btn-ghost-sm"
+                    style="padding:.28rem .6rem;"
+                    title="ویرایش"
+                  >
+                    <i class="bi bi-pencil"></i>
+                  </a>
+
+                  <form
+                    action="/sw-admin/projects/<%= project._id %>/delete"
+                    method="POST"
+                    style="display:inline;"
+                    onsubmit="return confirm('آیا از حذف این پروژه مطمئن هستید؟')"
+                  >
+                    <button
+                      type="submit"
+                      class="btn-danger-sm"
+                      style="padding:.28rem .6rem;"
+                      title="حذف"
+                    >
+                      <i class="bi bi-trash"></i>
+                    </button>
+                  </form>
+                </div>
+              </td>
+            </tr>
+          <% }) %>
+        </tbody>
+      </table>
     </div>
-  </div><!-- /kanbanView -->
 
-  <!-- Table View -->
-  <div id="tableView" style="display:none;">
-    <div class="dash-panel fade-up fade-up-3">
-      <div style="overflow-x:auto;">
-        <table class="sol-table">
-          <thead>
-            <tr>
-              <th>#</th><th>نام پروژه</th><th>مشتری</th><th>نوع</th>
-              <th>وضعیت</th><th>پیشرفت</th><th>ددلاین</th><th>عملیات</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr>
-              <td><span style="font-size:.75rem;color:var(--color-text-light);">#۱۰۱</span></td>
-              <td><div style="font-weight:600;">فروشگاه کیانی لباس</div><div style="font-size:.73rem;color:var(--color-text-muted);">WooCommerce</div></td>
-              <td>کیانی لباس</td><td>فروشگاه</td>
-              <td><span class="badge-status badge-inprog">در انجام</span></td>
-              <td><div style="display:flex;align-items:center;gap:.5rem;"><div class="prog-bar-mini"><div class="prog-fill" style="width:68%"></div></div><span style="font-size:.73rem;color:var(--color-text-muted);">۶۸٪</span></div></td>
-              <td style="font-size:.78rem;">۱۵ خرداد</td>
-              <td><div style="display:flex;gap:.4rem;">
-                <button class="btn-ghost-sm" style="padding:.28rem .6rem;" title="مشاهده"><i class="bi bi-eye"></i></button>
-                <button class="btn-ghost-sm" style="padding:.28rem .6rem;" title="ویرایش"><i class="bi bi-pencil"></i></button>
-                <button class="btn-danger-sm" style="padding:.28rem .6rem;" title="حذف"><i class="bi bi-trash"></i></button>
-              </div></td>
-            </tr>
-            <tr>
-              <td><span style="font-size:.75rem;color:var(--color-text-light);">#۱۰۲</span></td>
-              <td><div style="font-weight:600;">پورتال سازمانی پارسیان</div><div style="font-size:.73rem;color:var(--color-text-muted);">Laravel</div></td>
-              <td>گروه پارسیان</td><td>وب اپ</td>
-              <td><span class="badge-status badge-inprog">در انجام</span></td>
-              <td><div style="display:flex;align-items:center;gap:.5rem;"><div class="prog-bar-mini"><div class="prog-fill" style="width:42%"></div></div><span style="font-size:.73rem;color:#dc2626;font-weight:700;">۴۲٪</span></div></td>
-              <td style="font-size:.78rem;color:#dc2626;font-weight:700;">⚠️ فردا!</td>
-              <td><div style="display:flex;gap:.4rem;">
-                <button class="btn-ghost-sm" style="padding:.28rem .6rem;"><i class="bi bi-eye"></i></button>
-                <button class="btn-ghost-sm" style="padding:.28rem .6rem;"><i class="bi bi-pencil"></i></button>
-                <button class="btn-danger-sm" style="padding:.28rem .6rem;"><i class="bi bi-trash"></i></button>
-              </div></td>
-            </tr>
-            <tr>
-              <td><span style="font-size:.75rem;color:var(--color-text-light);">#۱۰۳</span></td>
-              <td><div style="font-weight:600;">اپلیکیشن مدیریت مالی</div><div style="font-size:.73rem;color:var(--color-text-muted);">React + Node.js</div></td>
-              <td>آفیلیو</td><td>UI/UX</td>
-              <td><span class="badge-status badge-review">ریویو</span></td>
-              <td><div style="display:flex;align-items:center;gap:.5rem;"><div class="prog-bar-mini"><div class="prog-fill" style="width:85%"></div></div><span style="font-size:.73rem;color:var(--color-text-muted);">۸۵٪</span></div></td>
-              <td style="font-size:.78rem;">۲۲ خرداد</td>
-              <td><div style="display:flex;gap:.4rem;">
-                <button class="btn-ghost-sm" style="padding:.28rem .6rem;"><i class="bi bi-eye"></i></button>
-                <button class="btn-ghost-sm" style="padding:.28rem .6rem;"><i class="bi bi-pencil"></i></button>
-                <button class="btn-danger-sm" style="padding:.28rem .6rem;"><i class="bi bi-trash"></i></button>
-              </div></td>
-            </tr>
-            <tr>
-              <td><span style="font-size:.75rem;color:var(--color-text-light);">#۱۰۰</span></td>
-              <td><div style="font-weight:600;">وب‌سایت شرکتی آتین‌دیزاین</div><div style="font-size:.73rem;color:var(--color-text-muted);">PHP</div></td>
-              <td>آتین‌دیزاین</td><td>وب</td>
-              <td><span class="badge-status badge-done">تحویل‌شد</span></td>
-              <td><div style="display:flex;align-items:center;gap:.5rem;"><div class="prog-bar-mini"><div class="prog-fill" style="width:100%"></div></div><span style="font-size:.73rem;color:#16a34a;font-weight:700;">۱۰۰٪</span></div></td>
-              <td style="font-size:.78rem;">۱ خرداد</td>
-              <td><div style="display:flex;gap:.4rem;">
-                <button class="btn-ghost-sm" style="padding:.28rem .6rem;"><i class="bi bi-eye"></i></button>
-                <button class="btn-ghost-sm" style="padding:.28rem .6rem;"><i class="bi bi-pencil"></i></button>
-                <button class="btn-danger-sm" style="padding:.28rem .6rem;"><i class="bi bi-trash"></i></button>
-              </div></td>
-            </tr>
-            <tr>
-              <td><span style="font-size:.75rem;color:var(--color-text-light);">#۰۹۹</span></td>
-              <td><div style="font-weight:600;">فروشگاه دیجیتال پرتو</div><div style="font-size:.73rem;color:var(--color-text-muted);">Node.js</div></td>
-              <td>شرکت پرتو</td><td>فروشگاه</td>
-              <td><span class="badge-status badge-hold">متوقف</span></td>
-              <td><div style="display:flex;align-items:center;gap:.5rem;"><div class="prog-bar-mini"><div class="prog-fill" style="width:30%"></div></div><span style="font-size:.73rem;color:var(--color-text-muted);">۳۰٪</span></div></td>
-              <td style="font-size:.78rem;">نامشخص</td>
-              <td><div style="display:flex;gap:.4rem;">
-                <button class="btn-ghost-sm" style="padding:.28rem .6rem;"><i class="bi bi-eye"></i></button>
-                <button class="btn-ghost-sm" style="padding:.28rem .6rem;"><i class="bi bi-pencil"></i></button>
-                <button class="btn-danger-sm" style="padding:.28rem .6rem;"><i class="bi bi-trash"></i></button>
-              </div></td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
-      <div style="display:flex;align-items:center;justify-content:space-between;padding:1rem 1.25rem;border-top:1px solid var(--color-border);flex-wrap:wrap;gap:.75rem;">
-        <span style="font-size:.78rem;color:var(--color-text-muted);">نمایش ۱–۵ از ۲۴ پروژه</span>
-        <div style="display:flex;gap:.35rem;">
-          <button class="view-btn" disabled><i class="bi bi-chevron-right"></i></button>
-          <button class="view-btn active">۱</button>
-          <button class="view-btn">۲</button>
-          <button class="view-btn">۳</button>
-          <button class="view-btn"><i class="bi bi-chevron-left"></i></button>
-        </div>
+    <div style="display:flex;align-items:center;justify-content:space-between;padding:1rem 1.25rem;border-top:1px solid var(--color-border);flex-wrap:wrap;gap:.75rem;">
+      <span style="font-size:.78rem;color:var(--color-text-muted);">
+        نمایش <%= toFaDigits(safeProjects.length) %> پروژه
+      </span>
+
+      <div style="display:flex;gap:.35rem;">
+        <button class="view-btn active">
+          <%= toFaDigits(1) %>
+        </button>
       </div>
     </div>
-  </div><!-- /tableView -->
+  </div>
+</div>
+<!-- /tableView -->
+
 
 </main>
 </div><!-- /main-content -->
@@ -343,47 +466,62 @@
       <div class="modal-title" style="margin:0;">پروژه جدید</div>
       <button data-modal-close style="background:transparent;border:none;font-size:1.2rem;color:var(--color-text-muted);cursor:pointer;"><i class="bi bi-x-lg"></i></button>
     </div>
-    <div class="form-row">
-      <label class="sol-label">نام پروژه</label>
-      <input class="sol-input" type="text" placeholder="مثال: وب‌سایت شرکت آلفا">
-    </div>
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;">
+
+    <form action="/admin/projects/add" method="POST" id="addProjectForm">
+
       <div class="form-row">
-        <label class="sol-label">مشتری</label>
-        <select class="sol-select" style="width:100%">
-          <option>انتخاب مشتری…</option>
-          <option>کیانی لباس</option><option>گروه پارسیان</option><option>آفیلیو</option>
-        </select>
+        <label class="sol-label">نام پروژه</label>
+        <input class="sol-input" type="text" name="title" placeholder="مثال: وب‌سایت شرکت آلفا" required>
       </div>
+
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;">
+        <div class="form-row">
+          <label class="sol-label">مشتری</label>
+          <select class="sol-select" name="client" style="width:100%" required>
+            <option value="" selected disabled>انتخاب مشتری…</option>
+            <% clients.forEach(c => { %>
+              <option value="<%= c._id %>"><%= c.name %></option>
+            <% }) %>
+          </select>
+        </div>
+        <div class="form-row">
+          <label class="sol-label">نوع پروژه</label>
+          <select class="sol-select" name="category" style="width:100%" required>
+            <option value="" selected disabled>انتخاب نوع پروژه…</option>
+            <% serviceCategories.forEach(cat => { %>
+              <option value="<%= cat._id %>"><%= cat.title %></option>
+            <% }) %>
+          </select>
+        </div>
+      </div>
+
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;">
+        <div class="form-row">
+          <label class="sol-label">تاریخ شروع</label>
+          <input class="sol-input" type="text" name="startDate" placeholder="۱۴۰۴/۰۳/۲۱">
+        </div>
+        <div class="form-row">
+          <label class="sol-label">ددلاین</label>
+          <input class="sol-input" type="text" name="deadline" placeholder="۱۴۰۴/۰۴/۱۵">
+        </div>
+      </div>
+
       <div class="form-row">
-        <label class="sol-label">نوع پروژه</label>
-        <select class="sol-select" style="width:100%">
-          <option>طراحی وب</option><option>فروشگاه</option><option>UI/UX</option><option>وب اپ</option>
-        </select>
+        <label class="sol-label">تکنولوژی</label>
+        <input class="sol-input" type="text" name="technologies" placeholder="مثال: PHP · Laravel · React">
       </div>
-    </div>
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;">
+
       <div class="form-row">
-        <label class="sol-label">تاریخ شروع</label>
-        <input class="sol-input" type="text" placeholder="۱۴۰۴/۰۳/۲۱">
+        <label class="sol-label">توضیحات</label>
+        <textarea class="sol-input" name="description" rows="3" placeholder="توضیح مختصر پروژه…" style="resize:vertical;"></textarea>
       </div>
-      <div class="form-row">
-        <label class="sol-label">ددلاین</label>
-        <input class="sol-input" type="text" placeholder="۱۴۰۴/۰۴/۱۵">
+
+      <div style="display:flex;gap:.75rem;justify-content:flex-end;margin-top:1.5rem;">
+        <button type="button" class="btn-ghost-sm" data-modal-close>انصراف</button>
+        <button type="submit" class="btn-sol-sm"><i class="bi bi-check-lg"></i> ثبت پروژه</button>
       </div>
-    </div>
-    <div class="form-row">
-      <label class="sol-label">تکنولوژی</label>
-      <input class="sol-input" type="text" placeholder="مثال: PHP · Laravel · React">
-    </div>
-    <div class="form-row">
-      <label class="sol-label">توضیحات</label>
-      <textarea class="sol-input" rows="3" placeholder="توضیح مختصر پروژه…" style="resize:vertical;"></textarea>
-    </div>
-    <div style="display:flex;gap:.75rem;justify-content:flex-end;margin-top:1.5rem;">
-      <button class="btn-ghost-sm" data-modal-close>انصراف</button>
-      <button class="btn-sol-sm"><i class="bi bi-check-lg"></i> ثبت پروژه</button>
-    </div>
+
+    </form>
   </div>
 </div>
 

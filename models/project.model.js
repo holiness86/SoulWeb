@@ -12,10 +12,10 @@ const projectSchema = new mongoose.Schema({
     ref: 'Client',
     required: true
   },
-  type: {
-    type: String,
-    enum: ['web', 'store', 'ui_ux', 'webapp', 'app', 'other'],
-    default: 'web'
+  category: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Category',
+    required: true
   },
   techStack: [{ type: String }],   // e.g. ['Laravel', 'Vue', 'MySQL']
   status: {
@@ -38,7 +38,7 @@ const projectSchema = new mongoose.Schema({
   createdBy: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'User',
-    required: true
+    required: false ,
   }
 }, { timestamps: true });
 

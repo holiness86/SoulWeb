@@ -431,135 +431,58 @@
       <button class="filter-btn" data-filter=".ui">UI/UX</button>
     </div>
 
-    <div class="row g-4">
+<div class="row">
+  <% portfolio.forEach((item, index) => { %>
+    <% 
+      // نگاشت دسته‌بندی‌ها به متن فارسی و کلاس CSS
+      const catMap = {
+        'web': { text: 'طراحی وب', class: 'web' },
+        'store': { text: 'فروشگاه', class: 'shop' },
+        'ui_ux': { text: 'UI/UX', class: 'ui' },
+        'webapp': { text: 'وب اپلیکیشن', class: 'web' },
+        'branding': { text: 'برندینگ', class: 'ui' },
+        'other': { text: 'سایر', class: 'other' }
+      };
+      const currentCat = catMap[item.category] || { text: 'پروژه', class: 'other' };
+      
+      // محاسبه تاخیر انیمیشن (1, 2, 3) برای ایجاد حالت پله‌ای
+      const delay = (index % 3) + 1;
+    %>
 
-      <div class="col-md-6 col-lg-4 portfolio-item web reveal reveal-delay-1">
-        <div class="card-sol card-portfolio">
-          <div class="portfolio-img">
-            <div style="width:100%;height:220px;background:linear-gradient(135deg,#6447f4,#0090e8);display:flex;align-items:center;justify-content:center;">
-              <i class="bi bi-laptop" style="font-size:4rem;color:rgba(255,255,255,.7);"></i>
+    <div class="col-md-6 col-lg-4 portfolio-item <%= currentCat.class %> reveal reveal-delay-<%= delay %>">
+      <div class="card-sol card-portfolio">
+        <div class="portfolio-img">
+          <% if (item.coverImage) { %>
+            <!-- اگر تصویر داشت نمایش بده، در غیر این صورت گرادینت پیش‌فرض -->
+            <img src="<%= item.coverImage %>" alt="<%= item.title %>" style="width:100%; height:220px; object-fit:cover;">
+          <% } else { %>
+            <div style="width:100%; height:220px; background:linear-gradient(135deg,#6447f4,#0090e8); display:flex; align-items:center; justify-content:center;">
+              <i class="bi bi-laptop" style="font-size:4rem; color:rgba(255,255,255,.7);"></i>
             </div>
-            <div class="portfolio-overlay">
-              <a href="#" class="btn-portfolio-view">
-                <i class="bi bi-eye me-1"></i>
-                مشاهده پروژه
-              </a>
-            </div>
-          </div>
-          <div class="portfolio-body">
-            <p class="tag">طراحی وب</p>
-            <h5 style="font-weight:700;font-size:.95rem;margin-bottom:.3rem;">وب‌سایت شرکتی آتین‌دیزاین</h5>
-            <p class="text-muted" style="font-size:.82rem;margin:0;">طراحی و توسعه وب‌سایت شرکت دیزاین آتین</p>
+          <% } %>
+          
+          <div class="portfolio-overlay">
+            <a href="<%= item.liveUrl || '#' %>" class="btn-portfolio-view">
+              <i class="bi bi-eye me-1"></i>
+              مشاهده پروژه
+            </a>
           </div>
         </div>
-      </div>
-
-      <div class="col-md-6 col-lg-4 portfolio-item shop reveal reveal-delay-2">
-        <div class="card-sol card-portfolio">
-          <div class="portfolio-img">
-            <div style="width:100%;height:220px;background:linear-gradient(135deg,#0090e8,#4dc3ff);display:flex;align-items:center;justify-content:center;">
-              <i class="bi bi-bag-heart" style="font-size:4rem;color:rgba(255,255,255,.7);"></i>
-            </div>
-            <div class="portfolio-overlay">
-              <a href="#" class="btn-portfolio-view">
-                <i class="bi bi-eye me-1"></i>
-                مشاهده پروژه
-              </a>
-            </div>
-          </div>
-          <div class="portfolio-body">
-            <p class="tag">فروشگاه</p>
-            <h5 style="font-weight:700;font-size:.95rem;margin-bottom:.3rem;">فروشگاه آنلاین مد و پوشاک</h5>
-            <p class="text-muted" style="font-size:.82rem;margin:0;">طراحی فروشگاه برند لباس لوکس کیانی</p>
-          </div>
+        
+        <div class="portfolio-body">
+          <p class="tag"><%= currentCat.text %></p>
+          <h5 style="font-weight:700; font-size:.95rem; margin-bottom:.3rem;">
+            <%= item.title %>
+          </h5>
+          <p class="text-muted" style="font-size:.82rem; margin:0;">
+            <%= item.description %>
+          </p>
         </div>
       </div>
-
-      <div class="col-md-6 col-lg-4 portfolio-item ui reveal reveal-delay-3">
-        <div class="card-sol card-portfolio">
-          <div class="portfolio-img">
-            <div style="width:100%;height:220px;background:linear-gradient(135deg,#a394fb,#6447f4);display:flex;align-items:center;justify-content:center;">
-              <i class="bi bi-palette2" style="font-size:4rem;color:rgba(255,255,255,.7);"></i>
-            </div>
-            <div class="portfolio-overlay">
-              <a href="#" class="btn-portfolio-view">
-                <i class="bi bi-eye me-1"></i>
-                مشاهده پروژه
-              </a>
-            </div>
-          </div>
-          <div class="portfolio-body">
-            <p class="tag">UI/UX</p>
-            <h5 style="font-weight:700;font-size:.95rem;margin-bottom:.3rem;">اپلیکیشن مدیریت مالی</h5>
-            <p class="text-muted" style="font-size:.82rem;margin:0;">طراحی رابط کاربری اپ مدیریت بودجه</p>
-          </div>
-        </div>
-      </div>
-
-      <div class="col-md-6 col-lg-4 portfolio-item web reveal reveal-delay-1">
-        <div class="card-sol card-portfolio">
-          <div class="portfolio-img">
-            <div style="width:100%;height:220px;background:linear-gradient(135deg,#1e1274,#4028b8);display:flex;align-items:center;justify-content:center;">
-              <i class="bi bi-building" style="font-size:4rem;color:rgba(255,255,255,.7);"></i>
-            </div>
-            <div class="portfolio-overlay">
-              <a href="#" class="btn-portfolio-view">
-                <i class="bi bi-eye me-1"></i>
-                مشاهده پروژه
-              </a>
-            </div>
-          </div>
-          <div class="portfolio-body">
-            <p class="tag">طراحی وب</p>
-            <h5 style="font-weight:700;font-size:.95rem;margin-bottom:.3rem;">پورتال سازمانی پارسیان</h5>
-            <p class="text-muted" style="font-size:.82rem;margin:0;">طراحی پورتال اینترانت سازمان پارسیان</p>
-          </div>
-        </div>
-      </div>
-
-      <div class="col-md-6 col-lg-4 portfolio-item shop reveal reveal-delay-2">
-        <div class="card-sol card-portfolio">
-          <div class="portfolio-img">
-            <div style="width:100%;height:220px;background:linear-gradient(135deg,#005896,#0090e8);display:flex;align-items:center;justify-content:center;">
-              <i class="bi bi-cart3" style="font-size:4rem;color:rgba(255,255,255,.7);"></i>
-            </div>
-            <div class="portfolio-overlay">
-              <a href="#" class="btn-portfolio-view">
-                <i class="bi bi-eye me-1"></i>
-                مشاهده پروژه
-              </a>
-            </div>
-          </div>
-          <div class="portfolio-body">
-            <p class="tag">فروشگاه</p>
-            <h5 style="font-weight:700;font-size:.95rem;margin-bottom:.3rem;">فروشگاه دیجیتال پرتو</h5>
-            <p class="text-muted" style="font-size:.82rem;margin:0;">راه‌اندازی فروشگاه آنلاین تجهیزات الکترونیک</p>
-          </div>
-        </div>
-      </div>
-
-      <div class="col-md-6 col-lg-4 portfolio-item ui reveal reveal-delay-3">
-        <div class="card-sol card-portfolio">
-          <div class="portfolio-img">
-            <div style="width:100%;height:220px;background:linear-gradient(135deg,#4028b8,#836af8);display:flex;align-items:center;justify-content:center;">
-              <i class="bi bi-grid-3x3-gap-fill" style="font-size:4rem;color:rgba(255,255,255,.7);"></i>
-            </div>
-            <div class="portfolio-overlay">
-              <a href="#" class="btn-portfolio-view">
-                <i class="bi bi-eye me-1"></i>
-                مشاهده پروژه
-              </a>
-            </div>
-          </div>
-          <div class="portfolio-body">
-            <p class="tag">UI/UX</p>
-            <h5 style="font-weight:700;font-size:.95rem;margin-bottom:.3rem;">داشبورد تحلیل داده</h5>
-            <p class="text-muted" style="font-size:.82rem;margin:0;">طراحی داشبورد مدیریت و گزارش‌گیری هوشمند</p>
-          </div>
-        </div>
-      </div>
-
     </div>
+  <% }) %>
+</div>
+
 
     <div class="text-center mt-5 reveal">
       <a href="portfolio.html" class="btn btn-outline-main btn-lg">

@@ -70,8 +70,13 @@ const upload = multer({ storage })
 // ─────────────────────────────────────────
 //  PUBLIC ROUTES
 // ─────────────────────────────────────────
-app.get('/', (req, res) => {
-  res.render('index')
+app.get('/', async (req, res) => {
+  try {
+    const portfolio = await Portfolio.find().sort({ order : 1 })
+    res.render('index' , { portfolio })
+  } catch (err) {
+    res.status(500).send('Server Error')
+  }
 })
 
 // ─────────────────────────────────────────
@@ -117,20 +122,49 @@ app.get('/sw-admin', async (req, res) => {
 app.get('/sw-admin/projects', async (req, res) => {
   try {
     const { status, search } = req.query
+
     const filter = {}
-    if (status)  filter.status = status
-    if (search)  filter.title  = { $regex: search, $options: 'i' }
 
-    const projects = await Project.find(filter)
-      .populate('client', 'name company')
-      .sort({ createdAt: -1 })
+    if (status) {
+      filter.status = status
+    }
 
-    res.render('admin/Projects', { projects, query: req.query })
+    if (search) {
+      filter.title = { $regex: search, $options: 'i' }
+    }
+
+    const [projects, clients, serviceCategories] = await Promise.all([
+      Project.find(filter)
+        .populate('client', 'name company')
+        .populate('category', 'title slug')
+        .sort({ createdAt: -1 })
+        .lean(),
+
+      Client.find({ isActive: true })
+        .sort({ name: 1 })
+        .lean(),
+
+      Category.find({
+        type: 'service',
+        isActive: true
+      })
+        .sort({ order: 1 })
+        .lean()
+    ])
+
+    res.render('admin/Projects', {
+      projects,
+      clients,
+      serviceCategories,
+      query: req.query
+    })
+
   } catch (err) {
     console.error(err)
     res.status(500).send('خطا در بارگذاری پروژه‌ها')
   }
 })
+
 
 app.post('/sw-admin/projects', async (req, res) => {
   try {
@@ -848,6 +882,34 @@ app.post('/contact', async (req, res) => {
   } catch (err) {
     res.status(500).json({ success: false, message: 'خطا در ارسال پیام' })
   }
+})
+
+app.post('/admin/projects/add' , async (req, res) => {
+    try {
+        const { title, client, category, startDate, deadline, technologies, description } = req.body
+
+        if (!title || !client || !category) {
+            return res.status(400).send('نام پروژه، مشتری و نوع پروژه الزامی هستند')
+        }
+
+        const newProject = new Project({
+            title,
+            client,
+            category,
+            startDate,
+            deadline,
+            technologies,
+            description
+        })
+
+        await newProject.save()
+
+        res.redirect('/sw-admin/Projects')
+
+    } catch (err) {
+        console.error(err)
+        res.status(500).send('خطا در ثبت پروژه')
+    }
 })
 
 // ─────────────────────────────────────────

@@ -21,6 +21,7 @@
     "bcryptjs": "^3.0.3",
     "connect-flash": "^0.1.1",
     "ejs": "^6.0.1",
+    "exceljs": "^4.4.0",
     "express": "^5.2.1",
     "express-session": "^1.19.0",
     "mongoose": "^9.7.0",

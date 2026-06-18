@@ -4,7 +4,14 @@
 <div class="sidebar-overlay" id="sidebarOverlay"></div>
 <div class="admin-shell">
 
-<%- include('partials/_sidebar', { activePage: 'projects', adminUser: { name: 'علی مدیری', role: 'مدیر کل سیستم', initials: 'ادم' } }) %>
+<%- include('partials/_sidebar', { 
+  activePage: 'projects', 
+  adminUser: { 
+    name: 'علی مدیری', 
+    role: 'مدیر کل سیستم', 
+    initials: 'ادم' 
+  } 
+}) %>
 
 <div class="main-content" id="mainContent">
 <%- include('partials/_header', {
@@ -14,446 +21,614 @@
 
 <main class="page-content">
 
+  <%
+    const safeProjects = Array.isArray(projects) ? projects : [];
+    const safeClients = typeof clients !== 'undefined' && Array.isArray(clients) ? clients : [];
+    const safeServiceCategories = typeof serviceCategories !== 'undefined' && Array.isArray(serviceCategories) ? serviceCategories : [];
+
+    const toFaDigits = (num) => {
+      return String(num ?? 0).replace(/\d/g, d => '۰۱۲۳۴۵۶۷۸۹'[d]);
+    };
+
+    const formatDateFa = (date) => {
+      if (!date) return 'نامشخص';
+
+      try {
+        const d = new Date(date);
+
+        if (Number.isNaN(d.getTime())) {
+          return 'نامشخص';
+        }
+
+        return d.toLocaleDateString('fa-IR', {
+          day: 'numeric',
+          month: 'long'
+        });
+      } catch (e) {
+        return 'نامشخص';
+      }
+    };
+
+    const statusMap = {
+      active: {
+        title: 'در حال انجام',
+        badge: 'badge-inprog',
+        dot: '#6447f4'
+      },
+      review: {
+        title: 'در ریویو',
+        badge: 'badge-review',
+        dot: '#f59e0b'
+      },
+      done: {
+        title: 'تحویل‌شده',
+        badge: 'badge-done',
+        dot: '#22c55e'
+      },
+      hold: {
+        title: 'متوقف',
+        badge: 'badge-hold',
+        dot: '#9899bc'
+      },
+      cancelled: {
+        title: 'لغوشده',
+        badge: 'badge-hold',
+        dot: '#dc2626'
+      }
+    };
+
+    const kanbanColumns = [
+      {
+        key: 'active',
+        title: 'در حال انجام',
+        dot: '#6447f4'
+      },
+      {
+        key: 'review',
+        title: 'در ریویو',
+        dot: '#f59e0b'
+      },
+      {
+        key: 'done',
+        title: 'تحویل‌شده',
+        dot: '#22c55e'
+      },
+      {
+        key: 'hold',
+        title: 'متوقف',
+        dot: '#9899bc'
+      },
+      {
+        key: 'cancelled',
+        title: 'لغوشده',
+        dot: '#dc2626'
+      }
+    ];
+
+    const stats = {
+      active: 0,
+      done: 0,
+      review: 0,
+      hold: 0,
+      cancelled: 0
+    };
+
+    safeProjects.forEach(project => {
+      if (project.status && stats[project.status] !== undefined) {
+        stats[project.status]++;
+      }
+    });
+
+    const getStatusTitle = (status) => {
+      return statusMap[status]?.title || 'نامشخص';
+    };
+
+    const getStatusBadge = (status) => {
+      return statusMap[status]?.badge || 'badge-new';
+    };
+
+    const getClientName = (project) => {
+      if (!project || !project.client) return 'بدون مشتری';
+
+      if (typeof project.client === 'string') {
+        return project.client;
+      }
+
+      return project.client.company || project.client.name || project.client.fullName || 'بدون مشتری';
+    };
+
+    const getCategoryTitle = (project) => {
+      if (!project || !project.category) return 'بدون نوع';
+
+      if (typeof project.category === 'string') {
+        return project.category;
+      }
+
+      return project.category.title || project.category.name || 'بدون نوع';
+    };
+
+    const getTechText = (project) => {
+      if (!project) return 'بدون تکنولوژی';
+
+      if (Array.isArray(project.techStack) && project.techStack.length) {
+        return project.techStack.join(' · ');
+      }
+
+      if (Array.isArray(project.technologies) && project.technologies.length) {
+        return project.technologies.join(' · ');
+      }
+
+      if (typeof project.technologies === 'string' && project.technologies.trim()) {
+        return project.technologies;
+      }
+
+      return 'بدون تکنولوژی';
+    };
+
+    const getDueText = (project) => {
+      return formatDateFa(project?.deadline);
+    };
+
+    const isDeadlineNear = (project) => {
+      if (!project || !project.deadline) return false;
+      if (project.status === 'done' || project.status === 'cancelled') return false;
+
+      const now = new Date();
+      const deadline = new Date(project.deadline);
+
+      if (Number.isNaN(deadline.getTime())) {
+        return false;
+      }
+
+      const diffDays = Math.ceil((deadline - now) / (1000 * 60 * 60 * 24));
+
+      return diffDays <= 1;
+    };
+
+    const getInitials = (project) => {
+      const name = getClientName(project).trim();
+
+      if (!name || name === 'بدون مشتری') {
+        return '؟';
+      }
+
+      return name
+        .split(' ')
+        .filter(Boolean)
+        .slice(0, 2)
+        .map(part => part[0])
+        .join('');
+    };
+
+    const totalProjects = safeProjects.length;
+  %>
+
   <!-- Page Header -->
   <div class="page-header fade-up fade-up-1">
     <div>
       <h1 class="page-title">مدیریت پروژه‌ها</h1>
-      <p class="page-subtitle">۲۴ پروژه فعال · ۸ در انتظار بررسی · ۳ متوقف</p>
+      <p class="page-subtitle">
+        <%= toFaDigits(stats.active) %> پروژه فعال ·
+        <%= toFaDigits(stats.review) %> در انتظار بررسی ·
+        <%= toFaDigits(stats.hold) %> متوقف
+      </p>
     </div>
+
     <div style="display:flex;gap:.6rem;">
-      <button class="btn-ghost-sm"><i class="bi bi-download"></i> خروجی Excel</button>
-      <button class="btn-sol-sm" data-modal-open="projectModal"><i class="bi bi-plus-lg"></i> پروژه جدید</button>
+<a href="/sw-admin/projects/export" class="btn-ghost-sm">
+  <i class="bi bi-download"></i>
+  خروجی Excel
+</a>
+
+
+      <button class="btn-sol-sm" data-modal-open="projectModal">
+        <i class="bi bi-plus-lg"></i>
+        پروژه جدید
+      </button>
     </div>
   </div>
 
   <!-- Stats -->
   <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:1rem;margin-bottom:1.5rem;" class="fade-up fade-up-2">
-    <div class="pstat">
-      <div class="pstat-icon" style="background:rgba(100,71,244,.1);color:var(--main-500);"><i class="bi bi-kanban-fill"></i></div>
-      <div><div class="pstat-val text-grad stat-value" data-count="24" data-suffix="">۲۴</div><div class="pstat-lbl">پروژه فعال</div></div>
-    </div>
-    <div class="pstat">
-      <div class="pstat-icon" style="background:rgba(34,197,94,.1);color:#16a34a;"><i class="bi bi-check-circle-fill"></i></div>
-      <div><div class="pstat-val text-grad stat-value" data-count="153" data-suffix="">۱۵۳</div><div class="pstat-lbl">تحویل‌داده‌شده</div></div>
-    </div>
-    <div class="pstat">
-      <div class="pstat-icon" style="background:rgba(245,158,11,.1);color:#d97706;"><i class="bi bi-clock-history"></i></div>
-      <div><div class="pstat-val text-grad stat-value" data-count="8" data-suffix="">۸</div><div class="pstat-lbl">در انتظار ریویو</div></div>
-    </div>
-    <div class="pstat">
-      <div class="pstat-icon" style="background:rgba(239,68,68,.1);color:#dc2626;"><i class="bi bi-pause-circle-fill"></i></div>
-      <div><div class="pstat-val text-grad stat-value" data-count="3" data-suffix="">۳</div><div class="pstat-lbl">متوقف‌شده</div></div>
-    </div>
-  </div>
 
-  <!-- Filter Bar -->
-  <div class="filter-bar fade-up fade-up-2" data-filter-group>
-    <button class="filter-chip active" data-filter="all">همه</button>
-    <button class="filter-chip" data-filter="inprog">در حال انجام</button>
-    <button class="filter-chip" data-filter="review">ریویو</button>
-    <button class="filter-chip" data-filter="done">تحویل‌شده</button>
-    <button class="filter-chip" data-filter="hold">متوقف</button>
-    <div style="margin-right:auto;display:flex;gap:.5rem;align-items:center;">
-      <select class="sol-select" style="width:auto;font-size:.78rem;padding:.38rem .8rem;">
-        <option>مرتب: جدیدترین</option>
-        <option>مرتب: ددلاین</option>
-        <option>مرتب: پیشرفت</option>
-      </select>
-      <div style="display:flex;gap:.3rem;">
-        <button class="view-btn active" id="viewKanban" title="کانبان"><i class="bi bi-grid-3x3-gap"></i></button>
-        <button class="view-btn" id="viewTable" title="جدول"><i class="bi bi-list-ul"></i></button>
+    <!-- پروژه فعال -->
+    <div class="pstat">
+      <div class="pstat-icon" style="background:rgba(100,71,244,.1);color:var(--main-500);">
+        <i class="bi bi-kanban-fill"></i>
       </div>
-    </div>
-  </div>
 
-
-  <%
-  const safeProjects = Array.isArray(projects) ? projects : [];
-
-  const toFaDigits = (value) => {
-    if (value === null || value === undefined) return '';
-    return String(value).replace(/\d/g, d => '۰۱۲۳۴۵۶۷۸۹'[d]);
-  };
-
-  const formatDateFa = (date) => {
-    if (!date) return 'نامشخص';
-
-    try {
-      return new Date(date).toLocaleDateString('fa-IR', {
-        day: 'numeric',
-        month: 'long'
-      });
-    } catch (e) {
-      return 'نامشخص';
-    }
-  };
-
-  const getClientName = (project) => {
-    if (!project.client) return 'بدون مشتری';
-    return project.client.company || project.client.name || 'بدون مشتری';
-  };
-
-  const getCategoryTitle = (project) => {
-    if (!project.category) return 'بدون نوع';
-    return project.category.title || 'بدون نوع';
-  };
-
-  const getTechText = (project) => {
-    if (Array.isArray(project.techStack) && project.techStack.length) {
-      return project.techStack.join(' · ');
-    }
-
-    return 'بدون تکنولوژی';
-  };
-
-  const statusMap = {
-    active: {
-      title: 'در حال انجام',
-      badge: 'badge-inprog',
-      dot: '#6447f4'
-    },
-    review: {
-      title: 'در ریویو',
-      badge: 'badge-review',
-      dot: '#f59e0b'
-    },
-    done: {
-      title: 'تحویل‌شده',
-      badge: 'badge-done',
-      dot: '#22c55e'
-    },
-    hold: {
-      title: 'متوقف',
-      badge: 'badge-hold',
-      dot: '#9899bc'
-    },
-    cancelled: {
-      title: 'لغوشده',
-      badge: 'badge-hold',
-      dot: '#dc2626'
-    }
-  };
-
-  const kanbanColumns = [
-    {
-      key: 'active',
-      title: 'در حال انجام',
-      dot: '#6447f4'
-    },
-    {
-      key: 'review',
-      title: 'در ریویو',
-      dot: '#f59e0b'
-    },
-    {
-      key: 'done',
-      title: 'تحویل‌شده',
-      dot: '#22c55e'
-    },
-    {
-      key: 'hold',
-      title: 'متوقف',
-      dot: '#9899bc'
-    },
-    {
-      key: 'cancelled',
-      title: 'لغوشده',
-      dot: '#dc2626'
-    }
-  ];
-
-  const getStatusTitle = (status) => {
-    return statusMap[status]?.title || 'نامشخص';
-  };
-
-  const getStatusBadge = (status) => {
-    return statusMap[status]?.badge || 'badge-new';
-  };
-
-  const getDueText = (project) => {
-    return formatDateFa(project.deadline);
-  };
-
-  const isDeadlineNear = (project) => {
-    if (!project.deadline || project.status === 'done' || project.status === 'cancelled') return false;
-
-    const now = new Date();
-    const deadline = new Date(project.deadline);
-
-    const diffTime = deadline.getTime() - now.getTime();
-    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-
-    return diffDays <= 1;
-  };
-
-  const getInitials = (project) => {
-    const name = getClientName(project).trim();
-
-    if (!name || name === 'بدون مشتری') return '؟';
-
-    return name
-      .split(' ')
-      .filter(Boolean)
-      .slice(0, 2)
-      .map(part => part[0])
-      .join('');
-  };
-%>
-
-<!-- Kanban View -->
-<div id="kanbanView">
-  <div class="kanban-board fade-up fade-up-3">
-
-    <% kanbanColumns.forEach(column => { %>
-      <%
-        const columnProjects = safeProjects.filter(project => project.status === column.key);
-      %>
-
-      <div class="kanban-col">
-        <div class="kanban-head">
-          <div class="kanban-head-title">
-            <div class="kanban-dot" style="background:<%= column.dot %>;"></div>
-            <%= column.title %>
-          </div>
-
-          <span class="kanban-count">
-            <%= toFaDigits(columnProjects.length) %>
-          </span>
+      <div>
+        <div class="pstat-val text-grad stat-value"
+             data-count="<%= stats.active %>"
+             data-suffix="">
+          <%= toFaDigits(stats.active) %>
         </div>
 
-        <div class="kanban-cards">
+        <div class="pstat-lbl">
+          پروژه فعال
+        </div>
+      </div>
+    </div>
 
-          <% if (columnProjects.length === 0) { %>
-            <div class="kcard" style="opacity:.65;text-align:center;">
-              <div class="kcard-title" style="font-size:.8rem;color:var(--color-text-muted);">
-                پروژه‌ای وجود ندارد
-              </div>
+    <!-- تحویل شده -->
+    <div class="pstat">
+      <div class="pstat-icon" style="background:rgba(34,197,94,.1);color:#16a34a;">
+        <i class="bi bi-check-circle-fill"></i>
+      </div>
+
+      <div>
+        <div class="pstat-val text-grad stat-value"
+             data-count="<%= stats.done %>"
+             data-suffix="">
+          <%= toFaDigits(stats.done) %>
+        </div>
+
+        <div class="pstat-lbl">
+          تحویل‌داده‌شده
+        </div>
+      </div>
+    </div>
+
+    <!-- ریویو -->
+    <div class="pstat">
+      <div class="pstat-icon" style="background:rgba(245,158,11,.1);color:#d97706;">
+        <i class="bi bi-clock-history"></i>
+      </div>
+
+      <div>
+        <div class="pstat-val text-grad stat-value"
+             data-count="<%= stats.review %>"
+             data-suffix="">
+          <%= toFaDigits(stats.review) %>
+        </div>
+
+        <div class="pstat-lbl">
+          در انتظار ریویو
+        </div>
+      </div>
+    </div>
+
+    <!-- متوقف -->
+    <div class="pstat">
+      <div class="pstat-icon" style="background:rgba(239,68,68,.1);color:#dc2626;">
+        <i class="bi bi-pause-circle-fill"></i>
+      </div>
+
+      <div>
+        <div class="pstat-val text-grad stat-value"
+             data-count="<%= stats.hold %>"
+             data-suffix="">
+          <%= toFaDigits(stats.hold) %>
+        </div>
+
+        <div class="pstat-lbl">
+          متوقف‌شده
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+<!-- Filter Bar -->
+<div class="filter-bar fade-up fade-up-2" data-filter-group>
+
+  <button class="filter-chip active" data-filter="all">
+    همه
+    <span class="filter-count">
+      <%= toFaDigits(safeProjects.length) %>
+    </span>
+  </button>
+
+  <% kanbanColumns.forEach(column => { %>
+    <%
+      const statusCount = safeProjects.filter(project => project.status === column.key).length;
+    %>
+
+    <button class="filter-chip" data-filter="<%= column.key %>">
+      <span 
+        style="width:7px;height:7px;border-radius:50%;background:<%= column.dot %>;display:inline-block;"
+      ></span>
+
+      <%= column.title %>
+
+      <span class="filter-count">
+        <%= toFaDigits(statusCount) %>
+      </span>
+    </button>
+  <% }) %>
+
+  <div style="margin-right:auto;display:flex;gap:.5rem;align-items:center;">
+    <select 
+      class="sol-select" 
+      id="projectSort"
+      style="width:auto;font-size:.78rem;padding:.38rem .8rem;"
+    >
+      <option value="newest">مرتب: جدیدترین</option>
+      <option value="deadline">مرتب: ددلاین</option>
+      <option value="progress">مرتب: پیشرفت</option>
+      <option value="title">مرتب: نام پروژه</option>
+    </select>
+
+    <div style="display:flex;gap:.3rem;">
+      <button type="button" class="view-btn active" id="viewKanban" title="کانبان">
+        <i class="bi bi-grid-3x3-gap"></i>
+      </button>
+
+      <button type="button" class="view-btn" id="viewTable" title="جدول">
+        <i class="bi bi-list-ul"></i>
+      </button>
+    </div>
+  </div>
+</div>
+
+
+  <!-- Kanban View -->
+  <div id="kanbanView">
+    <div class="kanban-board fade-up fade-up-3">
+
+      <% kanbanColumns.forEach(column => { %>
+        <%
+          const columnProjects = safeProjects.filter(project => project.status === column.key);
+        %>
+
+<div class="kanban-col" data-status-col="<%= column.key %>">
+          <div class="kanban-head">
+            <div class="kanban-head-title">
+              <div class="kanban-dot" style="background:<%= column.dot %>;"></div>
+              <%= column.title %>
             </div>
-          <% } %>
 
-          <% columnProjects.forEach(project => { %>
-            <%
-              const progress = Number(project.progress || 0);
-              const progressWidth = Math.max(0, Math.min(100, progress));
-              const doneStyle = project.status === 'done'
-                ? 'opacity:.7;'
-                : '';
+            <span class="kanban-count">
+              <%= toFaDigits(columnProjects.length) %>
+            </span>
+          </div>
 
-              const progressFillStyle = project.status === 'done'
-                ? `width:${progressWidth}%;background:linear-gradient(135deg,#22c55e,#16a34a)`
-                : `width:${progressWidth}%`;
+          <div class="kanban-cards">
 
-              const deadlineDanger = isDeadlineNear(project);
-            %>
-
-            <div class="kcard" style="<%= doneStyle %>">
-              <div class="kcard-title">
-                <%= project.title %>
+            <% if (columnProjects.length === 0) { %>
+              <div class="kcard" style="opacity:.65;text-align:center;">
+                <div class="kcard-title" style="font-size:.8rem;color:var(--color-text-muted);">
+                  پروژه‌ای وجود ندارد
+                </div>
               </div>
+            <% } %>
 
-              <div class="kcard-prog">
-                <div class="kcard-prog-fill" style="<%= progressFillStyle %>"></div>
+            <% columnProjects.forEach(project => { %>
+              <%
+                const progress = Number(project.progress || 0);
+                const progressWidth = Math.max(0, Math.min(100, progress));
+
+                const doneStyle = project.status === 'done'
+                  ? 'opacity:.7;'
+                  : '';
+
+                const progressFillStyle = project.status === 'done'
+                  ? `width:${progressWidth}%;background:linear-gradient(135deg,#22c55e,#16a34a)`
+                  : `width:${progressWidth}%`;
+
+                const deadlineDanger = isDeadlineNear(project);
+              %>
+
+              <div 
+                class="kcard" 
+                style="<%= doneStyle %>" 
+                data-status="<%= project.status %>"
+                data-title="<%= project.title || '' %>"
+                data-progress="<%= progressWidth %>"
+                data-deadline="<%= project.deadline ? new Date(project.deadline).getTime() : 0 %>"
+                data-created="<%= project.createdAt ? new Date(project.createdAt).getTime() : 0 %>"
+              >
+                <div class="kcard-title">
+                  <%= project.title || 'بدون عنوان' %>
+                </div>
+
+                <div class="kcard-prog">
+                  <div class="kcard-prog-fill" style="<%= progressFillStyle %>"></div>
+                </div>
+
+                <div class="kcard-meta">
+                  <span class="badge-status <%= getStatusBadge(project.status) %>">
+                    <%= getStatusTitle(project.status) %>
+                  </span>
+
+                  <span
+                    class="kcard-due"
+                    style="<%= deadlineDanger ? 'color:#dc2626;font-weight:700;' : '' %>"
+                  >
+                    <% if (deadlineDanger) { %>
+                      <i class="bi bi-exclamation-triangle"></i>
+                    <% } else { %>
+                      <i class="bi bi-calendar3"></i>
+                    <% } %>
+
+                    <%= getDueText(project) %>
+                  </span>
+                </div>
+
+                <div style="margin-top:.6rem;display:flex;justify-content:space-between;align-items:center;gap:.75rem;">
+                  <div class="kcard-avatars">
+                    <div class="kcard-av" style="background:var(--grad-main);">
+                      <%= getInitials(project) %>
+                    </div>
+                  </div>
+
+                  <span style="font-size:.68rem;color:var(--color-text-light);text-align:left;direction:ltr;">
+                    <%= getTechText(project) %> · <%= toFaDigits(progressWidth) %>٪
+                  </span>
+                </div>
+
+                <div style="margin-top:.55rem;font-size:.7rem;color:var(--color-text-muted);display:flex;justify-content:space-between;gap:.5rem;">
+                  <span>
+                    <i class="bi bi-person"></i>
+                    <%= getClientName(project) %>
+                  </span>
+
+                  <span>
+                    <i class="bi bi-folder"></i>
+                    <%= getCategoryTitle(project) %>
+                  </span>
+                </div>
               </div>
+            <% }) %>
 
-              <div class="kcard-meta">
-                <span class="badge-status <%= getStatusBadge(project.status) %>">
-                  <%= getStatusTitle(project.status) %>
-                </span>
+          </div>
+        </div>
+      <% }) %>
 
-                <span
-                  class="kcard-due"
-                  style="<%= deadlineDanger ? 'color:#dc2626;font-weight:700;' : '' %>"
+    </div>
+  </div>
+  <!-- /kanbanView -->
+
+  <!-- Table View -->
+  <div id="tableView" style="display:none;">
+    <div class="dash-panel fade-up fade-up-3">
+      <div style="overflow-x:auto;">
+        <table class="sol-table">
+          <thead>
+            <tr>
+              <th>#</th>
+              <th>نام پروژه</th>
+              <th>مشتری</th>
+              <th>نوع</th>
+              <th>وضعیت</th>
+              <th>پیشرفت</th>
+              <th>ددلاین</th>
+              <th>عملیات</th>
+            </tr>
+          </thead>
+
+          <tbody>
+            <% if (safeProjects.length === 0) { %>
+              <tr>
+                <td colspan="8" style="text-align:center;padding:2rem;color:var(--color-text-muted);">
+                  هیچ پروژه‌ای پیدا نشد.
+                </td>
+              </tr>
+            <% } %>
+
+            <% safeProjects.forEach((project, index) => { %>
+              <%
+                const progress = Number(project.progress || 0);
+                const progressWidth = Math.max(0, Math.min(100, progress));
+                const deadlineDanger = isDeadlineNear(project);
+              %>
+
+              <tr 
+                data-status="<%= project.status %>"
+                data-title="<%= project.title || '' %>"
+                data-progress="<%= progressWidth %>"
+                data-deadline="<%= project.deadline ? new Date(project.deadline).getTime() : 0 %>"
+                data-created="<%= project.createdAt ? new Date(project.createdAt).getTime() : 0 %>"
+              >
+                <td>
+                  <span style="font-size:.75rem;color:var(--color-text-light);">
+                    #<%= toFaDigits(index + 1) %>
+                  </span>
+                </td>
+
+                <td>
+                  <div style="font-weight:600;">
+                    <%= project.title || 'بدون عنوان' %>
+                  </div>
+
+                  <div style="font-size:.73rem;color:var(--color-text-muted);direction:ltr;text-align:right;">
+                    <%= getTechText(project) %>
+                  </div>
+                </td>
+
+                <td>
+                  <%= getClientName(project) %>
+                </td>
+
+                <td>
+                  <%= getCategoryTitle(project) %>
+                </td>
+
+                <td>
+                  <span class="badge-status <%= getStatusBadge(project.status) %>">
+                    <%= getStatusTitle(project.status) %>
+                  </span>
+                </td>
+
+                <td>
+                  <div style="display:flex;align-items:center;gap:.5rem;">
+                    <div class="prog-bar-mini">
+                      <div class="prog-fill" style="width:<%= progressWidth %>%"></div>
+                    </div>
+
+                    <span style="font-size:.73rem;color:<%= deadlineDanger ? '#dc2626' : 'var(--color-text-muted)' %>;font-weight:<%= deadlineDanger ? '700' : '400' %>;">
+                      <%= toFaDigits(progressWidth) %>٪
+                    </span>
+                  </div>
+                </td>
+
+                <td
+                  style="font-size:.78rem;<%= deadlineDanger ? 'color:#dc2626;font-weight:700;' : '' %>"
                 >
                   <% if (deadlineDanger) { %>
-                    <i class="bi bi-exclamation-triangle"></i>
-                  <% } else { %>
-                    <i class="bi bi-calendar3"></i>
+                    ⚠️
                   <% } %>
 
                   <%= getDueText(project) %>
-                </span>
-              </div>
+                </td>
 
-              <div style="margin-top:.6rem;display:flex;justify-content:space-between;align-items:center;gap:.75rem;">
-                <div class="kcard-avatars">
-                  <div class="kcard-av" style="background:var(--grad-main);">
-                    <%= getInitials(project) %>
+                <td>
+                  <div style="display:flex;gap:.4rem;">
+                    <a
+                      href="/sw-admin/projects/<%= project._id %>"
+                      class="btn-ghost-sm"
+                      style="padding:.28rem .6rem;"
+                      title="مشاهده"
+                    >
+                      <i class="bi bi-eye"></i>
+                    </a>
+
+                    <a
+                      href="/sw-admin/projects/<%= project._id %>/edit"
+                      class="btn-ghost-sm"
+                      style="padding:.28rem .6rem;"
+                      title="ویرایش"
+                    >
+                      <i class="bi bi-pencil"></i>
+                    </a>
+
+                    <form
+                      action="/sw-admin/projects/<%= project._id %>/delete"
+                      method="POST"
+                      style="display:inline;"
+                      onsubmit="return confirm('آیا از حذف این پروژه مطمئن هستید؟')"
+                    >
+                      <button
+                        type="submit"
+                        class="btn-danger-sm"
+                        style="padding:.28rem .6rem;"
+                        title="حذف"
+                      >
+                        <i class="bi bi-trash"></i>
+                      </button>
+                    </form>
                   </div>
-                </div>
+                </td>
+              </tr>
+            <% }) %>
+          </tbody>
+        </table>
+      </div>
 
-                <span style="font-size:.68rem;color:var(--color-text-light);text-align:left;direction:ltr;">
-                  <%= getTechText(project) %> · <%= toFaDigits(progressWidth) %>٪
-                </span>
-              </div>
+      <div style="display:flex;align-items:center;justify-content:space-between;padding:1rem 1.25rem;border-top:1px solid var(--color-border);flex-wrap:wrap;gap:.75rem;">
+        <span style="font-size:.78rem;color:var(--color-text-muted);">
+          نمایش <%= toFaDigits(totalProjects) %> پروژه
+        </span>
 
-              <div style="margin-top:.55rem;font-size:.7rem;color:var(--color-text-muted);display:flex;justify-content:space-between;gap:.5rem;">
-                <span>
-                  <i class="bi bi-person"></i>
-                  <%= getClientName(project) %>
-                </span>
-
-                <span>
-                  <i class="bi bi-folder"></i>
-                  <%= getCategoryTitle(project) %>
-                </span>
-              </div>
-            </div>
-          <% }) %>
-
+        <div style="display:flex;gap:.35rem;">
+          <button class="view-btn active">
+            <%= toFaDigits(1) %>
+          </button>
         </div>
       </div>
-    <% }) %>
-
-  </div>
-</div>
-<!-- /kanbanView -->
-
-
-<!-- Table View -->
-<div id="tableView" style="display:none;">
-  <div class="dash-panel fade-up fade-up-3">
-    <div style="overflow-x:auto;">
-      <table class="sol-table">
-        <thead>
-          <tr>
-            <th>#</th>
-            <th>نام پروژه</th>
-            <th>مشتری</th>
-            <th>نوع</th>
-            <th>وضعیت</th>
-            <th>پیشرفت</th>
-            <th>ددلاین</th>
-            <th>عملیات</th>
-          </tr>
-        </thead>
-
-        <tbody>
-          <% if (safeProjects.length === 0) { %>
-            <tr>
-              <td colspan="8" style="text-align:center;padding:2rem;color:var(--color-text-muted);">
-                هیچ پروژه‌ای پیدا نشد.
-              </td>
-            </tr>
-          <% } %>
-
-          <% safeProjects.forEach((project, index) => { %>
-            <%
-              const progress = Number(project.progress || 0);
-              const progressWidth = Math.max(0, Math.min(100, progress));
-              const deadlineDanger = isDeadlineNear(project);
-            %>
-
-            <tr>
-              <td>
-                <span style="font-size:.75rem;color:var(--color-text-light);">
-                  #<%= toFaDigits(index + 1) %>
-                </span>
-              </td>
-
-              <td>
-                <div style="font-weight:600;">
-                  <%= project.title %>
-                </div>
-
-                <div style="font-size:.73rem;color:var(--color-text-muted);direction:ltr;text-align:right;">
-                  <%= getTechText(project) %>
-                </div>
-              </td>
-
-              <td>
-                <%= getClientName(project) %>
-              </td>
-
-              <td>
-                <%= getCategoryTitle(project) %>
-              </td>
-
-              <td>
-                <span class="badge-status <%= getStatusBadge(project.status) %>">
-                  <%= getStatusTitle(project.status) %>
-                </span>
-              </td>
-
-              <td>
-                <div style="display:flex;align-items:center;gap:.5rem;">
-                  <div class="prog-bar-mini">
-                    <div class="prog-fill" style="width:<%= progressWidth %>%"></div>
-                  </div>
-
-                  <span style="font-size:.73rem;color:<%= deadlineDanger ? '#dc2626' : 'var(--color-text-muted)' %>;font-weight:<%= deadlineDanger ? '700' : '400' %>;">
-                    <%= toFaDigits(progressWidth) %>٪
-                  </span>
-                </div>
-              </td>
-
-              <td
-                style="font-size:.78rem;<%= deadlineDanger ? 'color:#dc2626;font-weight:700;' : '' %>"
-              >
-                <% if (deadlineDanger) { %>
-                  ⚠️
-                <% } %>
-
-                <%= getDueText(project) %>
-              </td>
-
-              <td>
-                <div style="display:flex;gap:.4rem;">
-                  <a
-                    href="/sw-admin/projects/<%= project._id %>"
-                    class="btn-ghost-sm"
-                    style="padding:.28rem .6rem;"
-                    title="مشاهده"
-                  >
-                    <i class="bi bi-eye"></i>
-                  </a>
-
-                  <a
-                    href="/sw-admin/projects/<%= project._id %>/edit"
-                    class="btn-ghost-sm"
-                    style="padding:.28rem .6rem;"
-                    title="ویرایش"
-                  >
-                    <i class="bi bi-pencil"></i>
-                  </a>
-
-                  <form
-                    action="/sw-admin/projects/<%= project._id %>/delete"
-                    method="POST"
-                    style="display:inline;"
-                    onsubmit="return confirm('آیا از حذف این پروژه مطمئن هستید؟')"
-                  >
-                    <button
-                      type="submit"
-                      class="btn-danger-sm"
-                      style="padding:.28rem .6rem;"
-                      title="حذف"
-                    >
-                      <i class="bi bi-trash"></i>
-                    </button>
-                  </form>
-                </div>
-              </td>
-            </tr>
-          <% }) %>
-        </tbody>
-      </table>
-    </div>
-
-    <div style="display:flex;align-items:center;justify-content:space-between;padding:1rem 1.25rem;border-top:1px solid var(--color-border);flex-wrap:wrap;gap:.75rem;">
-      <span style="font-size:.78rem;color:var(--color-text-muted);">
-        نمایش <%= toFaDigits(safeProjects.length) %> پروژه
-      </span>
-
-      <div style="display:flex;gap:.35rem;">
-        <button class="view-btn active">
-          <%= toFaDigits(1) %>
-        </button>
-      </div>
     </div>
   </div>
-</div>
-<!-- /tableView -->
-
+  <!-- /tableView -->
 
 </main>
 </div><!-- /main-content -->
@@ -464,32 +639,50 @@
   <div class="modal-box">
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1.5rem;">
       <div class="modal-title" style="margin:0;">پروژه جدید</div>
-      <button data-modal-close style="background:transparent;border:none;font-size:1.2rem;color:var(--color-text-muted);cursor:pointer;"><i class="bi bi-x-lg"></i></button>
+
+      <button data-modal-close style="background:transparent;border:none;font-size:1.2rem;color:var(--color-text-muted);cursor:pointer;">
+        <i class="bi bi-x-lg"></i>
+      </button>
     </div>
 
-    <form action="/admin/projects/add" method="POST" id="addProjectForm">
+    <form action="/sw-admin/projects/add" method="POST" id="addProjectForm">
 
       <div class="form-row">
         <label class="sol-label">نام پروژه</label>
-        <input class="sol-input" type="text" name="title" placeholder="مثال: وب‌سایت شرکت آلفا" required>
+        <input 
+          class="sol-input" 
+          type="text" 
+          name="title" 
+          placeholder="مثال: وب‌سایت شرکت آلفا" 
+          required
+        >
       </div>
 
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;">
         <div class="form-row">
           <label class="sol-label">مشتری</label>
+
           <select class="sol-select" name="client" style="width:100%" required>
             <option value="" selected disabled>انتخاب مشتری…</option>
-            <% clients.forEach(c => { %>
-              <option value="<%= c._id %>"><%= c.name %></option>
+
+            <% safeClients.forEach(c => { %>
+              <option value="<%= c._id %>">
+                <%= c.name || 'مشتری بدون نام' %>
+              </option>
             <% }) %>
           </select>
         </div>
+
         <div class="form-row">
           <label class="sol-label">نوع پروژه</label>
+
           <select class="sol-select" name="category" style="width:100%" required>
             <option value="" selected disabled>انتخاب نوع پروژه…</option>
-            <% serviceCategories.forEach(cat => { %>
-              <option value="<%= cat._id %>"><%= cat.title %></option>
+
+            <% safeServiceCategories.forEach(cat => { %>
+              <option value="<%= cat._id %>">
+                <%= cat.title || cat.name || 'دسته‌بندی بدون عنوان' %>
+              </option>
             <% }) %>
           </select>
         </div>
@@ -498,27 +691,55 @@
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;">
         <div class="form-row">
           <label class="sol-label">تاریخ شروع</label>
-          <input class="sol-input" type="text" name="startDate" placeholder="۱۴۰۴/۰۳/۲۱">
+          <input 
+            class="sol-input" 
+            type="date" 
+            name="startDate" 
+            placeholder="۱۴۰۴/۰۳/۲۱"
+          >
         </div>
+
         <div class="form-row">
           <label class="sol-label">ددلاین</label>
-          <input class="sol-input" type="text" name="deadline" placeholder="۱۴۰۴/۰۴/۱۵">
+          <input 
+            class="sol-input" 
+            type="date" 
+            name="deadline" 
+            placeholder="۱۴۰۴/۰۴/۱۵"
+          >
         </div>
       </div>
 
       <div class="form-row">
         <label class="sol-label">تکنولوژی</label>
-        <input class="sol-input" type="text" name="technologies" placeholder="مثال: PHP · Laravel · React">
+        <input 
+          class="sol-input" 
+          type="text" 
+          name="techStack" 
+          placeholder="مثال: PHP · Laravel · React"
+        >
       </div>
 
       <div class="form-row">
         <label class="sol-label">توضیحات</label>
-        <textarea class="sol-input" name="description" rows="3" placeholder="توضیح مختصر پروژه…" style="resize:vertical;"></textarea>
+        <textarea 
+          class="sol-input" 
+          name="description" 
+          rows="3" 
+          placeholder="توضیح مختصر پروژه…" 
+          style="resize:vertical;"
+        ></textarea>
       </div>
 
       <div style="display:flex;gap:.75rem;justify-content:flex-end;margin-top:1.5rem;">
-        <button type="button" class="btn-ghost-sm" data-modal-close>انصراف</button>
-        <button type="submit" class="btn-sol-sm"><i class="bi bi-check-lg"></i> ثبت پروژه</button>
+        <button type="button" class="btn-ghost-sm" data-modal-close>
+          انصراف
+        </button>
+
+        <button type="submit" class="btn-sol-sm">
+          <i class="bi bi-check-lg"></i>
+          ثبت پروژه
+        </button>
       </div>
 
     </form>
@@ -532,33 +753,224 @@
 .pstat-icon{width:40px;height:40px;border-radius:var(--radius-sm);display:flex;align-items:center;justify-content:center;font-size:1.1rem;flex-shrink:0}
 .pstat-val{font-size:1.5rem;font-weight:900;line-height:1}
 .pstat-lbl{font-size:.73rem;color:var(--color-text-muted);margin-top:.15rem}
+
 .filter-bar{display:flex;align-items:center;gap:.6rem;flex-wrap:wrap;margin-bottom:1.25rem}
 .filter-chip{display:inline-flex;align-items:center;gap:.35rem;font-family:var(--font-primary);font-size:.78rem;font-weight:600;padding:.38rem .9rem;border-radius:var(--radius-full);border:1.5px solid var(--color-border);background:var(--color-surface);color:var(--color-text-muted);cursor:pointer;transition:all var(--dur-fast)}
 .filter-chip:hover,.filter-chip.active{background:var(--main-500);border-color:var(--main-500);color:#fff}
+
 .view-btn{width:32px;height:32px;border-radius:var(--radius-sm);border:1.5px solid var(--color-border);background:var(--color-surface);color:var(--color-text-muted);display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:.9rem;transition:all var(--dur-fast)}
 .view-btn:disabled{opacity:.4;cursor:not-allowed}
 .view-btn.active,.view-btn:not(:disabled):hover{background:var(--main-500);border-color:var(--main-500);color:#fff}
-.kanban-board{display:grid;grid-template-columns:repeat(4,1fr);gap:1rem;margin-bottom:1.5rem}
+
+.kanban-board{display:grid;grid-template-columns:repeat(5,1fr);gap:1rem;margin-bottom:1.5rem}
+@media(max-width:1400px){.kanban-board{grid-template-columns:repeat(4,1fr)}}
 @media(max-width:1100px){.kanban-board{grid-template-columns:repeat(2,1fr)}}
 @media(max-width:600px){.kanban-board{grid-template-columns:1fr}}
+
 .kanban-col{background:var(--color-bg);border:1px solid var(--color-border);border-radius:var(--radius-lg);overflow:hidden}
 [data-bs-theme="dark"] .kanban-col{background:var(--color-surface-alt)}
+
 .kanban-head{padding:.75rem 1rem;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid var(--color-border)}
 .kanban-head-title{font-size:.8rem;font-weight:700;display:flex;align-items:center;gap:.45rem}
 .kanban-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
 .kanban-count{font-size:.68rem;font-weight:700;background:var(--color-border);color:var(--color-text-muted);padding:.1rem .4rem;border-radius:99px}
+
 .kanban-cards{padding:.65rem;display:flex;flex-direction:column;gap:.6rem;min-height:120px}
+
 .kcard{background:var(--color-surface);border:1px solid var(--color-border);border-radius:var(--radius-md);padding:.85rem 1rem;cursor:pointer;transition:all var(--dur-normal) var(--ease-spring);position:relative;overflow:hidden}
 .kcard:hover{transform:translateY(-2px);box-shadow:var(--shadow-md);border-color:var(--main-200)}
 [data-bs-theme="dark"] .kcard:hover{border-color:rgba(100,71,244,.25)}
+
 .kcard::before{content:'';position:absolute;top:0;right:0;left:0;height:3px;background:var(--grad-main);opacity:0;transition:opacity var(--dur-fast)}
 .kcard:hover::before{opacity:1}
+
 .kcard-title{font-size:.83rem;font-weight:700;margin-bottom:.5rem;line-height:1.4}
 .kcard-meta{display:flex;align-items:center;justify-content:space-between;gap:.5rem;flex-wrap:wrap}
 .kcard-due{font-size:.68rem;color:var(--color-text-muted);display:flex;align-items:center;gap:.2rem}
+
 .kcard-prog{height:3px;border-radius:99px;background:var(--color-border);margin:.6rem 0;overflow:hidden}
 .kcard-prog-fill{height:100%;border-radius:99px;background:var(--grad-main)}
+
 .kcard-avatars{display:flex;gap:.25rem;align-items:center}
 .kcard-av{width:20px;height:20px;border-radius:5px;font-size:.55rem;font-weight:800;color:#fff;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+
+.filter-count{
+  font-size:.65rem;
+  font-weight:800;
+  min-width:18px;
+  height:18px;
+  padding:0 .35rem;
+  border-radius:99px;
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  background:rgba(255,255,255,.22);
+}
+
+.filter-chip:not(.active) .filter-count{
+  background:var(--color-border);
+  color:var(--color-text-muted);
+}
+
 </style>
+
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+  const viewKanbanBtn = document.getElementById('viewKanban');
+  const viewTableBtn = document.getElementById('viewTable');
+  const kanbanView = document.getElementById('kanbanView');
+  const tableView = document.getElementById('tableView');
+
+  const filterChips = document.querySelectorAll('.filter-chip[data-filter]');
+  const kanbanColumns = document.querySelectorAll('.kanban-col[data-status-col]');
+  const tableRows = document.querySelectorAll('#tableView tbody tr[data-status]');
+  const projectSort = document.getElementById('projectSort');
+
+  let activeFilter = 'all';
+
+  // -----------------------------
+  // View Switch: Kanban / Table
+  // -----------------------------
+  if (viewKanbanBtn && viewTableBtn && kanbanView && tableView) {
+    viewKanbanBtn.addEventListener('click', function () {
+      kanbanView.style.display = '';
+      tableView.style.display = 'none';
+
+      viewKanbanBtn.classList.add('active');
+      viewTableBtn.classList.remove('active');
+    });
+
+    viewTableBtn.addEventListener('click', function () {
+      kanbanView.style.display = 'none';
+      tableView.style.display = '';
+
+      viewTableBtn.classList.add('active');
+      viewKanbanBtn.classList.remove('active');
+    });
+  }
+
+  // -----------------------------
+  // Filter Function
+  // -----------------------------
+  function applyFilter(filter) {
+    activeFilter = filter;
+
+    // Kanban columns
+    kanbanColumns.forEach(function (column) {
+      const colStatus = column.dataset.statusCol;
+
+      if (filter === 'all' || colStatus === filter) {
+        column.style.display = '';
+      } else {
+        column.style.display = 'none';
+      }
+    });
+
+    // Table rows
+    tableRows.forEach(function (row) {
+      const rowStatus = row.dataset.status;
+
+      if (filter === 'all' || rowStatus === filter) {
+        row.style.display = '';
+      } else {
+        row.style.display = 'none';
+      }
+    });
+  }
+
+  // -----------------------------
+  // Filter Buttons Events
+  // -----------------------------
+  filterChips.forEach(function (chip) {
+    chip.addEventListener('click', function () {
+      const filter = chip.dataset.filter;
+
+      filterChips.forEach(function (item) {
+        item.classList.remove('active');
+      });
+
+      chip.classList.add('active');
+
+      applyFilter(filter);
+    });
+  });
+
+  // -----------------------------
+  // Sort Helpers
+  // -----------------------------
+  function getSortableValue(element, sortType) {
+    if (sortType === 'progress') {
+      return Number(element.dataset.progress || 0);
+    }
+
+    if (sortType === 'deadline') {
+      return Number(element.dataset.deadline || 0);
+    }
+
+    if (sortType === 'newest') {
+      return Number(element.dataset.created || 0);
+    }
+
+    if (sortType === 'title') {
+      return String(element.dataset.title || '').trim();
+    }
+
+    return 0;
+  }
+
+  function sortElements(container, selector, sortType) {
+    if (!container) return;
+
+    const items = Array.from(container.querySelectorAll(selector));
+
+    items.sort(function (a, b) {
+      const aValue = getSortableValue(a, sortType);
+      const bValue = getSortableValue(b, sortType);
+
+      if (sortType === 'title') {
+        return String(aValue).localeCompare(String(bValue), 'fa');
+      }
+
+      // newest/progress/deadline descending/ascending logic
+      if (sortType === 'deadline') {
+        // ددلاین نزدیک‌تر اول
+        return aValue - bValue;
+      }
+
+      // جدیدترین و پیشرفت بیشتر اول
+      return bValue - aValue;
+    });
+
+    items.forEach(function (item) {
+      container.appendChild(item);
+    });
+  }
+
+  function applySort(sortType) {
+    // Sort Kanban cards inside each column
+    document.querySelectorAll('.kanban-cards').forEach(function (cardsContainer) {
+      sortElements(cardsContainer, '.kcard[data-status]', sortType);
+    });
+
+    // Sort Table rows
+    const tableBody = document.querySelector('#tableView tbody');
+
+    if (tableBody) {
+      sortElements(tableBody, 'tr[data-status]', sortType);
+    }
+
+    // بعد از sort، فیلتر فعلی دوباره اعمال شود
+    applyFilter(activeFilter);
+  }
+
+  // -----------------------------
+  // Sort Event
+  // -----------------------------
+  if (projectSort) {
+    projectSort.addEventListener('change', function () {
+      applySort(projectSort.value);
+    });
+  }
+});
+</script>
 ` }) %>

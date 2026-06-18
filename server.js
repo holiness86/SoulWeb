@@ -3,6 +3,8 @@ const mongoose   = require('mongoose')
 const bcrypt     = require('bcryptjs')
 const path       = require('path')
 const multer     = require('multer')
+const ExcelJS    = require('exceljs')
+
 
 const app = express()
 
@@ -166,39 +168,39 @@ app.get('/sw-admin/projects', async (req, res) => {
 })
 
 
-app.post('/sw-admin/projects', async (req, res) => {
-  try {
-    const { title, description, client, type, techStack,
-            status, progress, deadline, price, tags } = req.body
+// app.post('/sw-admin/projects', async (req, res) => {
+//   try {
+//     const { title, description, client, type, techStack,
+//             status, progress, deadline, price, tags } = req.body
 
-    // createdBy: در پروژه واقعی از session میاد — فعلا placeholder
-    const ADMIN_PLACEHOLDER_ID = '000000000000000000000001'
+//     // createdBy: در پروژه واقعی از session میاد — فعلا placeholder
+//     const ADMIN_PLACEHOLDER_ID = '000000000000000000000001'
 
-    await Project.create({
-      title, description, client, type,
-      techStack : techStack ? techStack.split(',').map(t => t.trim()) : [],
-      status    : status || 'active',
-      progress  : Number(progress) || 0,
-      deadline  : deadline || null,
-      price     : Number(price) || 0,
-      tags      : tags ? tags.split(',').map(t => t.trim()) : [],
-      createdBy : ADMIN_PLACEHOLDER_ID
-    })
+//     await Project.create({
+//       title, description, client, type,
+//       techStack : techStack ? techStack.split(',').map(t => t.trim()) : [],
+//       status    : status || 'active',
+//       progress  : Number(progress) || 0,
+//       deadline  : deadline || null,
+//       price     : Number(price) || 0,
+//       tags      : tags ? tags.split(',').map(t => t.trim()) : [],
+//       createdBy : ADMIN_PLACEHOLDER_ID
+//     })
 
-    // ثبت فعالیت
-    await Activity.create({
-      type        : 'project_created',
-      title       : `پروژه جدید «${title}» ثبت شد`,
-      icon        : 'bi-file-earmark-plus-fill',
-      colorVariant: 'main'
-    })
+//     // ثبت فعالیت
+//     await Activity.create({
+//       type        : 'project_created',
+//       title       : `پروژه جدید «${title}» ثبت شد`,
+//       icon        : 'bi-file-earmark-plus-fill',
+//       colorVariant: 'main'
+//     })
 
-    res.redirect('/sw-admin/projects')
-  } catch (err) {
-    console.error(err)
-    res.status(500).send('خطا در ثبت پروژه')
-  }
-})
+//     res.redirect('/sw-admin/projects')
+//   } catch (err) {
+//     console.error(err)
+//     res.status(500).send('خطا در ثبت پروژه')
+//   }
+// })
 
 app.post('/sw-admin/projects/:id/update', async (req, res) => {
   try {
@@ -884,34 +886,154 @@ app.post('/contact', async (req, res) => {
   }
 })
 
-app.post('/admin/projects/add' , async (req, res) => {
-    try {
-        const { title, client, category, startDate, deadline, technologies, description } = req.body
+app.post('/sw-admin/projects/add', async (req, res) => {
+  try {
+    const {
+      title,
+      client,
+      category,
+      startDate,
+      deadline,
+      techStack,
+      description
+    } = req.body
 
-        if (!title || !client || !category) {
-            return res.status(400).send('نام پروژه، مشتری و نوع پروژه الزامی هستند')
-        }
-
-        const newProject = new Project({
-            title,
-            client,
-            category,
-            startDate,
-            deadline,
-            technologies,
-            description
-        })
-
-        await newProject.save()
-
-        res.redirect('/sw-admin/Projects')
-
-    } catch (err) {
-        console.error(err)
-        res.status(500).send('خطا در ثبت پروژه')
+    if (!title || !client || !category) {
+      return res.status(400).send('نام پروژه، مشتری و نوع پروژه الزامی هستند')
     }
+
+    const normalizeDate = (value) => {
+      if (!value) return null
+
+      const date = new Date(value)
+
+      if (Number.isNaN(date.getTime())) {
+        return null
+      }
+
+      return date
+    }
+
+    const normalizeTechStack = (value) => {
+      if (!value) return []
+
+      if (Array.isArray(value)) {
+        return value
+          .map(item => String(item).trim())
+          .filter(Boolean)
+      }
+
+      return String(value)
+        .split(/[,،،·|]/)
+        .map(item => item.trim())
+        .filter(Boolean)
+    }
+
+    await Project.create({
+      title: title.trim(),
+      client,
+      category,
+      startDate: normalizeDate(startDate),
+      deadline: normalizeDate(deadline),
+      techStack: normalizeTechStack(techStack),
+      description: description ? description.trim() : '',
+      status: 'active',
+      progress: 0,
+      createdBy: '000000000000000000000001'
+    })
+
+    res.redirect('/sw-admin/projects')
+  } catch (err) {
+    console.error('Project create error:', err)
+    res.status(500).send('خطا در ثبت پروژه')
+  }
 })
 
+
+
+
+// خرجی اکسل پروژه ها
+app.get('/sw-admin/projects/export', async (req, res) => {
+  try {
+
+    const projects = await Project.find()
+      .populate('client', 'name company')
+      .populate('category', 'title')
+      .sort({ createdAt: -1 })
+      .lean()
+
+    const workbook = new ExcelJS.Workbook()
+    const sheet = workbook.addWorksheet('Projects')
+
+    sheet.columns = [
+      { header: 'نام پروژه', key: 'title', width: 30 },
+      { header: 'مشتری', key: 'client', width: 25 },
+      { header: 'نوع پروژه', key: 'category', width: 25 },
+      { header: 'وضعیت', key: 'status', width: 18 },
+      { header: 'پیشرفت', key: 'progress', width: 12 },
+      { header: 'ددلاین', key: 'deadline', width: 18 },
+      { header: 'تکنولوژی', key: 'tech', width: 35 }
+    ]
+
+    const statusMap = {
+      active: 'در حال انجام',
+      review: 'در ریویو',
+      done: 'تحویل شده',
+      hold: 'متوقف',
+      cancelled: 'لغو شده'
+    }
+
+    projects.forEach(p => {
+
+      const clientName =
+        p.client?.company ||
+        p.client?.name ||
+        'بدون مشتری'
+
+      const categoryTitle =
+        p.category?.title ||
+        'بدون نوع'
+
+      const tech =
+        Array.isArray(p.techStack)
+          ? p.techStack.join(' · ')
+          : ''
+
+      sheet.addRow({
+        title: p.title || '',
+        client: clientName,
+        category: categoryTitle,
+        status: statusMap[p.status] || '',
+        progress: `${p.progress || 0}%`,
+        deadline: p.deadline
+          ? new Date(p.deadline).toLocaleDateString('fa-IR')
+          : '',
+        tech
+      })
+
+    })
+
+    sheet.getRow(1).font = { bold: true }
+
+    res.setHeader(
+      'Content-Type',
+      'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+    )
+
+    res.setHeader(
+      'Content-Disposition',
+      'attachment; filename=projects.xlsx'
+    )
+
+    await workbook.xlsx.write(res)
+
+    res.end()
+
+  } catch (err) {
+    console.error(err)
+    res.status(500).send('خطا در خروجی Excel')
+  }
+})
 // ─────────────────────────────────────────
 //  404
 // ─────────────────────────────────────────

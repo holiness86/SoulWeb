@@ -153,55 +153,55 @@
 
 <!-- Modal: فاکتور جدید -->
 <div class="modal-overlay" id="invoiceModal">
-  <div class="modal-box" style="width:min(560px,92vw);">
+  <form class="modal-box" style="width:min(560px,92vw);" id="invoiceForm">
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1.5rem;">
       <div class="modal-title" style="margin:0;">فاکتور جدید</div>
-      <button data-modal-close style="background:transparent;border:none;font-size:1.2rem;color:var(--color-text-muted);cursor:pointer;"><i class="bi bi-x-lg"></i></button>
+      <button type="button" data-modal-close style="background:transparent;border:none;font-size:1.2rem;color:var(--color-text-muted);cursor:pointer;"><i class="bi bi-x-lg"></i></button>
     </div>
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;">
       <div class="form-row">
         <label class="sol-label">مشتری</label>
-        <select class="sol-select" style="width:100%">
+        <select class="sol-select" style="width:100%" name="client">
           <option>انتخاب مشتری…</option>
           <option>آفیلیو</option><option>کیانی لباس</option><option>گروه پارسیان</option>
         </select>
       </div>
       <div class="form-row">
         <label class="sol-label">پروژه</label>
-        <select class="sol-select" style="width:100%">
+        <select class="sol-select" style="width:100%" name="project">
           <option>انتخاب پروژه…</option>
         </select>
       </div>
     </div>
     <div id="invItems">
       <div class="inv-item-row">
-        <input class="sol-input" type="text" placeholder="شرح خدمات" style="flex:2;">
-        <input class="sol-input" type="number" placeholder="تعداد" style="flex:0.5;">
-        <input class="sol-input" type="text" placeholder="مبلغ واحد" style="flex:1;">
-        <button class="btn-danger-sm" style="padding:.45rem .6rem;flex-shrink:0;"><i class="bi bi-trash"></i></button>
+        <input class="sol-input" type="text" placeholder="شرح خدمات" style="flex:2;" name="item_desc[]">
+        <input class="sol-input" type="number" placeholder="تعداد" style="flex:0.5;" name="item_qty[]">
+        <input class="sol-input" type="text" placeholder="مبلغ واحد" style="flex:1;" name="item_price[]">
+        <button type="button" class="btn-danger-sm remove-inv-item" style="padding:.45rem .6rem;flex-shrink:0;"><i class="bi bi-trash"></i></button>
       </div>
     </div>
-    <button class="btn-ghost-sm" style="margin-top:.5rem;width:100%;justify-content:center;" id="addInvItem"><i class="bi bi-plus"></i> افزودن آیتم</button>
+    <button type="button" class="btn-ghost-sm" style="margin-top:.5rem;width:100%;justify-content:center;" id="addInvItem"><i class="bi bi-plus"></i> افزودن آیتم</button>
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin-top:1rem;">
       <div class="form-row">
         <label class="sol-label">تاریخ صدور</label>
-        <input class="sol-input" type="text" placeholder="۱۴۰۴/۰۳/۲۱">
+        <input class="sol-input" type="text" placeholder="۱۴۰۴/۰۳/۲۱" name="issue_date">
       </div>
       <div class="form-row">
         <label class="sol-label">سررسید پرداخت</label>
-        <input class="sol-input" type="text" placeholder="۱۴۰۴/۰۴/۲۱">
+        <input class="sol-input" type="text" placeholder="۱۴۰۴/۰۴/۲۱" name="due_date">
       </div>
     </div>
     <div class="form-row">
       <label class="sol-label">یادداشت</label>
-      <textarea class="sol-input" rows="2" placeholder="یادداشت اختیاری…" style="resize:vertical;"></textarea>
+      <textarea class="sol-input" rows="2" placeholder="یادداشت اختیاری…" style="resize:vertical;" name="note"></textarea>
     </div>
     <div style="display:flex;gap:.75rem;justify-content:flex-end;margin-top:1.5rem;">
-      <button class="btn-ghost-sm" data-modal-close>انصراف</button>
-      <button class="btn-ghost-sm"><i class="bi bi-file-earmark"></i> پیش‌نویس</button>
-      <button class="btn-sol-sm"><i class="bi bi-send-fill"></i> صدور فاکتور</button>
+      <button type="button" class="btn-ghost-sm" data-modal-close>انصراف</button>
+      <button type="button" class="btn-ghost-sm"><i class="bi bi-file-earmark"></i> پیش‌نویس</button>
+      <button type="submit" class="btn-sol-sm"><i class="bi bi-send-fill"></i> صدور فاکتور</button>
     </div>
-  </div>
+  </form>
 </div>
 
 <!-- Modal: مشاهده فاکتور -->
@@ -249,7 +249,6 @@
     </div>
   </div>
 </div>
-
 <%- include('partials/_scripts', { extraScripts: `
 <style>
 .inv-stat{background:var(--color-surface);border:1px solid var(--color-border);border-radius:var(--radius-lg);padding:1.1rem 1.25rem;display:flex;align-items:center;gap:.85rem;transition:all var(--dur-normal) var(--ease-spring);}
@@ -269,11 +268,24 @@ document.getElementById('invSearch').addEventListener('input', function(){
     row.style.display = row.textContent.toLowerCase().includes(q) ? '' : 'none';
   });
 });
+
 document.getElementById('addInvItem').addEventListener('click', function(){
   const row = document.createElement('div');
   row.className = 'inv-item-row';
-  row.innerHTML = '<input class="sol-input" type="text" placeholder="شرح خدمات" style="flex:2;"><input class="sol-input" type="number" placeholder="تعداد" style="flex:0.5;"><input class="sol-input" type="text" placeholder="مبلغ واحد" style="flex:1;"><button class="btn-danger-sm" style="padding:.45rem .6rem;flex-shrink:0;" onclick="this.closest(\'.inv-item-row\').remove()"><i class="bi bi-trash"></i></button>';
+  row.innerHTML = '<input class="sol-input" type="text" placeholder="شرح خدمات" style="flex:2;" name="item_desc[]">' +
+    '<input class="sol-input" type="number" placeholder="تعداد" style="flex:0.5;" name="item_qty[]">' +
+    '<input class="sol-input" type="text" placeholder="مبلغ واحد" style="flex:1;" name="item_price[]">' +
+    '<button type="button" class="btn-danger-sm remove-inv-item" style="padding:.45rem .6rem;flex-shrink:0;"><i class="bi bi-trash"></i></button>';
   document.getElementById('invItems').appendChild(row);
+});
+
+document.getElementById('invItems').addEventListener('click', function(e){
+  const btn = e.target.closest('.remove-inv-item');
+  if (btn) btn.closest('.inv-item-row').remove();
+});
+
+document.getElementById('invoiceForm').addEventListener('submit', function(e){
+  e.preventDefault();
 });
 </script>
 `}) %>

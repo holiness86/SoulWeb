@@ -1,0 +1,443 @@
+<%# views/sw-admin/settings.ejs %>
+<%- include('partials/_head', { title: 'تنظیمات' }) %>
+
+<div class="sidebar-overlay" id="sidebarOverlay"></div>
+<div class="admin-shell">
+
+<%- include('partials/_sidebar', { activePage: 'settings', adminUser: { name: 'علی مدیری', role: 'مدیر کل سیستم', initials: 'ادم' } }) %>
+
+<div class="main-content" id="mainContent">
+<%- include('partials/_header', {
+  breadcrumbs: [{ label: 'داشبورد', href: '/sw-admin' }, { label: 'تنظیمات' }],
+  searchPlaceholder: 'جستجو در تنظیمات…'
+}) %>
+
+<main class="page-content">
+
+  <div class="page-header fade-up fade-up-1">
+    <div>
+      <h1 class="page-title">تنظیمات سیستم</h1>
+      <p class="page-subtitle">مدیریت اطلاعات وب‌سایت، حساب کاربری و تنظیمات عمومی پنل</p>
+    </div>
+    <button class="btn-sol-sm"><i class="bi bi-check-lg"></i> ذخیره همه تغییرات</button>
+  </div>
+
+  <div class="settings-layout fade-up fade-up-2">
+
+    <!-- Tabs sidebar -->
+    <div class="settings-tabs">
+      <button class="stab active" data-tab="general"><i class="bi bi-building"></i> اطلاعات سایت</button>
+      <button class="stab" data-tab="account"><i class="bi bi-person-circle"></i> حساب کاربری</button>
+      <button class="stab" data-tab="appearance"><i class="bi bi-palette-fill"></i> ظاهر و تم</button>
+      <button class="stab" data-tab="notifications"><i class="bi bi-bell-fill"></i> اعلان‌ها</button>
+      <button class="stab" data-tab="team"><i class="bi bi-people-fill"></i> اعضای تیم</button>
+      <button class="stab" data-tab="security"><i class="bi bi-shield-lock-fill"></i> امنیت</button>
+      <button class="stab" data-tab="billing"><i class="bi bi-credit-card-fill"></i> صورتحساب</button>
+    </div>
+
+    <!-- Tab content -->
+    <div class="settings-content">
+
+      <!-- General -->
+      <div class="tab-pane-sol active" id="tab-general">
+        <div class="dash-panel">
+          <div class="panel-header"><h6 class="panel-title">اطلاعات کلی وب‌سایت</h6></div>
+          <div style="padding:1.5rem;">
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.25rem;">
+              <div class="form-row">
+                <label class="sol-label">نام وب‌سایت</label>
+                <input class="sol-input" type="text" value="سُل وب">
+              </div>
+              <div class="form-row">
+                <label class="sol-label">آدرس سایت</label>
+                <input class="sol-input" type="text" value="solweb.ir">
+              </div>
+            </div>
+            <div class="form-row">
+              <label class="sol-label">شعار / تگ‌لاین</label>
+              <input class="sol-input" type="text" value="تیم سُل وب روح وب‌سایت‌ها را می‌آفریند">
+            </div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.25rem;">
+              <div class="form-row">
+                <label class="sol-label">ایمیل تماس</label>
+                <input class="sol-input" type="email" value="hello@solweb.ir">
+              </div>
+              <div class="form-row">
+                <label class="sol-label">شماره تماس</label>
+                <input class="sol-input" type="text" value="۰۲۱-۸۸۰۰۱۲۳۴">
+              </div>
+            </div>
+            <div class="form-row">
+              <label class="sol-label">آدرس</label>
+              <input class="sol-input" type="text" value="تهران، خیابان ولیعصر">
+            </div>
+            <div class="form-row">
+              <label class="sol-label">لوگوی سایت</label>
+              <div class="upload-zone">
+                <i class="bi bi-cloud-arrow-up"></i>
+                <span>برای آپلود لوگو کلیک کنید (PNG یا SVG)</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="dash-panel" style="margin-top:1.25rem;">
+          <div class="panel-header"><h6 class="panel-title">شبکه‌های اجتماعی</h6></div>
+          <div style="padding:1.5rem;display:flex;flex-direction:column;gap:1rem;">
+            <div class="social-input-row">
+              <i class="bi bi-instagram" style="color:#e1306c;"></i>
+              <input class="sol-input" type="text" placeholder="آدرس اینستاگرام" value="instagram.com/solweb">
+            </div>
+            <div class="social-input-row">
+              <i class="bi bi-telegram" style="color:#0088cc;"></i>
+              <input class="sol-input" type="text" placeholder="آدرس تلگرام" value="t.me/solweb">
+            </div>
+            <div class="social-input-row">
+              <i class="bi bi-linkedin" style="color:#0a66c2;"></i>
+              <input class="sol-input" type="text" placeholder="آدرس لینکدین" value="">
+            </div>
+            <div class="social-input-row">
+              <i class="bi bi-whatsapp" style="color:#25d366;"></i>
+              <input class="sol-input" type="text" placeholder="شماره واتساپ" value="">
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Account -->
+      <div class="tab-pane-sol" id="tab-account">
+        <div class="dash-panel">
+          <div class="panel-header"><h6 class="panel-title">پروفایل کاربری</h6></div>
+          <div style="padding:1.5rem;">
+            <div style="display:flex;align-items:center;gap:1.25rem;margin-bottom:1.5rem;">
+              <div style="width:72px;height:72px;border-radius:var(--radius-lg);background:var(--grad-main);display:flex;align-items:center;justify-content:center;font-size:1.3rem;font-weight:800;color:#fff;flex-shrink:0;">ادم</div>
+              <div>
+                <button class="btn-ghost-sm"><i class="bi bi-upload"></i> تغییر تصویر پروفایل</button>
+                <p style="font-size:.72rem;color:var(--color-text-muted);margin:.5rem 0 0;">فرمت‌های مجاز: JPG, PNG — حداکثر ۲ مگابایت</p>
+              </div>
+            </div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.25rem;">
+              <div class="form-row">
+                <label class="sol-label">نام کامل</label>
+                <input class="sol-input" type="text" value="علی مدیری">
+              </div>
+              <div class="form-row">
+                <label class="sol-label">نام کاربری</label>
+                <input class="sol-input" type="text" value="admin_ali">
+              </div>
+            </div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.25rem;">
+              <div class="form-row">
+                <label class="sol-label">ایمیل</label>
+                <input class="sol-input" type="email" value="ali@solweb.ir">
+              </div>
+              <div class="form-row">
+                <label class="sol-label">شماره تماس</label>
+                <input class="sol-input" type="text" value="۰۹۱۲۰۰۰۰۰۰۰">
+              </div>
+            </div>
+            <div class="form-row">
+              <label class="sol-label">نقش سازمانی</label>
+              <input class="sol-input" type="text" value="مدیر کل سیستم" disabled style="opacity:.6;">
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Appearance -->
+      <div class="tab-pane-sol" id="tab-appearance">
+        <div class="dash-panel">
+          <div class="panel-header"><h6 class="panel-title">حالت نمایش</h6></div>
+          <div style="padding:1.5rem;">
+            <div class="theme-options">
+              <label class="theme-opt">
+                <input type="radio" name="themeMode" value="light" checked>
+                <div class="theme-preview light"><div class="tp-sidebar"></div><div class="tp-main"></div></div>
+                <span>روشن</span>
+              </label>
+              <label class="theme-opt">
+                <input type="radio" name="themeMode" value="dark">
+                <div class="theme-preview dark"><div class="tp-sidebar"></div><div class="tp-main"></div></div>
+                <span>تیره</span>
+              </label>
+              <label class="theme-opt">
+                <input type="radio" name="themeMode" value="auto">
+                <div class="theme-preview auto"><div class="tp-sidebar"></div><div class="tp-main"></div></div>
+                <span>خودکار (سیستم)</span>
+              </label>
+            </div>
+          </div>
+        </div>
+
+        <div class="dash-panel" style="margin-top:1.25rem;">
+          <div class="panel-header"><h6 class="panel-title">رنگ اصلی برند</h6></div>
+          <div style="padding:1.5rem;">
+            <div class="color-options">
+              <label class="color-opt"><input type="radio" name="brandColor" checked><span style="background:linear-gradient(135deg,#6447f4,#0090e8);"></span></label>
+              <label class="color-opt"><input type="radio" name="brandColor"><span style="background:linear-gradient(135deg,#ec4899,#f97316);"></span></label>
+              <label class="color-opt"><input type="radio" name="brandColor"><span style="background:linear-gradient(135deg,#16a34a,#0090e8);"></span></label>
+              <label class="color-opt"><input type="radio" name="brandColor"><span style="background:linear-gradient(135deg,#dc2626,#f59e0b);"></span></label>
+              <label class="color-opt"><input type="radio" name="brandColor"><span style="background:linear-gradient(135deg,#0891b2,#6447f4);"></span></label>
+            </div>
+          </div>
+        </div>
+
+        <div class="dash-panel" style="margin-top:1.25rem;">
+          <div class="panel-header"><h6 class="panel-title">سایدبار</h6></div>
+          <div style="padding:1.25rem 1.5rem;display:flex;flex-direction:column;gap:1rem;">
+            <div class="toggle-row">
+              <div><div class="tr-title">جمع‌شدگی خودکار سایدبار</div><div class="tr-sub">سایدبار به‌طور خودکار در صفحه‌نمایش‌های کوچک جمع شود</div></div>
+              <label class="sw-toggle"><input type="checkbox" checked><span class="sw-slider"></span></label>
+            </div>
+            <div class="toggle-row">
+              <div><div class="tr-title">نمایش نشان (Badge) تعداد</div><div class="tr-sub">نمایش تعداد آیتم‌های جدید کنار منوها</div></div>
+              <label class="sw-toggle"><input type="checkbox" checked><span class="sw-slider"></span></label>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Notifications -->
+      <div class="tab-pane-sol" id="tab-notifications">
+        <div class="dash-panel">
+          <div class="panel-header"><h6 class="panel-title">اعلان‌های ایمیلی</h6></div>
+          <div style="padding:1.25rem 1.5rem;display:flex;flex-direction:column;gap:1rem;">
+            <div class="toggle-row">
+              <div><div class="tr-title">پیام جدید از مشتری</div><div class="tr-sub">دریافت ایمیل هنگام ارسال پیام جدید از فرم تماس</div></div>
+              <label class="sw-toggle"><input type="checkbox" checked><span class="sw-slider"></span></label>
+            </div>
+            <div class="toggle-row">
+              <div><div class="tr-title">پروژه جدید ثبت شد</div><div class="tr-sub">اطلاع‌رسانی هنگام ثبت پروژه جدید در سیستم</div></div>
+              <label class="sw-toggle"><input type="checkbox" checked><span class="sw-slider"></span></label>
+            </div>
+            <div class="toggle-row">
+              <div><div class="tr-title">پرداخت فاکتور</div><div class="tr-sub">اطلاع‌رسانی هنگام پرداخت شدن یک فاکتور</div></div>
+              <label class="sw-toggle"><input type="checkbox" checked><span class="sw-slider"></span></label>
+            </div>
+            <div class="toggle-row">
+              <div><div class="tr-title">نظر جدید مشتری</div><div class="tr-sub">اطلاع‌رسانی هنگام ثبت نظر جدید</div></div>
+              <label class="sw-toggle"><input type="checkbox"><span class="sw-slider"></span></label>
+            </div>
+            <div class="toggle-row">
+              <div><div class="tr-title">یادآوری ددلاین پروژه</div><div class="tr-sub">یادآوری ۲۴ ساعت قبل از ددلاین پروژه‌ها</div></div>
+              <label class="sw-toggle"><input type="checkbox" checked><span class="sw-slider"></span></label>
+            </div>
+          </div>
+        </div>
+
+        <div class="dash-panel" style="margin-top:1.25rem;">
+          <div class="panel-header"><h6 class="panel-title">اعلان‌های درون‌برنامه‌ای (Push)</h6></div>
+          <div style="padding:1.25rem 1.5rem;display:flex;flex-direction:column;gap:1rem;">
+            <div class="toggle-row">
+              <div><div class="tr-title">فعال‌سازی نوتیفیکیشن لحظه‌ای</div><div class="tr-sub">نمایش زنگوله اعلان در هدر پنل</div></div>
+              <label class="sw-toggle"><input type="checkbox" checked><span class="sw-slider"></span></label>
+            </div>
+            <div class="toggle-row">
+              <div><div class="tr-title">صدای اعلان</div><div class="tr-sub">پخش صدا هنگام دریافت اعلان جدید</div></div>
+              <label class="sw-toggle"><input type="checkbox"><span class="sw-slider"></span></label>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Team -->
+      <div class="tab-pane-sol" id="tab-team">
+        <div class="dash-panel">
+          <div class="panel-header">
+            <h6 class="panel-title">اعضای تیم (۴ نفر)</h6>
+            <button class="btn-sol-sm" style="padding:.35rem .85rem;font-size:.75rem;"><i class="bi bi-person-plus"></i> دعوت عضو</button>
+          </div>
+          <div>
+            <div class="team-row">
+              <div class="cl-av" style="background:var(--grad-main);">علی</div>
+              <div style="flex:1;"><div style="font-weight:700;font-size:.85rem;">علی مدیری</div><div style="font-size:.72rem;color:var(--color-text-muted);">ali@solweb.ir</div></div>
+              <span class="role-badge owner">مدیر کل</span>
+              <button class="btn-ghost-sm" style="padding:.28rem .6rem;"><i class="bi bi-three-dots"></i></button>
+            </div>
+            <div class="team-row">
+              <div class="cl-av" style="background:linear-gradient(135deg,#a394fb,#6447f4);">سار</div>
+              <div style="flex:1;"><div style="font-weight:700;font-size:.85rem;">سارا طاهری</div><div style="font-size:.72rem;color:var(--color-text-muted);">sara@solweb.ir</div></div>
+              <span class="role-badge editor">طراح</span>
+              <button class="btn-ghost-sm" style="padding:.28rem .6rem;"><i class="bi bi-three-dots"></i></button>
+            </div>
+            <div class="team-row">
+              <div class="cl-av" style="background:linear-gradient(135deg,#0090e8,#4dc3ff);">محس</div>
+              <div style="flex:1;"><div style="font-weight:700;font-size:.85rem;">محسن مظاهر</div><div style="font-size:.72rem;color:var(--color-text-muted);">mohsen@solweb.ir</div></div>
+              <span class="role-badge editor">برنامه‌نویس</span>
+              <button class="btn-ghost-sm" style="padding:.28rem .6rem;"><i class="bi bi-three-dots"></i></button>
+            </div>
+            <div class="team-row">
+              <div class="cl-av" style="background:linear-gradient(135deg,#22c55e,#0090e8);">رضا</div>
+              <div style="flex:1;"><div style="font-weight:700;font-size:.85rem;">رضا محمدی</div><div style="font-size:.72rem;color:var(--color-text-muted);">reza@solweb.ir</div></div>
+              <span class="role-badge support">پشتیبانی</span>
+              <button class="btn-ghost-sm" style="padding:.28rem .6rem;"><i class="bi bi-three-dots"></i></button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Security -->
+      <div class="tab-pane-sol" id="tab-security">
+        <div class="dash-panel">
+          <div class="panel-header"><h6 class="panel-title">تغییر رمز عبور</h6></div>
+          <div style="padding:1.5rem;">
+            <div class="form-row">
+              <label class="sol-label">رمز عبور فعلی</label>
+              <input class="sol-input" type="password" placeholder="••••••••">
+            </div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.25rem;">
+              <div class="form-row">
+                <label class="sol-label">رمز عبور جدید</label>
+                <input class="sol-input" type="password" placeholder="••••••••">
+              </div>
+              <div class="form-row">
+                <label class="sol-label">تکرار رمز عبور جدید</label>
+                <input class="sol-input" type="password" placeholder="••••••••">
+              </div>
+            </div>
+            <button class="btn-sol-sm" style="margin-top:.5rem;"><i class="bi bi-shield-check"></i> به‌روزرسانی رمز عبور</button>
+          </div>
+        </div>
+
+        <div class="dash-panel" style="margin-top:1.25rem;">
+          <div class="panel-header"><h6 class="panel-title">احراز هویت دو مرحله‌ای</h6></div>
+          <div style="padding:1.25rem 1.5rem;">
+            <div class="toggle-row">
+              <div><div class="tr-title">فعال‌سازی 2FA</div><div class="tr-sub">افزایش امنیت حساب با کد تأیید پیامکی</div></div>
+              <label class="sw-toggle"><input type="checkbox"><span class="sw-slider"></span></label>
+            </div>
+          </div>
+        </div>
+
+        <div class="dash-panel" style="margin-top:1.25rem;">
+          <div class="panel-header"><h6 class="panel-title">جلسات فعال (Sessions)</h6></div>
+          <div>
+            <div class="session-row">
+              <i class="bi bi-laptop" style="font-size:1.3rem;color:var(--main-500);"></i>
+              <div style="flex:1;"><div style="font-weight:700;font-size:.83rem;">ویندوز · Chrome — تهران، ایران</div><div style="font-size:.72rem;color:var(--color-text-muted);">این جلسه · فعال الان</div></div>
+              <span class="badge-status badge-done">فعلی</span>
+            </div>
+            <div class="session-row">
+              <i class="bi bi-phone" style="font-size:1.3rem;color:var(--color-text-light);"></i>
+              <div style="flex:1;"><div style="font-weight:700;font-size:.83rem;">اندروید · Chrome — تهران، ایران</div><div style="font-size:.72rem;color:var(--color-text-muted);">۲ روز پیش</div></div>
+              <button class="btn-danger-sm" style="padding:.3rem .75rem;font-size:.73rem;">خروج</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Billing -->
+      <div class="tab-pane-sol" id="tab-billing">
+        <div class="dash-panel">
+          <div class="panel-header"><h6 class="panel-title">اطلاعات صورتحساب</h6></div>
+          <div style="padding:1.5rem;">
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.25rem;">
+              <div class="form-row">
+                <label class="sol-label">نام شرکت / فروشنده</label>
+                <input class="sol-input" type="text" value="گروه طراحی سُل وب">
+              </div>
+              <div class="form-row">
+                <label class="sol-label">شناسه مالیاتی</label>
+                <input class="sol-input" type="text" placeholder="۱۴-۰۰۰۰۰۰۰۰۰۰۰">
+              </div>
+            </div>
+            <div class="form-row">
+              <label class="sol-label">آدرس صورتحساب</label>
+              <input class="sol-input" type="text" value="تهران، خیابان ولیعصر">
+            </div>
+            <div class="form-row">
+              <label class="sol-label">شماره شبا (برای واریز)</label>
+              <input class="sol-input" type="text" placeholder="IR-XXXXXXXXXXXXXXXXXXXXXXXX">
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div><!-- /settings-content -->
+
+  </div><!-- /settings-layout -->
+
+</main>
+</div>
+</div>
+
+<%- include('partials/_scripts', { extraScripts: `
+<style>
+.upload-zone{border:2px dashed var(--color-border);border-radius:var(--radius-md);padding:1.5rem;text-align:center;cursor:pointer;color:var(--color-text-muted);transition:all var(--dur-fast);font-size:.8rem}
+.upload-zone i{font-size:1.5rem;display:block;margin-bottom:.4rem}
+.upload-zone:hover{border-color:var(--main-400);background:var(--main-50);color:var(--main-500)}
+[data-bs-theme="dark"] .upload-zone:hover{background:rgba(100,71,244,.08)}
+
+.settings-layout{display:grid;grid-template-columns:230px 1fr;gap:1.25rem;align-items:start}
+@media(max-width:900px){.settings-layout{grid-template-columns:1fr}}
+
+.settings-tabs{background:var(--color-surface);border:1px solid var(--color-border);border-radius:var(--radius-lg);padding:.6rem;display:flex;flex-direction:column;gap:.2rem;position:sticky;top:calc(var(--header-h) + 1.25rem)}
+@media(max-width:900px){.settings-tabs{position:static;flex-direction:row;overflow-x:auto;flex-wrap:nowrap}}
+.stab{display:flex;align-items:center;gap:.65rem;padding:.65rem .85rem;border-radius:var(--radius-sm);background:transparent;border:none;color:var(--color-text-muted);font-family:var(--font-primary);font-size:.83rem;font-weight:600;cursor:pointer;transition:all var(--dur-fast);text-align:right;white-space:nowrap}
+.stab i{font-size:.95rem;width:18px;text-align:center;flex-shrink:0}
+.stab:hover{background:var(--color-bg);color:var(--color-text-primary)}
+.stab.active{background:var(--grad-main);color:#fff;box-shadow:var(--shadow-main)}
+
+.tab-pane-sol{display:none}
+.tab-pane-sol.active{display:block;animation:fadeUp .35s var(--ease-smooth)}
+
+.social-input-row{display:flex;align-items:center;gap:.75rem}
+.social-input-row i{font-size:1.2rem;width:24px;text-align:center;flex-shrink:0}
+
+.theme-options{display:grid;grid-template-columns:repeat(3,1fr);gap:1rem}
+@media(max-width:600px){.theme-options{grid-template-columns:1fr}}
+.theme-opt{cursor:pointer;text-align:center;display:flex;flex-direction:column;gap:.6rem;align-items:center}
+.theme-opt input{display:none}
+.theme-preview{width:100%;height:90px;border-radius:var(--radius-md);border:2px solid var(--color-border);display:flex;overflow:hidden;transition:all var(--dur-fast)}
+.theme-opt input:checked + .theme-preview{border-color:var(--main-500);box-shadow:0 0 0 3px rgba(100,71,244,.15)}
+.theme-preview.light{background:#f5f5fb}
+.theme-preview.light .tp-sidebar{width:30%;background:#10102a}
+.theme-preview.light .tp-main{flex:1;background:#fff;margin:8px;border-radius:6px}
+.theme-preview.dark{background:#0d0d22}
+.theme-preview.dark .tp-sidebar{width:30%;background:#000}
+.theme-preview.dark .tp-main{flex:1;background:#14142e;margin:8px;border-radius:6px}
+.theme-preview.auto{background:linear-gradient(90deg,#f5f5fb 50%,#0d0d22 50%)}
+.theme-preview.auto .tp-sidebar{width:30%;background:linear-gradient(180deg,#10102a 50%,#000 50%)}
+.theme-preview.auto .tp-main{flex:1;background:linear-gradient(90deg,#fff 50%,#14142e 50%);margin:8px;border-radius:6px}
+.theme-opt span{font-size:.8rem;font-weight:600;color:var(--color-text-muted)}
+.theme-opt input:checked ~ span{color:var(--main-500)}
+
+.color-options{display:flex;gap:.85rem;flex-wrap:wrap}
+.color-opt{cursor:pointer}
+.color-opt input{display:none}
+.color-opt span{display:block;width:42px;height:42px;border-radius:50%;border:3px solid transparent;transition:all var(--dur-fast)}
+.color-opt input:checked + span{border-color:var(--color-text-primary);transform:scale(1.1)}
+
+.toggle-row{display:flex;align-items:center;justify-content:space-between;gap:1rem}
+.tr-title{font-size:.85rem;font-weight:700}
+.tr-sub{font-size:.74rem;color:var(--color-text-muted);margin-top:.15rem}
+
+.sw-toggle{position:relative;display:inline-block;width:42px;height:23px;flex-shrink:0}
+.sw-toggle input{opacity:0;width:0;height:0}
+.sw-slider{position:absolute;cursor:pointer;inset:0;background:var(--color-border);border-radius:99px;transition:var(--dur-fast)}
+.sw-slider::before{content:'';position:absolute;width:17px;height:17px;right:3px;top:3px;background:#fff;border-radius:50%;transition:var(--dur-fast)}
+.sw-toggle input:checked + .sw-slider{background:var(--grad-main)}
+.sw-toggle input:checked + .sw-slider::before{transform:translateX(-19px)}
+
+.cl-av{width:38px;height:38px;border-radius:var(--radius-sm);display:flex;align-items:center;justify-content:center;font-size:.72rem;font-weight:800;color:#fff;flex-shrink:0}
+.team-row{display:flex;align-items:center;gap:.85rem;padding:.85rem 1.25rem;border-bottom:1px solid var(--color-border)}
+.team-row:last-child{border-bottom:none}
+.role-badge{font-size:.7rem;font-weight:700;padding:.2rem .65rem;border-radius:var(--radius-full)}
+.role-badge.owner{background:rgba(100,71,244,.12);color:var(--main-600)}
+.role-badge.editor{background:rgba(0,144,232,.12);color:var(--accent-600)}
+.role-badge.support{background:rgba(34,197,94,.12);color:#16a34a}
+
+.session-row{display:flex;align-items:center;gap:.85rem;padding:.85rem 1.25rem;border-bottom:1px solid var(--color-border)}
+.session-row:last-child{border-bottom:none}
+</style>
+<script>
+document.querySelectorAll('.stab').forEach(function(tab){
+  tab.addEventListener('click', function(){
+    document.querySelectorAll('.stab').forEach(function(t){ t.classList.remove('active'); });
+    document.querySelectorAll('.tab-pane-sol').forEach(function(p){ p.classList.remove('active'); });
+    tab.classList.add('active');
+    document.getElementById('tab-' + tab.dataset.tab).classList.add('active');
+  });
+});
+<\/script>
+` }) %>

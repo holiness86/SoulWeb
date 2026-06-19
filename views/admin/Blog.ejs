@@ -1,0 +1,279 @@
+<%# views/sw-admin/blog.ejs %>
+<%- include('partials/_head', { title: 'مدیریت وبلاگ' }) %>
+
+<div class="sidebar-overlay" id="sidebarOverlay"></div>
+<div class="admin-shell">
+
+<%- include('partials/_sidebar', { activePage: 'blog', adminUser: { name: 'علی مدیری', role: 'مدیر کل سیستم', initials: 'ادم' } }) %>
+
+<div class="main-content" id="mainContent">
+<%- include('partials/_header', {
+  breadcrumbs: [{ label: 'داشبورد', href: '/sw-admin' }, { label: 'وبلاگ' }],
+  searchPlaceholder: 'جستجو در مقالات…'
+}) %>
+
+<main class="page-content">
+
+  <div class="page-header fade-up fade-up-1">
+    <div>
+      <h1 class="page-title">مدیریت وبلاگ</h1>
+      <p class="page-subtitle">۲۸ مقاله منتشرشده · ۳ پیش‌نویس</p>
+    </div>
+    <div style="display:flex;gap:.6rem;">
+      <button class="btn-ghost-sm"><i class="bi bi-folder2"></i> دسته‌بندی‌ها</button>
+      <button class="btn-sol-sm" data-modal-open="postModal"><i class="bi bi-plus-lg"></i> مقاله جدید</button>
+    </div>
+  </div>
+
+  <!-- Stats -->
+  <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:1rem;margin-bottom:1.5rem;" class="fade-up fade-up-2">
+    <div class="pstat">
+      <div class="pstat-icon" style="background:rgba(100,71,244,.1);color:var(--main-500);"><i class="bi bi-journal-text"></i></div>
+      <div><div class="pstat-val text-grad stat-value" data-count="28" data-suffix="">۲۸</div><div class="pstat-lbl">مقاله منتشرشده</div></div>
+    </div>
+    <div class="pstat">
+      <div class="pstat-icon" style="background:rgba(245,158,11,.1);color:#d97706;"><i class="bi bi-file-earmark-text"></i></div>
+      <div><div class="pstat-val text-grad stat-value" data-count="3" data-suffix="">۳</div><div class="pstat-lbl">پیش‌نویس</div></div>
+    </div>
+    <div class="pstat">
+      <div class="pstat-icon" style="background:rgba(0,144,232,.1);color:var(--accent-500);"><i class="bi bi-eye-fill"></i></div>
+      <div><div class="pstat-val text-grad stat-value" data-count="42" data-suffix="K">۴۲هزار</div><div class="pstat-lbl">کل بازدید</div></div>
+    </div>
+    <div class="pstat">
+      <div class="pstat-icon" style="background:rgba(34,197,94,.1);color:#16a34a;"><i class="bi bi-chat-square-text-fill"></i></div>
+      <div><div class="pstat-val text-grad stat-value" data-count="116" data-suffix="">۱۱۶</div><div class="pstat-lbl">نظر کاربران</div></div>
+    </div>
+  </div>
+
+  <!-- Filter -->
+  <div class="filter-bar fade-up fade-up-2" data-filter-group>
+    <button class="filter-chip active" data-filter="all">همه</button>
+    <button class="filter-chip" data-filter="published">منتشرشده</button>
+    <button class="filter-chip" data-filter="draft">پیش‌نویس</button>
+    <select class="sol-select" style="width:auto;margin-right:auto;">
+      <option>همه دسته‌ها</option><option>طراحی وب</option><option>سئو</option><option>برندینگ</option><option>تکنولوژی</option>
+    </select>
+  </div>
+
+  <!-- Blog Table -->
+  <div class="dash-panel fade-up fade-up-3">
+    <div style="overflow-x:auto;">
+      <table class="sol-table">
+        <thead>
+          <tr>
+            <th>مقاله</th><th>دسته‌بندی</th><th>نویسنده</th><th>بازدید</th><th>وضعیت</th><th>تاریخ</th><th>عملیات</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>
+              <div style="display:flex;align-items:center;gap:.75rem;">
+                <div class="post-thumb" style="background:linear-gradient(135deg,#6447f4,#0090e8);"><i class="bi bi-code-slash"></i></div>
+                <div>
+                  <div style="font-weight:700;font-size:.85rem;">۱۰ نکته طراحی وب‌سایت در ۱۴۰۴</div>
+                  <div style="font-size:.72rem;color:var(--color-text-muted);">/blog/web-design-tips-1404</div>
+                </div>
+              </div>
+            </td>
+            <td><span class="cat-tag">طراحی وب</span></td>
+            <td><span style="font-size:.8rem;">علی مدیری</span></td>
+            <td><span style="font-size:.83rem;font-weight:700;">۲٬۸۴۰</span></td>
+            <td><span class="badge-status badge-done">منتشرشده</span></td>
+            <td style="font-size:.78rem;">۱۸ خرداد</td>
+            <td>
+              <div style="display:flex;gap:.4rem;">
+                <button class="btn-ghost-sm" style="padding:.28rem .6rem;"><i class="bi bi-eye"></i></button>
+                <button class="btn-ghost-sm" style="padding:.28rem .6rem;" data-modal-open="postModal"><i class="bi bi-pencil"></i></button>
+                <button class="btn-danger-sm" style="padding:.28rem .6rem;"><i class="bi bi-trash"></i></button>
+              </div>
+            </td>
+          </tr>
+          <tr>
+            <td>
+              <div style="display:flex;align-items:center;gap:.75rem;">
+                <div class="post-thumb" style="background:linear-gradient(135deg,#0090e8,#4dc3ff);"><i class="bi bi-search"></i></div>
+                <div>
+                  <div style="font-weight:700;font-size:.85rem;">راهنمای کامل سئو برای فروشگاه‌های آنلاین</div>
+                  <div style="font-size:.72rem;color:var(--color-text-muted);">/blog/seo-guide-ecommerce</div>
+                </div>
+              </div>
+            </td>
+            <td><span class="cat-tag">سئو</span></td>
+            <td><span style="font-size:.8rem;">سارا طاهری</span></td>
+            <td><span style="font-size:.83rem;font-weight:700;">۵٬۱۲۰</span></td>
+            <td><span class="badge-status badge-done">منتشرشده</span></td>
+            <td style="font-size:.78rem;">۱۲ خرداد</td>
+            <td>
+              <div style="display:flex;gap:.4rem;">
+                <button class="btn-ghost-sm" style="padding:.28rem .6rem;"><i class="bi bi-eye"></i></button>
+                <button class="btn-ghost-sm" style="padding:.28rem .6rem;" data-modal-open="postModal"><i class="bi bi-pencil"></i></button>
+                <button class="btn-danger-sm" style="padding:.28rem .6rem;"><i class="bi bi-trash"></i></button>
+              </div>
+            </td>
+          </tr>
+          <tr>
+            <td>
+              <div style="display:flex;align-items:center;gap:.75rem;">
+                <div class="post-thumb" style="background:linear-gradient(135deg,#a394fb,#6447f4);"><i class="bi bi-palette2"></i></div>
+                <div>
+                  <div style="font-weight:700;font-size:.85rem;">چرا برندینگ قوی برای کسب‌وکار شما حیاتی است؟</div>
+                  <div style="font-size:.72rem;color:var(--color-text-muted);">/blog/branding-importance</div>
+                </div>
+              </div>
+            </td>
+            <td><span class="cat-tag">برندینگ</span></td>
+            <td><span style="font-size:.8rem;">محسن مظاهر</span></td>
+            <td><span style="font-size:.83rem;font-weight:700;">۱٬۹۸۰</span></td>
+            <td><span class="badge-status badge-done">منتشرشده</span></td>
+            <td style="font-size:.78rem;">۵ خرداد</td>
+            <td>
+              <div style="display:flex;gap:.4rem;">
+                <button class="btn-ghost-sm" style="padding:.28rem .6rem;"><i class="bi bi-eye"></i></button>
+                <button class="btn-ghost-sm" style="padding:.28rem .6rem;" data-modal-open="postModal"><i class="bi bi-pencil"></i></button>
+                <button class="btn-danger-sm" style="padding:.28rem .6rem;"><i class="bi bi-trash"></i></button>
+              </div>
+            </td>
+          </tr>
+          <tr>
+            <td>
+              <div style="display:flex;align-items:center;gap:.75rem;">
+                <div class="post-thumb" style="background:linear-gradient(135deg,#22c55e,#0090e8);"><i class="bi bi-phone"></i></div>
+                <div>
+                  <div style="font-weight:700;font-size:.85rem;">آینده طراحی ریسپانسیو موبایل‌محور</div>
+                  <div style="font-size:.72rem;color:var(--color-text-muted);">/blog/mobile-first-future</div>
+                </div>
+              </div>
+            </td>
+            <td><span class="cat-tag">تکنولوژی</span></td>
+            <td><span style="font-size:.8rem;">علی مدیری</span></td>
+            <td><span style="font-size:.83rem;font-weight:700;">۰</span></td>
+            <td><span class="badge-status badge-review">پیش‌نویس</span></td>
+            <td style="font-size:.78rem;">آخرین ویرایش: دیروز</td>
+            <td>
+              <div style="display:flex;gap:.4rem;">
+                <button class="btn-ghost-sm" style="padding:.28rem .6rem;"><i class="bi bi-eye"></i></button>
+                <button class="btn-ghost-sm" style="padding:.28rem .6rem;" data-modal-open="postModal"><i class="bi bi-pencil"></i></button>
+                <button class="btn-danger-sm" style="padding:.28rem .6rem;"><i class="bi bi-trash"></i></button>
+              </div>
+            </td>
+          </tr>
+          <tr>
+            <td>
+              <div style="display:flex;align-items:center;gap:.75rem;">
+                <div class="post-thumb" style="background:linear-gradient(135deg,#f59e0b,#ef4444);"><i class="bi bi-cart4"></i></div>
+                <div>
+                  <div style="font-weight:700;font-size:.85rem;">۵ اشتباه رایج در راه‌اندازی فروشگاه آنلاین</div>
+                  <div style="font-size:.72rem;color:var(--color-text-muted);">/blog/ecommerce-mistakes</div>
+                </div>
+              </div>
+            </td>
+            <td><span class="cat-tag">فروشگاه</span></td>
+            <td><span style="font-size:.8rem;">سارا طاهری</span></td>
+            <td><span style="font-size:.83rem;font-weight:700;">۳٬۴۵۰</span></td>
+            <td><span class="badge-status badge-done">منتشرشده</span></td>
+            <td style="font-size:.78rem;">۲۸ اردیبهشت</td>
+            <td>
+              <div style="display:flex;gap:.4rem;">
+                <button class="btn-ghost-sm" style="padding:.28rem .6rem;"><i class="bi bi-eye"></i></button>
+                <button class="btn-ghost-sm" style="padding:.28rem .6rem;" data-modal-open="postModal"><i class="bi bi-pencil"></i></button>
+                <button class="btn-danger-sm" style="padding:.28rem .6rem;"><i class="bi bi-trash"></i></button>
+              </div>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+    <div style="display:flex;align-items:center;justify-content:space-between;padding:1rem 1.25rem;border-top:1px solid var(--color-border);flex-wrap:wrap;gap:.75rem;">
+      <span style="font-size:.78rem;color:var(--color-text-muted);">نمایش ۱–۵ از ۳۱ مقاله</span>
+      <div style="display:flex;gap:.35rem;">
+        <button class="pg-btn" disabled><i class="bi bi-chevron-right"></i></button>
+        <button class="pg-btn active">۱</button>
+        <button class="pg-btn">۲</button>
+        <button class="pg-btn">۳</button>
+        <button class="pg-btn"><i class="bi bi-chevron-left"></i></button>
+      </div>
+    </div>
+  </div>
+
+</main>
+</div>
+</div>
+
+<!-- Modal: مقاله جدید/ویرایش -->
+<div class="modal-overlay" id="postModal">
+  <div class="modal-box" style="width:min(640px,92vw);">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1.5rem;">
+      <div class="modal-title" style="margin:0;">افزودن / ویرایش مقاله</div>
+      <button data-modal-close style="background:transparent;border:none;font-size:1.2rem;color:var(--color-text-muted);cursor:pointer;"><i class="bi bi-x-lg"></i></button>
+    </div>
+    <div class="form-row">
+      <label class="sol-label">عنوان مقاله</label>
+      <input class="sol-input" type="text" placeholder="عنوان جذاب مقاله…">
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;">
+      <div class="form-row">
+        <label class="sol-label">دسته‌بندی</label>
+        <select class="sol-select" style="width:100%">
+          <option>طراحی وب</option><option>سئو</option><option>برندینگ</option><option>تکنولوژی</option><option>فروشگاه</option>
+        </select>
+      </div>
+      <div class="form-row">
+        <label class="sol-label">نویسنده</label>
+        <select class="sol-select" style="width:100%">
+          <option>علی مدیری</option><option>سارا طاهری</option><option>محسن مظاهر</option>
+        </select>
+      </div>
+    </div>
+    <div class="form-row">
+      <label class="sol-label">تصویر شاخص</label>
+      <div style="border:2px dashed var(--color-border);border-radius:var(--radius-md);padding:1.5rem;text-align:center;cursor:pointer;color:var(--color-text-muted);transition:all var(--dur-fast);" class="upload-zone">
+        <i class="bi bi-cloud-arrow-up" style="font-size:1.5rem;display:block;margin-bottom:.4rem;"></i>
+        <span style="font-size:.8rem;">برای آپلود تصویر کلیک کنید یا فایل را اینجا بکشید</span>
+      </div>
+    </div>
+    <div class="form-row">
+      <label class="sol-label">خلاصه مقاله</label>
+      <textarea class="sol-input" rows="2" placeholder="چکیده کوتاه برای نمایش در لیست مقالات…" style="resize:vertical;"></textarea>
+    </div>
+    <div class="form-row">
+      <label class="sol-label">متن کامل مقاله</label>
+      <textarea class="sol-input" rows="6" placeholder="محتوای کامل مقاله را اینجا بنویسید…" style="resize:vertical;"></textarea>
+    </div>
+    <div class="form-row" style="display:flex;align-items:center;gap:.75rem;">
+      <label class="sw-toggle"><input type="checkbox" checked><span class="sw-slider"></span></label>
+      <span style="font-size:.83rem;font-weight:600;">انتشار فوری (در غیر این صورت پیش‌نویس می‌ماند)</span>
+    </div>
+    <div style="display:flex;gap:.75rem;justify-content:flex-end;margin-top:1.5rem;">
+      <button class="btn-ghost-sm" data-modal-close>انصراف</button>
+      <button class="btn-ghost-sm"><i class="bi bi-save"></i> ذخیره پیش‌نویس</button>
+      <button class="btn-sol-sm"><i class="bi bi-send-fill"></i> انتشار مقاله</button>
+    </div>
+  </div>
+</div>
+
+<%- include('partials/_scripts', { extraScripts: `
+<style>
+.pstat{background:var(--color-surface);border:1px solid var(--color-border);border-radius:var(--radius-lg);padding:1.1rem 1.25rem;display:flex;align-items:center;gap:.85rem;transition:all var(--dur-normal) var(--ease-spring)}
+.pstat:hover{transform:translateY(-2px);box-shadow:var(--shadow-sm);border-color:var(--main-200)}
+.pstat-icon{width:40px;height:40px;border-radius:var(--radius-sm);display:flex;align-items:center;justify-content:center;font-size:1.1rem;flex-shrink:0}
+.pstat-val{font-size:1.5rem;font-weight:900;line-height:1}
+.pstat-lbl{font-size:.73rem;color:var(--color-text-muted);margin-top:.15rem}
+.filter-bar{display:flex;align-items:center;gap:.6rem;flex-wrap:wrap;margin-bottom:1.25rem}
+.filter-chip{display:inline-flex;align-items:center;gap:.35rem;font-family:var(--font-primary);font-size:.78rem;font-weight:600;padding:.38rem .9rem;border-radius:var(--radius-full);border:1.5px solid var(--color-border);background:var(--color-surface);color:var(--color-text-muted);cursor:pointer;transition:all var(--dur-fast)}
+.filter-chip:hover,.filter-chip.active{background:var(--main-500);border-color:var(--main-500);color:#fff}
+.post-thumb{width:42px;height:42px;border-radius:var(--radius-sm);display:flex;align-items:center;justify-content:center;color:#fff;font-size:1.1rem;flex-shrink:0}
+.cat-tag{font-size:.72rem;font-weight:700;background:var(--main-50);color:var(--main-600);padding:.2rem .65rem;border-radius:var(--radius-full)}
+[data-bs-theme="dark"] .cat-tag{background:rgba(100,71,244,.15)}
+.pg-btn{width:32px;height:32px;border-radius:var(--radius-sm);border:1.5px solid var(--color-border);background:var(--color-surface);color:var(--color-text-muted);display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:.8rem;transition:all var(--dur-fast);font-family:var(--font-primary)}
+.pg-btn:disabled{opacity:.4;cursor:not-allowed}
+.pg-btn.active,.pg-btn:not(:disabled):hover{background:var(--main-500);border-color:var(--main-500);color:#fff}
+.upload-zone:hover{border-color:var(--main-400);background:var(--main-50);color:var(--main-500)}
+[data-bs-theme="dark"] .upload-zone:hover{background:rgba(100,71,244,.08)}
+.sw-toggle{position:relative;display:inline-block;width:38px;height:21px;flex-shrink:0}
+.sw-toggle input{opacity:0;width:0;height:0}
+.sw-slider{position:absolute;cursor:pointer;inset:0;background:var(--color-border);border-radius:99px;transition:var(--dur-fast)}
+.sw-slider::before{content:'';position:absolute;width:15px;height:15px;right:3px;top:3px;background:#fff;border-radius:50%;transition:var(--dur-fast)}
+.sw-toggle input:checked + .sw-slider{background:var(--grad-main)}
+.sw-toggle input:checked + .sw-slider::before{transform:translateX(-17px)}
+</style>
+` }) %>

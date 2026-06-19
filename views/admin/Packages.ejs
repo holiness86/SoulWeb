@@ -1,0 +1,281 @@
+<%# views/sw-admin/packages.ejs %>
+<%- include('partials/_head', { title: 'مدیریت پکیج‌ها' }) %>
+
+<div class="sidebar-overlay" id="sidebarOverlay"></div>
+<div class="admin-shell">
+
+<%- include('partials/_sidebar', { activePage: 'packages', adminUser: { name: 'علی مدیری', role: 'مدیر کل سیستم', initials: 'ادم' } }) %>
+
+<div class="main-content" id="mainContent">
+<%- include('partials/_header', {
+  breadcrumbs: [{ label: 'داشبورد', href: '/sw-admin' }, { label: 'پکیج‌ها' }],
+  searchPlaceholder: 'جستجو در پکیج‌ها…'
+}) %>
+
+<main class="page-content">
+
+  <div class="page-header fade-up fade-up-1">
+    <div>
+      <h1 class="page-title">مدیریت پکیج‌ها</h1>
+      <p class="page-subtitle">۴ پکیج فعال · نمایش در صفحه «پکیج‌ها» وب‌سایت</p>
+    </div>
+    <div style="display:flex;gap:.6rem;">
+      <button class="btn-ghost-sm"><i class="bi bi-eye"></i> مشاهده در سایت</button>
+      <button class="btn-sol-sm" data-modal-open="packageModal"><i class="bi bi-plus-lg"></i> پکیج جدید</button>
+    </div>
+  </div>
+
+  <!-- Stats -->
+  <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:1rem;margin-bottom:1.75rem;" class="fade-up fade-up-2">
+    <div class="pstat">
+      <div class="pstat-icon" style="background:rgba(100,71,244,.1);color:var(--main-500);"><i class="bi bi-box-seam-fill"></i></div>
+      <div><div class="pstat-val text-grad stat-value" data-count="4" data-suffix="">۴</div><div class="pstat-lbl">پکیج فعال</div></div>
+    </div>
+    <div class="pstat">
+      <div class="pstat-icon" style="background:rgba(34,197,94,.1);color:#16a34a;"><i class="bi bi-graph-up-arrow"></i></div>
+      <div><div class="pstat-val text-grad stat-value" data-count="58" data-suffix="">۵۸</div><div class="pstat-lbl">خرید این ماه</div></div>
+    </div>
+    <div class="pstat">
+      <div class="pstat-icon" style="background:rgba(245,158,11,.1);color:#d97706;"><i class="bi bi-star-fill"></i></div>
+      <div><div class="pstat-val text-grad">حرفه‌ای</div><div class="pstat-lbl">پرفروش‌ترین</div></div>
+    </div>
+    <div class="pstat">
+      <div class="pstat-icon" style="background:rgba(0,144,232,.1);color:var(--accent-500);"><i class="bi bi-cash-stack"></i></div>
+      <div><div class="pstat-val text-grad">۸۴۰M</div><div class="pstat-lbl">درآمد پکیج‌ها</div></div>
+    </div>
+  </div>
+
+  <!-- Packages Grid -->
+  <div class="pkg-admin-grid fade-up fade-up-3">
+
+    <!-- پایه -->
+    <div class="pkg-admin-card">
+      <div class="pkg-admin-top">
+        <span class="pkg-admin-badge">پایه</span>
+        <div class="pkg-admin-switch">
+          <label class="sw-toggle">
+            <input type="checkbox" checked>
+            <span class="sw-slider"></span>
+          </label>
+        </div>
+      </div>
+      <div class="pkg-admin-icon"><i class="bi bi-file-earmark-code"></i></div>
+      <h5 class="pkg-admin-name">پایه</h5>
+      <div class="pkg-admin-price">۱۲<small>میلیون تومان</small></div>
+      <p class="pkg-admin-desc">طراحی ساده وردپرسی با قالب آماده</p>
+      <ul class="pkg-admin-feat">
+        <li><i class="bi bi-check-lg"></i> قالب وردپرس آماده</li>
+        <li><i class="bi bi-check-lg"></i> ۵ صفحه اصلی</li>
+        <li><i class="bi bi-check-lg"></i> ریسپانسیو</li>
+        <li><i class="bi bi-check-lg"></i> ۱ ماه پشتیبانی</li>
+      </ul>
+      <div class="pkg-admin-stats">
+        <span><i class="bi bi-cart-check"></i> ۲۲ فروش</span>
+        <span><i class="bi bi-eye"></i> ۳۴۰ بازدید</span>
+      </div>
+      <div class="pkg-admin-actions">
+        <button class="btn-ghost-sm" style="flex:1;justify-content:center;" data-modal-open="packageModal"><i class="bi bi-pencil"></i> ویرایش</button>
+        <button class="btn-danger-sm" style="padding:.42rem .7rem;"><i class="bi bi-trash"></i></button>
+      </div>
+    </div>
+
+    <!-- اقتصادی -->
+    <div class="pkg-admin-card">
+      <div class="pkg-admin-top">
+        <span class="pkg-admin-badge">اقتصادی</span>
+        <div class="pkg-admin-switch">
+          <label class="sw-toggle">
+            <input type="checkbox" checked>
+            <span class="sw-slider"></span>
+          </label>
+        </div>
+      </div>
+      <div class="pkg-admin-icon"><i class="bi bi-window-stack"></i></div>
+      <h5 class="pkg-admin-name">اقتصادی</h5>
+      <div class="pkg-admin-price">۲۴<small>میلیون تومان</small></div>
+      <p class="pkg-admin-desc">طراحی وردپرسی با شخصی‌سازی بیشتر</p>
+      <ul class="pkg-admin-feat">
+        <li><i class="bi bi-check-lg"></i> وردپرس شخصی‌سازی‌شده</li>
+        <li><i class="bi bi-check-lg"></i> تا ۱۰ صفحه</li>
+        <li><i class="bi bi-check-lg"></i> سئو پایه</li>
+        <li><i class="bi bi-check-lg"></i> ۳ ماه پشتیبانی</li>
+      </ul>
+      <div class="pkg-admin-stats">
+        <span><i class="bi bi-cart-check"></i> ۱۸ فروش</span>
+        <span><i class="bi bi-eye"></i> ۲۸۰ بازدید</span>
+      </div>
+      <div class="pkg-admin-actions">
+        <button class="btn-ghost-sm" style="flex:1;justify-content:center;" data-modal-open="packageModal"><i class="bi bi-pencil"></i> ویرایش</button>
+        <button class="btn-danger-sm" style="padding:.42rem .7rem;"><i class="bi bi-trash"></i></button>
+      </div>
+    </div>
+
+    <!-- حرفه‌ای (Featured) -->
+    <div class="pkg-admin-card featured">
+      <div class="pkg-admin-top">
+        <span class="pkg-admin-badge featured">پرطرفدار ⭐</span>
+        <div class="pkg-admin-switch">
+          <label class="sw-toggle">
+            <input type="checkbox" checked>
+            <span class="sw-slider"></span>
+          </label>
+        </div>
+      </div>
+      <div class="pkg-admin-icon featured"><i class="bi bi-rocket-takeoff"></i></div>
+      <h5 class="pkg-admin-name">حرفه‌ای</h5>
+      <div class="pkg-admin-price">۴۵<small>میلیون تومان</small></div>
+      <p class="pkg-admin-desc">طراحی کاملاً اختصاصی با PHP یا Node.js</p>
+      <ul class="pkg-admin-feat">
+        <li><i class="bi bi-check-lg"></i> کدنویسی اختصاصی</li>
+        <li><i class="bi bi-check-lg"></i> صفحات نامحدود</li>
+        <li><i class="bi bi-check-lg"></i> سئو پیشرفته</li>
+        <li><i class="bi bi-check-lg"></i> ۶ ماه پشتیبانی</li>
+      </ul>
+      <div class="pkg-admin-stats">
+        <span><i class="bi bi-cart-check"></i> ۱۵ فروش</span>
+        <span><i class="bi bi-eye"></i> ۵۲۰ بازدید</span>
+      </div>
+      <div class="pkg-admin-actions">
+        <button class="btn-ghost-sm" style="flex:1;justify-content:center;" data-modal-open="packageModal"><i class="bi bi-pencil"></i> ویرایش</button>
+        <button class="btn-danger-sm" style="padding:.42rem .7rem;"><i class="bi bi-trash"></i></button>
+      </div>
+    </div>
+
+    <!-- سازمانی -->
+    <div class="pkg-admin-card">
+      <div class="pkg-admin-top">
+        <span class="pkg-admin-badge">پیشرفته</span>
+        <div class="pkg-admin-switch">
+          <label class="sw-toggle">
+            <input type="checkbox">
+            <span class="sw-slider"></span>
+          </label>
+        </div>
+      </div>
+      <div class="pkg-admin-icon"><i class="bi bi-building-gear"></i></div>
+      <h5 class="pkg-admin-name">سازمانی</h5>
+      <div class="pkg-admin-price">۹۰<small>میلیون تومان</small></div>
+      <p class="pkg-admin-desc">پروژه‌های بزرگ با معماری مقیاس‌پذیر</p>
+      <ul class="pkg-admin-feat">
+        <li><i class="bi bi-check-lg"></i> معماری سفارشی</li>
+        <li><i class="bi bi-check-lg"></i> API اختصاصی</li>
+        <li><i class="bi bi-check-lg"></i> یکپارچه‌سازی سیستم‌ها</li>
+        <li><i class="bi bi-check-lg"></i> ۱۲ ماه پشتیبانی</li>
+      </ul>
+      <div class="pkg-admin-stats">
+        <span><i class="bi bi-cart-check"></i> ۳ فروش</span>
+        <span><i class="bi bi-eye"></i> ۹۰ بازدید</span>
+      </div>
+      <div class="pkg-admin-actions">
+        <button class="btn-ghost-sm" style="flex:1;justify-content:center;" data-modal-open="packageModal"><i class="bi bi-pencil"></i> ویرایش</button>
+        <button class="btn-danger-sm" style="padding:.42rem .7rem;"><i class="bi bi-trash"></i></button>
+      </div>
+    </div>
+
+  </div><!-- /grid -->
+
+</main>
+</div>
+</div>
+
+<!-- Modal: پکیج جدید/ویرایش -->
+<div class="modal-overlay" id="packageModal">
+  <div class="modal-box">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1.5rem;">
+      <div class="modal-title" style="margin:0;">افزودن / ویرایش پکیج</div>
+      <button data-modal-close style="background:transparent;border:none;font-size:1.2rem;color:var(--color-text-muted);cursor:pointer;"><i class="bi bi-x-lg"></i></button>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;">
+      <div class="form-row">
+        <label class="sol-label">نام پکیج</label>
+        <input class="sol-input" type="text" placeholder="مثال: حرفه‌ای">
+      </div>
+      <div class="form-row">
+        <label class="sol-label">برچسب نمایشی</label>
+        <input class="sol-input" type="text" placeholder="مثال: پرطرفدار">
+      </div>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;">
+      <div class="form-row">
+        <label class="sol-label">قیمت (میلیون تومان)</label>
+        <input class="sol-input" type="number" placeholder="۴۵">
+      </div>
+      <div class="form-row">
+        <label class="sol-label">آیکون (Bootstrap Icons)</label>
+        <input class="sol-input" type="text" placeholder="bi-rocket-takeoff">
+      </div>
+    </div>
+    <div class="form-row">
+      <label class="sol-label">توضیح کوتاه</label>
+      <input class="sol-input" type="text" placeholder="توضیح یک‌خطی پکیج">
+    </div>
+    <div class="form-row">
+      <label class="sol-label">ویژگی‌ها (هر خط یک ویژگی)</label>
+      <textarea class="sol-input" rows="4" placeholder="کدنویسی اختصاصی&#10;صفحات نامحدود&#10;سئو پیشرفته" style="resize:vertical;"></textarea>
+    </div>
+    <div class="form-row" style="display:flex;align-items:center;gap:.75rem;">
+      <label class="sw-toggle"><input type="checkbox" checked><span class="sw-slider"></span></label>
+      <span style="font-size:.83rem;font-weight:600;">پکیج پرطرفدار (نمایش ویژه)</span>
+    </div>
+    <div style="display:flex;gap:.75rem;justify-content:flex-end;margin-top:1.5rem;">
+      <button class="btn-ghost-sm" data-modal-close>انصراف</button>
+      <button class="btn-sol-sm"><i class="bi bi-check-lg"></i> ذخیره پکیج</button>
+    </div>
+  </div>
+</div>
+
+<%- include('partials/_scripts', { extraScripts: `
+<style>
+.pstat{background:var(--color-surface);border:1px solid var(--color-border);border-radius:var(--radius-lg);padding:1.1rem 1.25rem;display:flex;align-items:center;gap:.85rem;transition:all var(--dur-normal) var(--ease-spring)}
+.pstat:hover{transform:translateY(-2px);box-shadow:var(--shadow-sm);border-color:var(--main-200)}
+.pstat-icon{width:40px;height:40px;border-radius:var(--radius-sm);display:flex;align-items:center;justify-content:center;font-size:1.1rem;flex-shrink:0}
+.pstat-val{font-size:1.5rem;font-weight:900;line-height:1}
+.pstat-lbl{font-size:.73rem;color:var(--color-text-muted);margin-top:.15rem}
+
+.pkg-admin-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:1.25rem}
+@media(max-width:1199px){.pkg-admin-grid{grid-template-columns:repeat(2,1fr)}}
+@media(max-width:575px){.pkg-admin-grid{grid-template-columns:1fr}}
+
+.pkg-admin-card{background:var(--color-surface);border:1px solid var(--color-border);border-radius:var(--radius-lg);padding:1.5rem;display:flex;flex-direction:column;transition:all var(--dur-normal) var(--ease-spring);position:relative;overflow:hidden}
+.pkg-admin-card:hover{transform:translateY(-4px);box-shadow:var(--shadow-lg);border-color:var(--main-200)}
+.pkg-admin-card.featured{background:var(--grad-main);border-color:transparent;box-shadow:var(--shadow-main)}
+.pkg-admin-card.featured .pkg-admin-name,
+.pkg-admin-card.featured .pkg-admin-desc,
+.pkg-admin-card.featured .pkg-admin-price,
+.pkg-admin-card.featured .pkg-admin-feat li,
+.pkg-admin-card.featured .pkg-admin-stats{color:rgba(255,255,255,.95)!important}
+.pkg-admin-card.featured .pkg-admin-feat li i{color:#fff!important}
+.pkg-admin-card.featured .pkg-admin-stats i{color:rgba(255,255,255,.7)!important}
+
+.pkg-admin-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:1rem}
+.pkg-admin-badge{font-size:.68rem;font-weight:800;color:var(--main-600);background:var(--main-50);border:1px solid var(--main-200);border-radius:var(--radius-full);padding:.22rem .75rem;text-transform:uppercase;letter-spacing:.04em}
+.pkg-admin-badge.featured{background:rgba(255,255,255,.2);color:#fff;border-color:transparent}
+
+.sw-toggle{position:relative;display:inline-block;width:38px;height:21px;flex-shrink:0}
+.sw-toggle input{opacity:0;width:0;height:0}
+.sw-slider{position:absolute;cursor:pointer;inset:0;background:var(--color-border);border-radius:99px;transition:var(--dur-fast)}
+.sw-slider::before{content:'';position:absolute;width:15px;height:15px;right:3px;top:3px;background:#fff;border-radius:50%;transition:var(--dur-fast)}
+.sw-toggle input:checked + .sw-slider{background:var(--grad-main)}
+.sw-toggle input:checked + .sw-slider::before{transform:translateX(-17px)}
+.pkg-admin-card.featured .sw-slider{background:rgba(255,255,255,.3)}
+.pkg-admin-card.featured .sw-toggle input:checked + .sw-slider{background:rgba(255,255,255,.5)}
+
+.pkg-admin-icon{width:52px;height:52px;border-radius:var(--radius-md);background:var(--main-50);color:var(--main-500);display:flex;align-items:center;justify-content:center;font-size:1.5rem;margin-bottom:1rem}
+.pkg-admin-icon.featured{background:rgba(255,255,255,.2);color:#fff}
+.pkg-admin-name{font-size:1.2rem;font-weight:900;margin-bottom:.4rem}
+.pkg-admin-price{font-size:1.6rem;font-weight:900;margin-bottom:.5rem;color:var(--main-600)}
+.pkg-admin-card.featured .pkg-admin-price{color:#fff}
+.pkg-admin-price small{font-size:.7rem;font-weight:500;color:var(--color-text-muted);margin-right:.3rem}
+.pkg-admin-card.featured .pkg-admin-price small{color:rgba(255,255,255,.75)}
+.pkg-admin-desc{font-size:.8rem;color:var(--color-text-muted);line-height:1.6;margin-bottom:1rem}
+.pkg-admin-feat{list-style:none;padding:0;margin:0 0 1.1rem;display:flex;flex-direction:column;gap:.45rem}
+.pkg-admin-feat li{display:flex;align-items:center;gap:.45rem;font-size:.8rem}
+.pkg-admin-feat li i{color:var(--main-500);font-size:.8rem;flex-shrink:0}
+.pkg-admin-stats{display:flex;justify-content:space-between;font-size:.72rem;color:var(--color-text-muted);padding-top:.9rem;margin-top:auto;border-top:1px solid var(--color-border)}
+.pkg-admin-card.featured .pkg-admin-stats{border-top-color:rgba(255,255,255,.2)}
+.pkg-admin-stats span{display:flex;align-items:center;gap:.3rem}
+.pkg-admin-actions{display:flex;gap:.5rem;margin-top:1rem}
+.pkg-admin-card.featured .btn-ghost-sm{background:rgba(255,255,255,.15);border-color:rgba(255,255,255,.3);color:#fff}
+.pkg-admin-card.featured .btn-ghost-sm:hover{background:rgba(255,255,255,.25)}
+</style>
+` }) %>

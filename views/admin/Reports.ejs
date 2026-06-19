@@ -1,0 +1,306 @@
+<%# views/sw-admin/reports.ejs %>
+<%- include('partials/_head', { title: 'گزارش‌ها و آمار' }) %>
+
+<div class="sidebar-overlay" id="sidebarOverlay"></div>
+<div class="admin-shell">
+
+<%- include('partials/_sidebar', { activePage: 'reports', adminUser: { name: 'علی مدیری', role: 'مدیر کل سیستم', initials: 'ادم' } }) %>
+
+<div class="main-content" id="mainContent">
+<%- include('partials/_header', {
+  breadcrumbs: [{ label: 'داشبورد', href: '/sw-admin' }, { label: 'گزارش‌ها' }],
+  searchPlaceholder: 'جستجو در گزارش‌ها…'
+}) %>
+
+<main class="page-content">
+
+  <div class="page-header fade-up fade-up-1">
+    <div>
+      <h1 class="page-title">گزارش‌ها و آمار عملکرد</h1>
+      <p class="page-subtitle">نمای کلی از وضعیت کسب‌وکار در ۶ ماه اخیر</p>
+    </div>
+    <div style="display:flex;gap:.6rem;">
+      <select class="sol-select" style="width:auto;">
+        <option>۶ ماه اخیر</option><option>۱۲ ماه اخیر</option><option>امسال</option><option>سال گذشته</option>
+      </select>
+      <button class="btn-sol-sm"><i class="bi bi-file-earmark-pdf"></i> دانلود گزارش PDF</button>
+    </div>
+  </div>
+
+  <!-- KPI Cards -->
+  <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:1rem;margin-bottom:1.5rem;" class="fade-up fade-up-2">
+    <div class="kpi-card">
+      <div class="kpi-top">
+        <div class="pstat-icon" style="background:rgba(100,71,244,.1);color:var(--main-500);"><i class="bi bi-cash-coin"></i></div>
+        <span class="stat-trend up"><i class="bi bi-arrow-up-short"></i>۱۸٪</span>
+      </div>
+      <div class="kpi-val text-grad stat-value" data-count="1240" data-suffix="M">۱،۲۴۰M</div>
+      <div class="kpi-lbl">درآمد کل (تومان)</div>
+      <div class="kpi-spark">
+        <svg viewBox="0 0 100 28" preserveAspectRatio="none" style="width:100%;height:28px;">
+          <polyline points="0,22 15,18 30,20 45,12 60,14 75,6 100,2" fill="none" stroke="url(#sg1)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+          <defs><linearGradient id="sg1" x1="0" y1="0" x2="1" y2="0"><stop offset="0%" stop-color="#6447f4"/><stop offset="100%" stop-color="#0090e8"/></linearGradient></defs>
+        </svg>
+      </div>
+    </div>
+
+    <div class="kpi-card">
+      <div class="kpi-top">
+        <div class="pstat-icon" style="background:rgba(34,197,94,.1);color:#16a34a;"><i class="bi bi-kanban-fill"></i></div>
+        <span class="stat-trend up"><i class="bi bi-arrow-up-short"></i>۱۲٪</span>
+      </div>
+      <div class="kpi-val text-grad stat-value" data-count="153" data-suffix="">۱۵۳</div>
+      <div class="kpi-lbl">پروژه تکمیل‌شده</div>
+      <div class="kpi-spark">
+        <svg viewBox="0 0 100 28" preserveAspectRatio="none" style="width:100%;height:28px;">
+          <polyline points="0,20 15,21 30,15 45,17 60,10 75,11 100,4" fill="none" stroke="#16a34a" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+      </div>
+    </div>
+
+    <div class="kpi-card">
+      <div class="kpi-top">
+        <div class="pstat-icon" style="background:rgba(0,144,232,.1);color:var(--accent-500);"><i class="bi bi-people-fill"></i></div>
+        <span class="stat-trend up"><i class="bi bi-arrow-up-short"></i>۸٪</span>
+      </div>
+      <div class="kpi-val text-grad stat-value" data-count="86" data-suffix="">۸۶</div>
+      <div class="kpi-lbl">مشتری فعال</div>
+      <div class="kpi-spark">
+        <svg viewBox="0 0 100 28" preserveAspectRatio="none" style="width:100%;height:28px;">
+          <polyline points="0,18 15,17 30,19 45,13 60,15 75,9 100,7" fill="none" stroke="#0090e8" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+      </div>
+    </div>
+
+    <div class="kpi-card">
+      <div class="kpi-top">
+        <div class="pstat-icon" style="background:rgba(245,158,11,.1);color:#d97706;"><i class="bi bi-star-fill"></i></div>
+        <span class="stat-trend down"><i class="bi bi-arrow-down-short"></i>۲٪</span>
+      </div>
+      <div class="kpi-val text-grad">۴.۹</div>
+      <div class="kpi-lbl">میانگین رضایت مشتری</div>
+      <div class="kpi-spark">
+        <svg viewBox="0 0 100 28" preserveAspectRatio="none" style="width:100%;height:28px;">
+          <polyline points="0,6 15,8 30,7 45,10 60,9 75,12 100,11" fill="none" stroke="#d97706" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+      </div>
+    </div>
+  </div>
+
+  <!-- Main charts row -->
+  <div class="rep-grid fade-up fade-up-3">
+
+    <!-- Revenue Chart -->
+    <div class="dash-panel">
+      <div class="panel-header">
+        <h6 class="panel-title"><i class="bi bi-graph-up me-1" style="color:var(--main-500);"></i> روند درآمد ماهانه</h6>
+        <div class="chart-legend-inline">
+          <span><i class="bi bi-circle-fill" style="color:var(--main-500);font-size:.5rem;"></i> درآمد</span>
+          <span><i class="bi bi-circle-fill" style="color:var(--accent-400);font-size:.5rem;"></i> هزینه</span>
+        </div>
+      </div>
+      <div style="padding:1.5rem 1.25rem;">
+        <svg viewBox="0 0 600 220" style="width:100%;height:220px;" id="revenueChart">
+          <!-- grid lines -->
+          <line x1="0" y1="20" x2="600" y2="20" stroke="var(--color-border)" stroke-width="1"/>
+          <line x1="0" y1="70" x2="600" y2="70" stroke="var(--color-border)" stroke-width="1"/>
+          <line x1="0" y1="120" x2="600" y2="120" stroke="var(--color-border)" stroke-width="1"/>
+          <line x1="0" y1="170" x2="600" y2="170" stroke="var(--color-border)" stroke-width="1"/>
+          <!-- revenue area -->
+          <polyline points="0,150 100,130 200,140 300,90 400,100 500,50 600,30" fill="none" stroke="url(#revg)" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+          <polygon points="0,150 100,130 200,140 300,90 400,100 500,50 600,30 600,220 0,220" fill="url(#revfill)" opacity="0.5"/>
+          <!-- expense line -->
+          <polyline points="0,190 100,185 200,180 300,175 400,170 500,165 600,160" fill="none" stroke="#0090e8" stroke-width="2" stroke-dasharray="5,4" stroke-linecap="round"/>
+          <!-- points -->
+          <circle cx="600" cy="30" r="5" fill="#6447f4" stroke="#fff" stroke-width="2"/>
+          <defs>
+            <linearGradient id="revg" x1="0" y1="0" x2="1" y2="0">
+              <stop offset="0%" stop-color="#6447f4"/><stop offset="100%" stop-color="#0090e8"/>
+            </linearGradient>
+            <linearGradient id="revfill" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stop-color="#6447f4" stop-opacity="0.25"/><stop offset="100%" stop-color="#6447f4" stop-opacity="0"/>
+            </linearGradient>
+          </defs>
+        </svg>
+        <div style="display:flex;justify-content:space-between;margin-top:.5rem;font-size:.72rem;color:var(--color-text-light);padding:0 .25rem;">
+          <span>دی</span><span>بهمن</span><span>اسفند</span><span>فروردین</span><span>اردیبهشت</span><span>خرداد</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Traffic Sources -->
+    <div class="dash-panel">
+      <div class="panel-header">
+        <h6 class="panel-title"><i class="bi bi-pie-chart-fill me-1" style="color:var(--main-500);"></i> منابع ترافیک</h6>
+      </div>
+      <div style="padding:1.5rem 1.25rem;">
+        <div class="donut-wrap" style="width:150px;height:150px;margin:0 auto 1.25rem;">
+          <svg viewBox="0 0 42 42" width="150" height="150">
+            <circle cx="21" cy="21" r="15.9" fill="none" stroke="var(--color-border)" stroke-width="4"/>
+            <circle cx="21" cy="21" r="15.9" fill="none" stroke="#6447f4" stroke-width="4" stroke-dasharray="42 58" stroke-dashoffset="25" stroke-linecap="round"/>
+            <circle cx="21" cy="21" r="15.9" fill="none" stroke="#0090e8" stroke-width="4" stroke-dasharray="28 72" stroke-dashoffset="-17" stroke-linecap="round"/>
+            <circle cx="21" cy="21" r="15.9" fill="none" stroke="#22c55e" stroke-width="4" stroke-dasharray="18 82" stroke-dashoffset="-45" stroke-linecap="round"/>
+            <circle cx="21" cy="21" r="15.9" fill="none" stroke="#f59e0b" stroke-width="4" stroke-dasharray="12 88" stroke-dashoffset="-63" stroke-linecap="round"/>
+          </svg>
+          <div class="donut-center"><div class="donut-val">۸٬۴۲۰</div><div class="donut-sub">کل بازدید</div></div>
+        </div>
+        <div class="traffic-list">
+          <div class="traffic-item"><span class="t-dot" style="background:#6447f4;"></span><span class="t-name">جستجوی گوگل</span><span class="t-pct">۴۲٪</span></div>
+          <div class="traffic-item"><span class="t-dot" style="background:#0090e8;"></span><span class="t-name">شبکه‌های اجتماعی</span><span class="t-pct">۲۸٪</span></div>
+          <div class="traffic-item"><span class="t-dot" style="background:#22c55e;"></span><span class="t-name">ورود مستقیم</span><span class="t-pct">۱۸٪</span></div>
+          <div class="traffic-item"><span class="t-dot" style="background:#f59e0b;"></span><span class="t-name">سایر منابع</span><span class="t-pct">۱۲٪</span></div>
+        </div>
+      </div>
+    </div>
+
+  </div><!-- /rep-grid -->
+
+  <!-- Secondary row: Project types + Top clients -->
+  <div class="rep-grid fade-up fade-up-4">
+
+    <!-- Project Types Bar -->
+    <div class="dash-panel">
+      <div class="panel-header">
+        <h6 class="panel-title"><i class="bi bi-bar-chart-fill me-1" style="color:var(--main-500);"></i> پروژه‌ها بر اساس نوع</h6>
+      </div>
+      <div style="padding:1.5rem 1.25rem;display:flex;flex-direction:column;gap:1rem;">
+        <div class="hbar-row">
+          <span class="hbar-label">طراحی وب</span>
+          <div class="hbar-track"><div class="hbar-fill" style="width:85%;background:var(--grad-main);"></div></div>
+          <span class="hbar-val">۶۵</span>
+        </div>
+        <div class="hbar-row">
+          <span class="hbar-label">فروشگاه آنلاین</span>
+          <div class="hbar-track"><div class="hbar-fill" style="width:62%;background:linear-gradient(135deg,#0090e8,#4dc3ff);"></div></div>
+          <span class="hbar-val">۴۸</span>
+        </div>
+        <div class="hbar-row">
+          <span class="hbar-label">UI/UX</span>
+          <div class="hbar-track"><div class="hbar-fill" style="width:45%;background:linear-gradient(135deg,#a394fb,#6447f4);"></div></div>
+          <span class="hbar-val">۳۴</span>
+        </div>
+        <div class="hbar-row">
+          <span class="hbar-label">وب اپلیکیشن</span>
+          <div class="hbar-track"><div class="hbar-fill" style="width:30%;background:linear-gradient(135deg,#22c55e,#0090e8);"></div></div>
+          <span class="hbar-val">۲۳</span>
+        </div>
+        <div class="hbar-row">
+          <span class="hbar-label">نگه‌داری و پشتیبانی</span>
+          <div class="hbar-track"><div class="hbar-fill" style="width:20%;background:linear-gradient(135deg,#f59e0b,#ef4444);"></div></div>
+          <span class="hbar-val">۱۵</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Top Clients -->
+    <div class="dash-panel">
+      <div class="panel-header">
+        <h6 class="panel-title"><i class="bi bi-trophy-fill me-1" style="color:var(--main-500);"></i> برترین مشتریان</h6>
+      </div>
+      <div style="padding:.5rem 0;">
+        <div class="top-client-row">
+          <span class="rank-badge gold">۱</span>
+          <div class="cl-av" style="background:linear-gradient(135deg,#22c55e,#0090e8);">رضا</div>
+          <div style="flex:1;"><div style="font-weight:700;font-size:.83rem;">رضا محمدی</div><div style="font-size:.72rem;color:var(--color-text-muted);">۵ پروژه</div></div>
+          <span style="font-size:.85rem;font-weight:800;" class="text-grad">۲۸۰M</span>
+        </div>
+        <div class="top-client-row">
+          <span class="rank-badge silver">۲</span>
+          <div class="cl-av" style="background:var(--grad-main);">علی</div>
+          <div style="flex:1;"><div style="font-weight:700;font-size:.83rem;">علی امینی</div><div style="font-size:.72rem;color:var(--color-text-muted);">۳ پروژه</div></div>
+          <span style="font-size:.85rem;font-weight:800;" class="text-grad">۱۹۵M</span>
+        </div>
+        <div class="top-client-row">
+          <span class="rank-badge bronze">۳</span>
+          <div class="cl-av" style="background:linear-gradient(135deg,#0090e8,#4dc3ff);">محس</div>
+          <div style="flex:1;"><div style="font-weight:700;font-size:.83rem;">محسن مظاهر</div><div style="font-size:.72rem;color:var(--color-text-muted);">۲ پروژه</div></div>
+          <span style="font-size:.85rem;font-weight:800;" class="text-grad">۱۴۰M</span>
+        </div>
+        <div class="top-client-row">
+          <span class="rank-badge">۴</span>
+          <div class="cl-av" style="background:linear-gradient(135deg,#6447f4,#1e1274);">کیا</div>
+          <div style="flex:1;"><div style="font-weight:700;font-size:.83rem;">کیانی لباس</div><div style="font-size:.72rem;color:var(--color-text-muted);">۱ پروژه</div></div>
+          <span style="font-size:.85rem;font-weight:800;" class="text-grad">۹۸M</span>
+        </div>
+        <div class="top-client-row">
+          <span class="rank-badge">۵</span>
+          <div class="cl-av" style="background:linear-gradient(135deg,#f59e0b,#ef4444);">نگر</div>
+          <div style="flex:1;"><div style="font-weight:700;font-size:.83rem;">نگار صادقی</div><div style="font-size:.72rem;color:var(--color-text-muted);">۲ پروژه</div></div>
+          <span style="font-size:.85rem;font-weight:800;" class="text-grad">۷۶M</span>
+        </div>
+      </div>
+    </div>
+
+  </div><!-- /rep-grid -->
+
+  <!-- Export panel -->
+  <div class="dash-panel fade-up fade-up-5" style="margin-top:1.25rem;">
+    <div class="panel-header">
+      <h6 class="panel-title"><i class="bi bi-download me-1" style="color:var(--main-500);"></i> دانلود گزارش‌های سفارشی</h6>
+    </div>
+    <div style="padding:1.25rem;display:grid;grid-template-columns:repeat(4,1fr);gap:1rem;">
+      <button class="export-btn"><i class="bi bi-cash-coin"></i><span>گزارش مالی</span></button>
+      <button class="export-btn"><i class="bi bi-kanban-fill"></i><span>گزارش پروژه‌ها</span></button>
+      <button class="export-btn"><i class="bi bi-people-fill"></i><span>گزارش مشتریان</span></button>
+      <button class="export-btn"><i class="bi bi-graph-up"></i><span>گزارش بازاریابی</span></button>
+    </div>
+  </div>
+
+</main>
+</div>
+</div>
+
+<%- include('partials/_scripts', { extraScripts: `
+<style>
+.stat-trend{display:flex;align-items:center;gap:.25rem;font-size:.73rem;font-weight:700;border-radius:var(--radius-full);padding:.2rem .55rem}
+.stat-trend.up{background:rgba(34,197,94,.12);color:#16a34a}
+.stat-trend.down{background:rgba(239,68,68,.12);color:#dc2626}
+.pstat-icon{width:40px;height:40px;border-radius:var(--radius-sm);display:flex;align-items:center;justify-content:center;font-size:1.1rem;flex-shrink:0}
+
+.kpi-card{background:var(--color-surface);border:1px solid var(--color-border);border-radius:var(--radius-lg);padding:1.25rem;transition:all var(--dur-normal) var(--ease-spring)}
+.kpi-card:hover{transform:translateY(-3px);box-shadow:var(--shadow-md);border-color:var(--main-200)}
+.kpi-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:.85rem}
+.kpi-val{font-size:1.7rem;font-weight:900;line-height:1}
+.kpi-lbl{font-size:.78rem;color:var(--color-text-muted);margin:.3rem 0 .75rem;}
+.kpi-spark{opacity:.85}
+
+.rep-grid{display:grid;grid-template-columns:1.4fr 1fr;gap:1.25rem;margin-bottom:1.25rem}
+@media(max-width:1100px){.rep-grid{grid-template-columns:1fr}}
+
+.chart-legend-inline{display:flex;gap:1rem;font-size:.74rem;color:var(--color-text-muted)}
+.chart-legend-inline span{display:flex;align-items:center;gap:.3rem}
+
+.donut-wrap{position:relative}
+.donut-center{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;flex-direction:column}
+.donut-val{font-size:1.15rem;font-weight:900;line-height:1}
+.donut-sub{font-size:.65rem;color:var(--color-text-muted);margin-top:.15rem}
+
+.traffic-list{display:flex;flex-direction:column;gap:.65rem}
+.traffic-item{display:flex;align-items:center;gap:.6rem;font-size:.82rem}
+.t-dot{width:9px;height:9px;border-radius:50%;flex-shrink:0}
+.t-name{flex:1;color:var(--color-text-muted)}
+.t-pct{font-weight:800;}
+
+.hbar-row{display:grid;grid-template-columns:110px 1fr 35px;align-items:center;gap:.85rem}
+.hbar-label{font-size:.8rem;color:var(--color-text-muted);font-weight:600}
+.hbar-track{height:9px;border-radius:99px;background:var(--color-bg);overflow:hidden}
+.hbar-fill{height:100%;border-radius:99px;transition:width 1s var(--ease-spring)}
+.hbar-val{font-size:.82rem;font-weight:800;text-align:left}
+
+.top-client-row{display:flex;align-items:center;gap:.75rem;padding:.7rem 1.25rem;border-bottom:1px solid var(--color-border);transition:background var(--dur-fast)}
+.top-client-row:last-child{border-bottom:none}
+.top-client-row:hover{background:var(--color-bg)}
+[data-bs-theme="dark"] .top-client-row:hover{background:rgba(255,255,255,.03)}
+.rank-badge{width:24px;height:24px;border-radius:50%;background:var(--color-bg);color:var(--color-text-muted);font-size:.72rem;font-weight:800;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.rank-badge.gold{background:linear-gradient(135deg,#fbbf24,#f59e0b);color:#fff}
+.rank-badge.silver{background:linear-gradient(135deg,#cbd5e1,#94a3b8);color:#fff}
+.rank-badge.bronze{background:linear-gradient(135deg,#d97757,#b45309);color:#fff}
+.cl-av{width:36px;height:36px;border-radius:var(--radius-sm);display:flex;align-items:center;justify-content:center;font-size:.72rem;font-weight:800;color:#fff;flex-shrink:0}
+
+.export-btn{display:flex;flex-direction:column;align-items:center;gap:.6rem;background:var(--color-bg);border:1.5px solid var(--color-border);border-radius:var(--radius-md);padding:1.25rem .75rem;cursor:pointer;transition:all var(--dur-fast);font-family:var(--font-primary);color:var(--color-text-muted);font-size:.8rem;font-weight:600}
+.export-btn i{font-size:1.4rem;color:var(--main-500)}
+.export-btn:hover{background:var(--main-50);border-color:var(--main-300);color:var(--main-600);transform:translateY(-2px)}
+[data-bs-theme="dark"] .export-btn:hover{background:rgba(100,71,244,.1)}
+@media(max-width:700px){.export-btn-grid,div[style*="grid-template-columns:repeat(4,1fr)"]{grid-template-columns:repeat(2,1fr)!important}}
+</style>
+` }) %>

@@ -1,0 +1,276 @@
+<%# views/sw-admin/reviews.ejs %>
+<%- include('partials/_head', { title: 'مدیریت نظرات' }) %>
+
+<div class="sidebar-overlay" id="sidebarOverlay"></div>
+<div class="admin-shell">
+
+<%- include('partials/_sidebar', { activePage: 'reviews', adminUser: { name: 'علی مدیری', role: 'مدیر کل سیستم', initials: 'ادم' } }) %>
+
+<div class="main-content" id="mainContent">
+<%- include('partials/_header', {
+  breadcrumbs: [{ label: 'داشبورد', href: '/sw-admin' }, { label: 'نظرات' }],
+  searchPlaceholder: 'جستجو در نظرات…'
+}) %>
+
+<main class="page-content">
+
+  <div class="page-header fade-up fade-up-1">
+    <div>
+      <h1 class="page-title">مدیریت نظرات مشتریان</h1>
+      <p class="page-subtitle">۴۲ نظر ثبت‌شده · ۳ نظر در انتظار تأیید</p>
+    </div>
+    <div style="display:flex;gap:.6rem;">
+      <button class="btn-ghost-sm"><i class="bi bi-eye"></i> مشاهده در سایت</button>
+      <button class="btn-sol-sm" data-modal-open="reviewModal"><i class="bi bi-plus-lg"></i> افزودن نظر</button>
+    </div>
+  </div>
+
+  <!-- Stats + Rating Summary -->
+  <div class="rev-summary fade-up fade-up-2">
+    <div class="rev-score-box">
+      <div class="rev-score">۴.۹</div>
+      <div style="color:#f59e0b;letter-spacing:.15em;font-size:1.1rem;">★★★★★</div>
+      <div style="font-size:.78rem;color:var(--color-text-muted);margin-top:.3rem;">از ۴۲ نظر</div>
+    </div>
+    <div class="rev-bars">
+      <div class="rev-bar-row"><span>۵ ستاره</span><div class="rev-bar-track"><div class="rev-bar-fill" style="width:88%;"></div></div><span class="rev-bar-count">۳۷</span></div>
+      <div class="rev-bar-row"><span>۴ ستاره</span><div class="rev-bar-track"><div class="rev-bar-fill" style="width:10%;"></div></div><span class="rev-bar-count">۴</span></div>
+      <div class="rev-bar-row"><span>۳ ستاره</span><div class="rev-bar-track"><div class="rev-bar-fill" style="width:2%;"></div></div><span class="rev-bar-count">۱</span></div>
+      <div class="rev-bar-row"><span>۲ ستاره</span><div class="rev-bar-track"><div class="rev-bar-fill" style="width:0%;"></div></div><span class="rev-bar-count">۰</span></div>
+      <div class="rev-bar-row"><span>۱ ستاره</span><div class="rev-bar-track"><div class="rev-bar-fill" style="width:0%;"></div></div><span class="rev-bar-count">۰</span></div>
+    </div>
+    <div class="rev-mini-stats">
+      <div class="rmini"><div class="rmini-val text-grad">۴۲</div><div class="rmini-lbl">کل نظرات</div></div>
+      <div class="rmini"><div class="rmini-val text-grad" style="color:#d97706;">۳</div><div class="rmini-lbl">در انتظار تأیید</div></div>
+      <div class="rmini"><div class="rmini-val text-grad">۹</div><div class="rmini-lbl">نمایش در صفحه اصلی</div></div>
+    </div>
+  </div>
+
+  <!-- Filter -->
+  <div class="filter-bar fade-up fade-up-2" data-filter-group>
+    <button class="filter-chip active" data-filter="all">همه</button>
+    <button class="filter-chip" data-filter="pending">در انتظار تأیید <span class="chip-count">۳</span></button>
+    <button class="filter-chip" data-filter="approved">تأیید شده</button>
+    <button class="filter-chip" data-filter="featured">نمایش‌داده‌شده</button>
+    <button class="filter-chip" data-filter="5star">۵ ستاره</button>
+  </div>
+
+  <!-- Reviews List -->
+  <div class="rev-grid fade-up fade-up-3">
+
+    <div class="rev-card pending">
+      <div class="rev-card-top">
+        <div style="display:flex;align-items:center;gap:.75rem;">
+          <div class="cl-av" style="background:var(--grad-main);">امی</div>
+          <div>
+            <div style="font-weight:700;font-size:.87rem;">امیر حسینی</div>
+            <div style="font-size:.72rem;color:var(--color-text-muted);">فروشگاه اسیل · ۲ ساعت پیش</div>
+          </div>
+        </div>
+        <span class="badge-status badge-review">در انتظار</span>
+      </div>
+      <div style="color:#f59e0b;letter-spacing:.1em;font-size:.95rem;margin:.65rem 0;">★★★★★</div>
+      <p class="rev-text">سُل وب وب‌سایتی برای فروشگاه ما طراحی کرد که واقعاً فروش آنلاین‌مان را چند برابر کرد. طراحی زیبا و عملکرد عالی، ممنون از تیم حرفه‌ای‌تون!</p>
+      <div class="rev-actions">
+        <button class="btn-sol-sm" style="padding:.4rem .9rem;"><i class="bi bi-check-lg"></i> تأیید</button>
+        <button class="btn-danger-sm" style="padding:.4rem .9rem;"><i class="bi bi-x-lg"></i> رد</button>
+        <button class="btn-ghost-sm" style="padding:.4rem .9rem;margin-right:auto;" data-modal-open="reviewModal"><i class="bi bi-pencil"></i></button>
+      </div>
+    </div>
+
+    <div class="rev-card pending">
+      <div class="rev-card-top">
+        <div style="display:flex;align-items:center;gap:.75rem;">
+          <div class="cl-av" style="background:linear-gradient(135deg,#f59e0b,#ef4444);">حسا</div>
+          <div>
+            <div style="font-weight:700;font-size:.87rem;">حسام طالبی</div>
+            <div style="font-size:.72rem;color:var(--color-text-muted);">شرکت بازرگانی ترنج · دیروز</div>
+          </div>
+        </div>
+        <span class="badge-status badge-review">در انتظار</span>
+      </div>
+      <div style="color:#f59e0b;letter-spacing:.1em;font-size:.95rem;margin:.65rem 0;">★★★★☆</div>
+      <p class="rev-text">کیفیت کار خوب بود ولی تحویل پروژه چند روز تاخیر داشت. در کل راضی هستم و دوباره همکاری می‌کنم.</p>
+      <div class="rev-actions">
+        <button class="btn-sol-sm" style="padding:.4rem .9rem;"><i class="bi bi-check-lg"></i> تأیید</button>
+        <button class="btn-danger-sm" style="padding:.4rem .9rem;"><i class="bi bi-x-lg"></i> رد</button>
+        <button class="btn-ghost-sm" style="padding:.4rem .9rem;margin-right:auto;" data-modal-open="reviewModal"><i class="bi bi-pencil"></i></button>
+      </div>
+    </div>
+
+    <div class="rev-card">
+      <div class="rev-card-top">
+        <div style="display:flex;align-items:center;gap:.75rem;">
+          <div class="cl-av" style="background:linear-gradient(135deg,#a394fb,#6447f4);">سار</div>
+          <div>
+            <div style="font-weight:700;font-size:.87rem;">سارا طاهری</div>
+            <div style="font-size:.72rem;color:var(--color-text-muted);">استودیوی خلاق نگاه · ۳ روز پیش</div>
+          </div>
+        </div>
+        <div style="display:flex;gap:.4rem;align-items:center;">
+          <span class="badge-status badge-done">تأیید‌شده</span>
+          <label class="sw-toggle sw-toggle-sm" title="نمایش در صفحه اصلی"><input type="checkbox" checked><span class="sw-slider"></span></label>
+        </div>
+      </div>
+      <div style="color:#f59e0b;letter-spacing:.1em;font-size:.95rem;margin:.65rem 0;">★★★★★</div>
+      <p class="rev-text">طراحی UI/UX که سُل وب برای اپلیکیشن ما انجام داد فوق‌العاده بود. کاربران از رابط کاربری جدید عاشق شدند و نرخ تعامل افزایش پیدا کرد!</p>
+      <div class="rev-actions">
+        <button class="btn-ghost-sm" style="padding:.4rem .9rem;" data-modal-open="reviewModal"><i class="bi bi-pencil"></i> ویرایش</button>
+        <button class="btn-danger-sm" style="padding:.4rem .9rem;margin-right:auto;"><i class="bi bi-trash"></i> حذف</button>
+      </div>
+    </div>
+
+    <div class="rev-card">
+      <div class="rev-card-top">
+        <div style="display:flex;align-items:center;gap:.75rem;">
+          <div class="cl-av" style="background:linear-gradient(135deg,#0090e8,#4dc3ff);">محس</div>
+          <div>
+            <div style="font-weight:700;font-size:.87rem;">محسن مظاهر</div>
+            <div style="font-size:.72rem;color:var(--color-text-muted);">استارتاپ آفیلیو · ۵ روز پیش</div>
+          </div>
+        </div>
+        <div style="display:flex;gap:.4rem;align-items:center;">
+          <span class="badge-status badge-done">تأیید‌شده</span>
+          <label class="sw-toggle sw-toggle-sm" title="نمایش در صفحه اصلی"><input type="checkbox" checked><span class="sw-slider"></span></label>
+        </div>
+      </div>
+      <div style="color:#f59e0b;letter-spacing:.1em;font-size:.95rem;margin:.65rem 0;">★★★★★</div>
+      <p class="rev-text">بهترین تیم توسعه وبی بودند که باهاشون کار کردم. پروژه را سر وقت تحویل دادند و پشتیبانی‌شان هم عالی بود.</p>
+      <div class="rev-actions">
+        <button class="btn-ghost-sm" style="padding:.4rem .9rem;" data-modal-open="reviewModal"><i class="bi bi-pencil"></i> ویرایش</button>
+        <button class="btn-danger-sm" style="padding:.4rem .9rem;margin-right:auto;"><i class="bi bi-trash"></i> حذف</button>
+      </div>
+    </div>
+
+    <div class="rev-card">
+      <div class="rev-card-top">
+        <div style="display:flex;align-items:center;gap:.75rem;">
+          <div class="cl-av" style="background:linear-gradient(135deg,#22c55e,#0090e8);">رضا</div>
+          <div>
+            <div style="font-weight:700;font-size:.87rem;">رضا محمدی</div>
+            <div style="font-size:.72rem;color:var(--color-text-muted);">شرکت فناوری آوا · ۱ هفته پیش</div>
+          </div>
+        </div>
+        <div style="display:flex;gap:.4rem;align-items:center;">
+          <span class="badge-status badge-done">تأیید‌شده</span>
+          <label class="sw-toggle sw-toggle-sm" title="نمایش در صفحه اصلی"><input type="checkbox"><span class="sw-slider"></span></label>
+        </div>
+      </div>
+      <div style="color:#f59e0b;letter-spacing:.1em;font-size:.95rem;margin:.65rem 0;">★★★★★</div>
+      <p class="rev-text">از ابتدا تا انتهای پروژه همراه‌مان بودند. مشاوره حرفه‌ای، طراحی عالی و تحویل به موقع. واقعاً ممنونم!</p>
+      <div class="rev-actions">
+        <button class="btn-ghost-sm" style="padding:.4rem .9rem;" data-modal-open="reviewModal"><i class="bi bi-pencil"></i> ویرایش</button>
+        <button class="btn-danger-sm" style="padding:.4rem .9rem;margin-right:auto;"><i class="bi bi-trash"></i> حذف</button>
+      </div>
+    </div>
+
+    <div class="rev-card">
+      <div class="rev-card-top">
+        <div style="display:flex;align-items:center;gap:.75rem;">
+          <div class="cl-av" style="background:linear-gradient(135deg,#f59e0b,#ef4444);">نگر</div>
+          <div>
+            <div style="font-weight:700;font-size:.87rem;">نگار صادقی</div>
+            <div style="font-size:.72rem;color:var(--color-text-muted);">برند آرایشی لوستا · ۲ هفته پیش</div>
+          </div>
+        </div>
+        <div style="display:flex;gap:.4rem;align-items:center;">
+          <span class="badge-status badge-done">تأیید‌شده</span>
+          <label class="sw-toggle sw-toggle-sm" title="نمایش در صفحه اصلی"><input type="checkbox" checked><span class="sw-slider"></span></label>
+        </div>
+      </div>
+      <div style="color:#f59e0b;letter-spacing:.1em;font-size:.95rem;margin:.65rem 0;">★★★★★</div>
+      <p class="rev-text">سئوی سایت‌مان بعد از همکاری با سُل وب به‌شدت بهبود پیدا کرد. درآمد آنلاین‌مان دو برابر شد!</p>
+      <div class="rev-actions">
+        <button class="btn-ghost-sm" style="padding:.4rem .9rem;" data-modal-open="reviewModal"><i class="bi bi-pencil"></i> ویرایش</button>
+        <button class="btn-danger-sm" style="padding:.4rem .9rem;margin-right:auto;"><i class="bi bi-trash"></i> حذف</button>
+      </div>
+    </div>
+
+  </div><!-- /rev-grid -->
+
+</main>
+</div>
+</div>
+
+<!-- Modal: نظر جدید/ویرایش -->
+<div class="modal-overlay" id="reviewModal">
+  <div class="modal-box">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1.5rem;">
+      <div class="modal-title" style="margin:0;">افزودن / ویرایش نظر</div>
+      <button data-modal-close style="background:transparent;border:none;font-size:1.2rem;color:var(--color-text-muted);cursor:pointer;"><i class="bi bi-x-lg"></i></button>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;">
+      <div class="form-row">
+        <label class="sol-label">نام مشتری</label>
+        <input class="sol-input" type="text" placeholder="نام و نام‌خانوادگی">
+      </div>
+      <div class="form-row">
+        <label class="sol-label">شرکت / سمت</label>
+        <input class="sol-input" type="text" placeholder="مثال: مدیر فروشگاه اسیل">
+      </div>
+    </div>
+    <div class="form-row">
+      <label class="sol-label">امتیاز</label>
+      <select class="sol-select" style="width:100%">
+        <option>۵ ستاره</option><option>۴ ستاره</option><option>۳ ستاره</option><option>۲ ستاره</option><option>۱ ستاره</option>
+      </select>
+    </div>
+    <div class="form-row">
+      <label class="sol-label">متن نظر</label>
+      <textarea class="sol-input" rows="4" placeholder="متن نظر مشتری…" style="resize:vertical;"></textarea>
+    </div>
+    <div class="form-row" style="display:flex;align-items:center;gap:.75rem;">
+      <label class="sw-toggle"><input type="checkbox" checked><span class="sw-slider"></span></label>
+      <span style="font-size:.83rem;font-weight:600;">نمایش در صفحه اصلی وب‌سایت</span>
+    </div>
+    <div style="display:flex;gap:.75rem;justify-content:flex-end;margin-top:1.5rem;">
+      <button class="btn-ghost-sm" data-modal-close>انصراف</button>
+      <button class="btn-sol-sm"><i class="bi bi-check-lg"></i> ذخیره نظر</button>
+    </div>
+  </div>
+</div>
+
+<%- include('partials/_scripts', { extraScripts: `
+<style>
+.cl-av{width:36px;height:36px;border-radius:var(--radius-sm);display:flex;align-items:center;justify-content:center;font-size:.72rem;font-weight:800;color:#fff;flex-shrink:0}
+.filter-bar{display:flex;align-items:center;gap:.6rem;flex-wrap:wrap;margin-bottom:1.25rem}
+.filter-chip{display:inline-flex;align-items:center;gap:.4rem;font-family:var(--font-primary);font-size:.78rem;font-weight:600;padding:.38rem .9rem;border-radius:var(--radius-full);border:1.5px solid var(--color-border);background:var(--color-surface);color:var(--color-text-muted);cursor:pointer;transition:all var(--dur-fast)}
+.filter-chip:hover,.filter-chip.active{background:var(--main-500);border-color:var(--main-500);color:#fff}
+.chip-count{background:rgba(255,255,255,.25);border-radius:99px;padding:.05rem .4rem;font-size:.65rem}
+.filter-chip:not(.active) .chip-count{background:rgba(220,38,38,.12);color:#dc2626}
+
+.rev-summary{display:grid;grid-template-columns:180px 1fr 1px 1fr;gap:1.5rem;align-items:center;background:var(--color-surface);border:1px solid var(--color-border);border-radius:var(--radius-lg);padding:1.5rem;margin-bottom:1.5rem}
+@media(max-width:900px){.rev-summary{grid-template-columns:1fr;text-align:center}.rev-summary > div:nth-child(3){display:none}}
+.rev-score-box{text-align:center}
+.rev-score{font-size:2.8rem;font-weight:900;line-height:1;background:var(--grad-main);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+.rev-bars{display:flex;flex-direction:column;gap:.5rem}
+.rev-bar-row{display:grid;grid-template-columns:55px 1fr 30px;align-items:center;gap:.6rem;font-size:.75rem;color:var(--color-text-muted)}
+.rev-bar-track{height:6px;border-radius:99px;background:var(--color-border);overflow:hidden}
+.rev-bar-fill{height:100%;border-radius:99px;background:var(--grad-main)}
+.rev-bar-count{text-align:left;font-weight:700;color:var(--color-text-primary)}
+.rev-summary > div:nth-child(3){width:1px;height:80px;background:var(--color-border);justify-self:center}
+.rev-mini-stats{display:flex;flex-direction:column;gap:.85rem}
+.rmini{display:flex;align-items:center;justify-content:space-between;gap:1rem}
+.rmini-val{font-size:1.3rem;font-weight:900}
+.rmini-lbl{font-size:.78rem;color:var(--color-text-muted)}
+
+.rev-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:1.25rem}
+@media(max-width:900px){.rev-grid{grid-template-columns:1fr}}
+.rev-card{background:var(--color-surface);border:1px solid var(--color-border);border-radius:var(--radius-lg);padding:1.4rem;transition:all var(--dur-normal) var(--ease-spring);display:flex;flex-direction:column}
+.rev-card:hover{box-shadow:var(--shadow-md);border-color:var(--main-200)}
+.rev-card.pending{border-color:rgba(245,158,11,.35);background:rgba(245,158,11,.03)}
+.rev-card-top{display:flex;align-items:flex-start;justify-content:space-between;gap:.75rem;flex-wrap:wrap}
+.rev-text{font-size:.84rem;color:var(--color-text-muted);line-height:1.8;flex:1}
+.rev-actions{display:flex;gap:.5rem;margin-top:1rem;padding-top:1rem;border-top:1px solid var(--color-border);flex-wrap:wrap}
+
+.sw-toggle{position:relative;display:inline-block;width:38px;height:21px;flex-shrink:0}
+.sw-toggle input{opacity:0;width:0;height:0}
+.sw-slider{position:absolute;cursor:pointer;inset:0;background:var(--color-border);border-radius:99px;transition:var(--dur-fast)}
+.sw-slider::before{content:'';position:absolute;width:15px;height:15px;right:3px;top:3px;background:#fff;border-radius:50%;transition:var(--dur-fast)}
+.sw-toggle input:checked + .sw-slider{background:var(--grad-main)}
+.sw-toggle input:checked + .sw-slider::before{transform:translateX(-17px)}
+.sw-toggle-sm{width:32px;height:18px}
+.sw-toggle-sm .sw-slider::before{width:12px;height:12px}
+.sw-toggle-sm input:checked + .sw-slider::before{transform:translateX(-14px)}
+</style>
+` }) %>

@@ -7,8 +7,82 @@
   activePage: 'invoices',
   adminUser: { name: 'علی مدیری', role: 'مدیر کل سیستم', initials: 'ادم' }
 }) %>
+<%
+const safeInvoices = Array.isArray(invoices) ? invoices : []
+const stats = invoiceStats || {}
+
+const totalInvoices = Number(stats.total) || safeInvoices.length || 0
+const waitingInvoices = Number(stats.sent) || 0
+
+const paidAmount = Number(stats.paidAmount) || 0
+const waitingAmount = Number(stats.sentAmount) || 0
+const overdueAmount = Number(stats.overdueAmount) || 0
+
+function formatMoney(v){
+  return (Number(v) || 0).toLocaleString('fa-IR')
+}
+
+function formatDate(d){
+  if(!d) return '—'
+  try{
+    return new Date(d).toLocaleDateString('fa-IR',{
+      year:'numeric',
+      month:'2-digit',
+      day:'2-digit'
+    })
+  }catch{
+    return '—'
+  }
+}
+
+function getClientName(c){
+  if(!c) return 'بدون مشتری'
+  return c.company || c.name || 'بدون نام'
+}
+
+function getProjectTitle(p){
+  if(!p) return 'بدون پروژه'
+  return p.title || 'بدون عنوان'
+}
+
+function getInvoiceStatusLabel(status){
+  const map={
+    draft:'پیش‌نویس',
+    sent:'ارسال‌شده',
+    paid:'پرداخت‌شده',
+    overdue:'معوق',
+    cancelled:'لغوشده'
+  }
+  return map[status] || 'نامشخص'
+}
+
+function getInvoiceStatusClass(status){
+  const map={
+    draft:'new',
+    sent:'review',
+    paid:'done',
+    overdue:'hold',
+    cancelled:'danger'
+  }
+  return map[status] || 'new'
+}
+
+function isOverdue(inv){
+  if(!inv || !inv.dueDate) return false
+  if(inv.status==='paid' || inv.status==='cancelled') return false
+
+  const today=new Date()
+  const due=new Date(inv.dueDate)
+
+  today.setHours(0,0,0,0)
+  due.setHours(0,0,0,0)
+
+  return due<today
+}
+%>
 
 <div class="main-content" id="mainContent">
+
 <%- include('partials/_header', {
   breadcrumbs: [{ label: 'داشبورد', href: '/sw-admin' }, { label: 'فاکتورها' }],
   searchPlaceholder: 'جستجو در فاکتورها…'
@@ -16,48 +90,88 @@
 
 <main class="page-content">
 
-  <div class="page-header fade-up fade-up-1">
-    <div>
-      <h1 class="page-title">مدیریت فاکتورها</h1>
-      <p class="page-subtitle">۳۸ فاکتور کل · ۵ فاکتور در انتظار پرداخت</p>
+<div class="page-header fade-up fade-up-1">
+  <div>
+    <h1 class="page-title">مدیریت فاکتورها</h1>
+
+    <p class="page-subtitle">
+      <%= totalInvoices.toLocaleString('fa-IR') %>
+      فاکتور کل
+      ·
+      <%= waitingInvoices.toLocaleString('fa-IR') %>
+      فاکتور در انتظار پرداخت
+    </p>
+  </div>
+
+  <div style="display:flex;gap:.6rem;">
+    <a href="/sw-admin/invoices/export/pdf" class="btn-ghost-sm" target="_blank">
+      <i class="bi bi-download"></i>
+      خروجی PDF
+    </a>
+
+    <button class="btn-sol-sm" data-modal-open="invoiceModal">
+      <i class="bi bi-plus-lg"></i>
+      فاکتور جدید
+    </button>
+  </div>
+</div>
+
+
+<!-- Stats -->
+<div class="stat-grid fade-up fade-up-2" style="display:grid;grid-template-columns:repeat(4,1fr);gap:1rem;margin-bottom:1.5rem;">
+
+  <div class="inv-stat">
+    <div class="inv-stat-icon" style="background:rgba(100,71,244,.1);color:var(--main-500);">
+      <i class="bi bi-receipt"></i>
     </div>
-    <div style="display:flex;gap:.6rem;">
-      <button class="btn-ghost-sm"><i class="bi bi-download"></i> خروجی PDF</button>
-      <button class="btn-sol-sm" data-modal-open="invoiceModal"><i class="bi bi-plus-lg"></i> فاکتور جدید</button>
+    <div>
+      <div class="inv-stat-val text-grad">
+        <%= totalInvoices.toLocaleString('fa-IR') %>
+      </div>
+      <div class="inv-stat-lbl">کل فاکتورها</div>
     </div>
   </div>
 
-  <!-- Stats -->
-  <div class="stat-grid fade-up fade-up-2" style="display:grid;grid-template-columns:repeat(4,1fr);gap:1rem;margin-bottom:1.5rem;">
-    <div class="inv-stat">
-      <div class="inv-stat-icon" style="background:rgba(100,71,244,.1);color:var(--main-500);"><i class="bi bi-receipt"></i></div>
-      <div>
-        <div class="inv-stat-val text-grad">۳۸</div>
-        <div class="inv-stat-lbl">کل فاکتورها</div>
-      </div>
+  <div class="inv-stat">
+    <div class="inv-stat-icon" style="background:rgba(34,197,94,.1);color:#16a34a;">
+      <i class="bi bi-check-circle-fill"></i>
     </div>
-    <div class="inv-stat">
-      <div class="inv-stat-icon" style="background:rgba(34,197,94,.1);color:#16a34a;"><i class="bi bi-check-circle-fill"></i></div>
-      <div>
-        <div class="inv-stat-val" style="color:#16a34a;">۲۸,۵۰۰,۰۰۰</div>
-        <div class="inv-stat-lbl">پرداخت‌شده (تومان)</div>
+    <div>
+      <div class="inv-stat-val" style="color:#16a34a;">
+        <%= formatMoney(paidAmount) %>
       </div>
-    </div>
-    <div class="inv-stat">
-      <div class="inv-stat-icon" style="background:rgba(245,158,11,.1);color:#d97706;"><i class="bi bi-clock-history"></i></div>
-      <div>
-        <div class="inv-stat-val" style="color:#d97706;">۴,۲۰۰,۰۰۰</div>
-        <div class="inv-stat-lbl">در انتظار (تومان)</div>
-      </div>
-    </div>
-    <div class="inv-stat">
-      <div class="inv-stat-icon" style="background:rgba(239,68,68,.1);color:#dc2626;"><i class="bi bi-exclamation-circle-fill"></i></div>
-      <div>
-        <div class="inv-stat-val" style="color:#dc2626;">۸۵۰,۰۰۰</div>
-        <div class="inv-stat-lbl">معوق (تومان)</div>
-      </div>
+      <div class="inv-stat-lbl">پرداخت‌شده (تومان)</div>
     </div>
   </div>
+
+  <div class="inv-stat">
+    <div class="inv-stat-icon" style="background:rgba(245,158,11,.1);color:#d97706;">
+      <i class="bi bi-clock-history"></i>
+    </div>
+    <div>
+      <div class="inv-stat-val" style="color:#d97706;">
+        <%= formatMoney(waitingAmount) %>
+      </div>
+      <div class="inv-stat-lbl">در انتظار (تومان)</div>
+    </div>
+  </div>
+
+  <div class="inv-stat">
+    <div class="inv-stat-icon" style="background:rgba(239,68,68,.1);color:#dc2626;">
+      <i class="bi bi-exclamation-circle-fill"></i>
+    </div>
+    <div>
+      <div class="inv-stat-val" style="color:#dc2626;">
+        <%= formatMoney(overdueAmount) %>
+      </div>
+      <div class="inv-stat-lbl">معوق (تومان)</div>
+    </div>
+  </div>
+
+</div>
+
+
+
 
   <!-- Filter -->
   <div style="display:flex;gap:.75rem;align-items:center;flex-wrap:wrap;margin-bottom:1.25rem;" class="fade-up fade-up-2">
@@ -65,20 +179,27 @@
       <i class="bi bi-search" style="color:var(--color-text-light);font-size:.85rem;"></i>
       <input type="text" placeholder="شماره فاکتور، نام مشتری…" style="border:none;background:transparent;outline:none;font-family:var(--font-primary);font-size:.85rem;color:var(--color-text-primary);width:100%;" id="invSearch">
     </div>
-    <select class="sol-select" style="width:auto;">
-      <option>همه وضعیت‌ها</option>
-      <option>پرداخت‌شده</option>
-      <option>در انتظار</option>
-      <option>معوق</option>
-      <option>پیش‌نویس</option>
-    </select>
-    <select class="sol-select" style="width:auto;">
-      <option>این ماه</option>
-      <option>۳ ماه اخیر</option>
-      <option>۶ ماه اخیر</option>
-      <option>امسال</option>
-    </select>
-  </div>
+<div class="invoice-filter-bar" style=display:flex;gap:.6rem;align-items:center;flex-wrap:wrap;">
+
+  <select id="invoiceStatusFilter" class="sol-select" style="width:auto;">
+    <option value="all">همه وضعیت‌ها</option>
+    <option value="paid">پرداخت‌شده</option>
+    <option value="sent">در انتظار</option>
+    <option value="overdue">معوق</option>
+    <option value="draft">پیش‌نویس</option>
+    <option value="cancelled">لغوشده</option>
+  </select>
+
+  <select id="invoiceRangeFilter" class="sol-select" style="width:auto;">
+    <option value="all">همه زمان‌ها</option>
+    <option value="month">این ماه</option>
+    <option value="3m">۳ ماه اخیر</option>
+    <option value="6m">۶ ماه اخیر</option>
+    <option value="year">امسال</option>
+  </select>
+
+</div>
+
 
   <!-- Invoices Table -->
   <div class="dash-panel fade-up fade-up-3">
@@ -96,55 +217,157 @@
             <th>عملیات</th>
           </tr>
         </thead>
-        <tbody>
-          <% const invoices = [
-            { num:'#۱۰۵۲', client:'آفیلیو',       project:'اپ مدیریت مالی',     amount:'۴,۵۰۰,۰۰۰', issued:'۱۴۰۴/۰۳/۱۵', due:'۱۴۰۴/۰۴/۱۵', status:'pending' },
-            { num:'#۱۰۵۱', client:'کیانی لباس',   project:'فروشگاه آنلاین',     amount:'۶,۸۰۰,۰۰۰', issued:'۱۴۰۴/۰۳/۱۰', due:'۱۴۰۴/۰۴/۱۰', status:'paid'    },
-            { num:'#۱۰۵۰', client:'گروه پارسیان', project:'پورتال سازمانی',     amount:'۱۲,۰۰۰,۰۰۰',issued:'۱۴۰۴/۰۳/۰۵', due:'۱۴۰۴/۰۴/۰۵', status:'pending' },
-            { num:'#۱۰۴۹', client:'استودیو نگاه', project:'سایت شرکتی نگاه',   amount:'۲,۲۰۰,۰۰۰', issued:'۱۴۰۴/۰۲/۲۸', due:'۱۴۰۴/۰۳/۲۸', status:'paid'    },
-            { num:'#۱۰۴۸', client:'شرکت آوا',     project:'پورتال آوا',         amount:'۵,۴۰۰,۰۰۰', issued:'۱۴۰۴/۰۲/۲۰', due:'۱۴۰۴/۰۳/۲۰', status:'paid'    },
-            { num:'#۱۰۴۷', client:'برند لوستا',   project:'فروشگاه آرایشی',    amount:'۳,۱۰۰,۰۰۰', issued:'۱۴۰۴/۰۲/۱۰', due:'۱۴۰۴/۰۳/۱۰', status:'overdue' },
-            { num:'#۱۰۴۶', client:'اسیل',         project:'فروشگاه اسیل',      amount:'۸,۵۰۰,۰۰۰', issued:'۱۴۰۴/۰۱/۲۵', due:'۱۴۰۴/۰۲/۲۵', status:'paid'    },
-            { num:'#۱۰۴۵', client:'آتین‌دیزاین',  project:'وب‌سایت شرکتی',     amount:'۳,۸۰۰,۰۰۰', issued:'۱۴۰۴/۰۱/۱۵', due:'۱۴۰۴/۰۲/۱۵', status:'draft'   },
-          ]; %>
-          <% invoices.forEach(function(inv){ %>
-          <tr>
-            <td>
-              <span style="font-family:monospace;font-size:.82rem;font-weight:700;color:var(--main-500);"><%= inv.num %></span>
-            </td>
-            <td style="font-size:.84rem;font-weight:600;"><%= inv.client %></td>
-            <td style="font-size:.82rem;color:var(--color-text-muted);"><%= inv.project %></td>
-            <td style="font-size:.84rem;font-weight:700;direction:ltr;text-align:right;"><%= inv.amount %></td>
-            <td style="font-size:.78rem;"><%= inv.issued %></td>
-            <td style="font-size:.78rem;color:<%= inv.status==='overdue' ? '#dc2626' : 'var(--color-text-muted)' %>;font-weight:<%= inv.status==='overdue' ? '700' : 'normal' %>;"><%= inv.due %></td>
-            <td>
-              <span class="badge-status badge-<%= inv.status==='paid' ? 'done' : inv.status==='pending' ? 'review' : inv.status==='overdue' ? 'hold' : 'new' %>">
-                <%= inv.status==='paid' ? 'پرداخت‌شده' : inv.status==='pending' ? 'در انتظار' : inv.status==='overdue' ? 'معوق' : 'پیش‌نویس' %>
-              </span>
-            </td>
-            <td>
-              <div style="display:flex;gap:.4rem;">
-                <button class="btn-ghost-sm" style="padding:.28rem .6rem;" title="مشاهده" data-modal-open="invViewModal"><i class="bi bi-eye"></i></button>
-                <button class="btn-ghost-sm" style="padding:.28rem .6rem;" title="دانلود PDF"><i class="bi bi-download"></i></button>
-                <button class="btn-ghost-sm" style="padding:.28rem .6rem;" title="ارسال ایمیل"><i class="bi bi-envelope"></i></button>
-                <button class="btn-danger-sm" style="padding:.28rem .6rem;" title="حذف"><i class="bi bi-trash"></i></button>
-              </div>
-            </td>
-          </tr>
-          <% }); %>
-        </tbody>
+<tbody>
+  <% if (safeInvoices && safeInvoices.length > 0) { %>
+
+    <% safeInvoices.forEach(function(inv) { %>
+      <% 
+        const overdue = isOverdue(inv)
+        const statusForView = overdue && inv.status !== 'paid' && inv.status !== 'cancelled'
+          ? 'overdue'
+          : inv.status
+
+        const invoiceCreatedAt = inv.createdAt 
+          ? new Date(inv.createdAt).toISOString() 
+          : ''
+      %>
+
+      <tr
+        class="invoice-row"
+        data-status="<%= statusForView || '' %>"
+        data-original-status="<%= inv.status || '' %>"
+        data-created-at="<%= invoiceCreatedAt %>"
+        data-total="<%= Number(inv.total) || 0 %>"
+      >
+        <td>
+          <span style="font-family:monospace;font-size:.82rem;font-weight:700;color:var(--main-500);">
+            <%= inv.invoiceNumber || '—' %>
+          </span>
+        </td>
+
+        <td style="font-size:.84rem;font-weight:600;">
+          <%= getClientName(inv.client) %>
+        </td>
+
+        <td style="font-size:.82rem;color:var(--color-text-muted);">
+          <%= getProjectTitle(inv.project) %>
+        </td>
+
+        <td style="font-size:.84rem;font-weight:700;direction:ltr;text-align:right;">
+          <%= formatMoney(inv.total) %>
+        </td>
+
+        <td style="font-size:.78rem;">
+          <%= formatDate(inv.issueDate || inv.createdAt) %>
+        </td>
+
+        <td 
+          style="
+            font-size:.78rem;
+            color:<%= overdue ? '#dc2626' : 'var(--color-text-muted)' %>;
+            font-weight:<%= overdue ? '700' : 'normal' %>;
+          "
+        >
+          <%= formatDate(inv.dueDate) %>
+        </td>
+
+        <td>
+          <span class="badge-status badge-<%= getInvoiceStatusClass(statusForView) %>">
+            <%= getInvoiceStatusLabel(statusForView) %>
+          </span>
+        </td>
+
+        <td>
+          <div style="display:flex;gap:.4rem;align-items:center;">
+
+            <button 
+              type="button"
+              class="btn-ghost-sm" 
+              style="padding:.28rem .6rem;" 
+              title="مشاهده" 
+              data-modal-open="invViewModal"
+              data-invoice-id="<%= inv._id %>"
+            >
+              <i class="bi bi-eye"></i>
+            </button>
+
+            <a 
+              href="/sw-admin/invoices/<%= inv._id %>/pdf" 
+              class="btn-ghost-sm" 
+              style="padding:.28rem .6rem;" 
+              title="دانلود PDF"
+              target="_blank"
+            >
+              <i class="bi bi-download"></i>
+            </a>
+
+            <a 
+              href="/sw-admin/invoices/<%= inv._id %>/send-email" 
+              class="btn-ghost-sm" 
+              style="padding:.28rem .6rem;" 
+              title="ارسال ایمیل"
+            >
+              <i class="bi bi-envelope"></i>
+            </a>
+
+            <form 
+              action="/sw-admin/invoices/<%= inv._id %>/delete" 
+              method="POST" 
+              onsubmit="return confirm('آیا از حذف این فاکتور مطمئن هستید؟')"
+              style="display:inline;"
+            >
+              <button 
+                type="submit"
+                class="btn-danger-sm" 
+                style="padding:.28rem .6rem;" 
+                title="حذف"
+              >
+                <i class="bi bi-trash"></i>
+              </button>
+            </form>
+
+          </div>
+        </td>      </tr>
+    <% }); %>
+
+    <tr id="noInvoiceRowsMessage" style="display:none;">
+      <td colspan="8" style="text-align:center;padding:2rem;color:var(--color-text-muted);font-size:.9rem;">
+        هیچ فاکتوری با این فیلترها پیدا نشد.
+      </td>
+    </tr>
+
+  <% } else { %>
+
+    <tr>
+      <td colspan="8" style="text-align:center;padding:2rem;color:var(--color-text-muted);font-size:.9rem;">
+        هنوز هیچ فاکتوری ثبت نشده است.
+      </td>
+    </tr>
+
+  <% } %>
+</tbody>
+
+
       </table>
     </div>
-    <div style="display:flex;align-items:center;justify-content:space-between;padding:1rem 1.25rem;border-top:1px solid var(--color-border);flex-wrap:wrap;gap:.75rem;">
-      <span style="font-size:.78rem;color:var(--color-text-muted);">نمایش ۱–۸ از ۳۸ فاکتور</span>
-      <div style="display:flex;gap:.35rem;">
-        <button class="pg-btn" disabled><i class="bi bi-chevron-right"></i></button>
-        <button class="pg-btn active">۱</button>
-        <button class="pg-btn">۲</button>
-        <button class="pg-btn">۳</button>
-        <button class="pg-btn"><i class="bi bi-chevron-left"></i></button>
-      </div>
-    </div>
+<div style="display:flex;align-items:center;justify-content:space-between;padding:1rem 1.25rem;border-top:1px solid var(--color-border);flex-wrap:wrap;gap:.75rem;">
+  <span style="font-size:.78rem;color:var(--color-text-muted);">
+    نمایش 
+    <%= invoices && invoices.length ? '۱' : '۰' %>
+    –
+    <%= invoices ? invoices.length.toLocaleString('fa-IR') : '۰' %>
+    از
+    <%= invoices ? invoices.length.toLocaleString('fa-IR') : '۰' %>
+    فاکتور
+  </span>
+
+  <div style="display:flex;gap:.35rem;">
+    <button class="pg-btn" disabled><i class="bi bi-chevron-right"></i></button>
+    <button class="pg-btn active">۱</button>
+    <button class="pg-btn" disabled><i class="bi bi-chevron-left"></i></button>
+  </div>
+</div>
+
   </div>
 
 </main>
@@ -153,53 +376,158 @@
 
 <!-- Modal: فاکتور جدید -->
 <div class="modal-overlay" id="invoiceModal">
-  <form class="modal-box" style="width:min(560px,92vw);" id="invoiceForm">
+  <form 
+    class="modal-box" 
+    style="width:min(560px,92vw);" 
+    id="invoiceForm"
+    action="/sw-admin/invoices/add"
+    method="POST"
+  >
+
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1.5rem;">
       <div class="modal-title" style="margin:0;">فاکتور جدید</div>
-      <button type="button" data-modal-close style="background:transparent;border:none;font-size:1.2rem;color:var(--color-text-muted);cursor:pointer;"><i class="bi bi-x-lg"></i></button>
+
+      <button 
+        type="button" 
+        data-modal-close 
+        style="background:transparent;border:none;font-size:1.2rem;color:var(--color-text-muted);cursor:pointer;"
+      >
+        <i class="bi bi-x-lg"></i>
+      </button>
     </div>
+
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;">
       <div class="form-row">
         <label class="sol-label">مشتری</label>
-        <select class="sol-select" style="width:100%" name="client">
-          <option>انتخاب مشتری…</option>
-          <option>آفیلیو</option><option>کیانی لباس</option><option>گروه پارسیان</option>
+
+        <select 
+          class="sol-select" 
+          style="width:100%" 
+          name="client" 
+          id="invoiceClientSelect"
+          required
+        >
+          <option value="">انتخاب مشتری…</option>
+
+          <% (clients || []).forEach(client => { %>
+            <option value="<%= client._id %>">
+              <%= client.company || client.name %>
+            </option>
+          <% }) %>
         </select>
       </div>
+
       <div class="form-row">
         <label class="sol-label">پروژه</label>
-        <select class="sol-select" style="width:100%" name="project">
-          <option>انتخاب پروژه…</option>
+
+        <select 
+          class="sol-select" 
+          style="width:100%" 
+          name="project" 
+          id="invoiceProjectSelect"
+        >
+          <option value="">ابتدا مشتری را انتخاب کنید…</option>
         </select>
       </div>
     </div>
+
     <div id="invItems">
       <div class="inv-item-row">
-        <input class="sol-input" type="text" placeholder="شرح خدمات" style="flex:2;" name="item_desc[]">
-        <input class="sol-input" type="number" placeholder="تعداد" style="flex:0.5;" name="item_qty[]">
-        <input class="sol-input" type="text" placeholder="مبلغ واحد" style="flex:1;" name="item_price[]">
-        <button type="button" class="btn-danger-sm remove-inv-item" style="padding:.45rem .6rem;flex-shrink:0;"><i class="bi bi-trash"></i></button>
+        <input 
+          class="sol-input" 
+          type="text" 
+          placeholder="شرح خدمات" 
+          style="flex:2;" 
+          name="item_desc[]"
+          required
+        >
+
+        <input 
+          class="sol-input" 
+          type="number" 
+          placeholder="تعداد" 
+          style="flex:0.5;" 
+          name="item_qty[]"
+          min="1"
+          value="1"
+          required
+        >
+
+        <input 
+          class="sol-input" 
+          type="number" 
+          placeholder="مبلغ واحد" 
+          style="flex:1;" 
+          name="item_price[]"
+          min="0"
+          required
+        >
+
+        <button 
+          type="button" 
+          class="btn-danger-sm remove-inv-item" 
+          style="padding:.45rem .6rem;flex-shrink:0;"
+        >
+          <i class="bi bi-trash"></i>
+        </button>
       </div>
     </div>
-    <button type="button" class="btn-ghost-sm" style="margin-top:.5rem;width:100%;justify-content:center;" id="addInvItem"><i class="bi bi-plus"></i> افزودن آیتم</button>
+
+    <button 
+      type="button" 
+      class="btn-ghost-sm" 
+      style="margin-top:.5rem;width:100%;justify-content:center;" 
+      id="addInvItem"
+    >
+      <i class="bi bi-plus"></i> افزودن آیتم
+    </button>
+
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin-top:1rem;">
       <div class="form-row">
         <label class="sol-label">تاریخ صدور</label>
-        <input class="sol-input" type="text" placeholder="۱۴۰۴/۰۳/۲۱" name="issue_date">
+        <input class="sol-input" type="date" name="issue_date">
       </div>
+
       <div class="form-row">
         <label class="sol-label">سررسید پرداخت</label>
-        <input class="sol-input" type="text" placeholder="۱۴۰۴/۰۴/۲۱" name="due_date">
+        <input class="sol-input" type="date" name="due_date">
       </div>
     </div>
+
     <div class="form-row">
       <label class="sol-label">یادداشت</label>
-      <textarea class="sol-input" rows="2" placeholder="یادداشت اختیاری…" style="resize:vertical;" name="note"></textarea>
+
+      <textarea 
+        class="sol-input" 
+        rows="2" 
+        placeholder="یادداشت اختیاری…" 
+        style="resize:vertical;" 
+        name="note"
+      ></textarea>
     </div>
+
+    <input type="hidden" name="status" id="invoiceStatusInput" value="sent">
+
     <div style="display:flex;gap:.75rem;justify-content:flex-end;margin-top:1.5rem;">
-      <button type="button" class="btn-ghost-sm" data-modal-close>انصراف</button>
-      <button type="button" class="btn-ghost-sm"><i class="bi bi-file-earmark"></i> پیش‌نویس</button>
-      <button type="submit" class="btn-sol-sm"><i class="bi bi-send-fill"></i> صدور فاکتور</button>
+      <button type="button" class="btn-ghost-sm" data-modal-close>
+        انصراف
+      </button>
+
+      <button 
+        type="submit" 
+        class="btn-ghost-sm" 
+        data-invoice-status="draft"
+      >
+        <i class="bi bi-file-earmark"></i> پیش‌نویس
+      </button>
+
+      <button 
+        type="submit" 
+        class="btn-sol-sm" 
+        data-invoice-status="sent"
+      >
+        <i class="bi bi-send-fill"></i> صدور فاکتور
+      </button>
     </div>
   </form>
 </div>
@@ -249,43 +577,269 @@
     </div>
   </div>
 </div>
-<%- include('partials/_scripts', { extraScripts: `
+<%- include('partials/_scripts') %>
+
 <style>
-.inv-stat{background:var(--color-surface);border:1px solid var(--color-border);border-radius:var(--radius-lg);padding:1.1rem 1.25rem;display:flex;align-items:center;gap:.85rem;transition:all var(--dur-normal) var(--ease-spring);}
-.inv-stat:hover{transform:translateY(-2px);box-shadow:var(--shadow-sm);border-color:var(--main-200);}
-.inv-stat-icon{width:40px;height:40px;border-radius:var(--radius-sm);display:flex;align-items:center;justify-content:center;font-size:1.1rem;flex-shrink:0;}
-.inv-stat-val{font-size:1.25rem;font-weight:900;line-height:1;background:var(--grad-main);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;}
-.inv-stat-lbl{font-size:.73rem;color:var(--color-text-muted);margin-top:.15rem;}
-.pg-btn{width:32px;height:32px;border-radius:var(--radius-sm);border:1.5px solid var(--color-border);background:var(--color-surface);color:var(--color-text-muted);display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:.8rem;transition:all var(--dur-fast);font-family:var(--font-primary);}
-.pg-btn.active,.pg-btn:not(:disabled):hover{background:var(--main-500);border-color:var(--main-500);color:#fff;}
-.pg-btn:disabled{opacity:.4;cursor:not-allowed;}
-.inv-item-row{display:flex;gap:.5rem;margin-bottom:.5rem;}
+  .inv-item-row {
+    display: flex;
+    gap: .5rem;
+    align-items: center;
+    margin-top: .75rem;
+    margin-bottom: .5rem;
+  }
+
+  .inv-stat {
+    background: var(--color-surface);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-lg);
+    padding: 1.1rem 1.25rem;
+    display: flex;
+    align-items: center;
+    gap: .85rem;
+    transition: all var(--dur-normal) var(--ease-spring);
+  }
+
+  .inv-stat:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-sm);
+    border-color: var(--main-200);
+  }
+
+  .inv-stat-icon {
+    width: 40px;
+    height: 40px;
+    border-radius: var(--radius-sm);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.1rem;
+    flex-shrink: 0;
+  }
+
+  .inv-stat-val {
+    font-size: 1.25rem;
+    font-weight: 900;
+    line-height: 1;
+    background: var(--grad-main);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  .inv-stat-lbl {
+    font-size: .73rem;
+    color: var(--color-text-muted);
+    margin-top: .15rem;
+  }
+
+  .pg-btn {
+    width: 32px;
+    height: 32px;
+    border-radius: var(--radius-sm);
+    border: 1.5px solid var(--color-border);
+    background: var(--color-surface);
+    color: var(--color-text-muted);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    font-size: .8rem;
+    transition: all var(--dur-fast);
+    font-family: var(--font-primary);
+  }
+
+  .pg-btn.active,
+  .pg-btn:not(:disabled):hover {
+    background: var(--main-500);
+    border-color: var(--main-500);
+    color: #fff;
+  }
+
+  .pg-btn:disabled {
+    opacity: .4;
+    cursor: not-allowed;
+  }
 </style>
+
 <script>
-document.getElementById('invSearch').addEventListener('input', function(){
-  const q = this.value.toLowerCase();
-  document.querySelectorAll('#invTable tbody tr').forEach(function(row){
-    row.style.display = row.textContent.toLowerCase().includes(q) ? '' : 'none';
-  });
-});
+document.addEventListener('DOMContentLoaded', function () {
+  const invSearch = document.getElementById('invSearch')
+  const invTable = document.getElementById('invTable')
+  const invItems = document.getElementById('invItems')
+  const addInvItemBtn = document.getElementById('addInvItem')
+  const clientSelect = document.getElementById('invoiceClientSelect')
+  const projectSelect = document.getElementById('invoiceProjectSelect')
+  const invoiceStatusInput = document.getElementById('invoiceStatusInput')
+  const invoiceForm = document.getElementById('invoiceForm')
 
-document.getElementById('addInvItem').addEventListener('click', function(){
-  const row = document.createElement('div');
-  row.className = 'inv-item-row';
-  row.innerHTML = '<input class="sol-input" type="text" placeholder="شرح خدمات" style="flex:2;" name="item_desc[]">' +
-    '<input class="sol-input" type="number" placeholder="تعداد" style="flex:0.5;" name="item_qty[]">' +
-    '<input class="sol-input" type="text" placeholder="مبلغ واحد" style="flex:1;" name="item_price[]">' +
-    '<button type="button" class="btn-danger-sm remove-inv-item" style="padding:.45rem .6rem;flex-shrink:0;"><i class="bi bi-trash"></i></button>';
-  document.getElementById('invItems').appendChild(row);
-});
+  if (invSearch && invTable) {
+    invSearch.addEventListener('input', function () {
+      const q = this.value.toLowerCase()
 
-document.getElementById('invItems').addEventListener('click', function(e){
-  const btn = e.target.closest('.remove-inv-item');
-  if (btn) btn.closest('.inv-item-row').remove();
-});
+      invTable.querySelectorAll('tbody tr').forEach(function (row) {
+        row.style.display = row.textContent.toLowerCase().includes(q) ? '' : 'none'
+      })
+    })
+  }
 
-document.getElementById('invoiceForm').addEventListener('submit', function(e){
-  e.preventDefault();
-});
+  if (addInvItemBtn && invItems) {
+    addInvItemBtn.addEventListener('click', function () {
+      const row = document.createElement('div')
+      row.className = 'inv-item-row'
+
+      row.innerHTML =
+        '<input class="sol-input" type="text" placeholder="شرح خدمات" style="flex:2;" name="item_desc[]" required>' +
+        '<input class="sol-input" type="number" placeholder="تعداد" style="flex:0.5;" name="item_qty[]" min="1" value="1" required>' +
+        '<input class="sol-input" type="number" placeholder="مبلغ واحد" style="flex:1;" name="item_price[]" min="0" required>' +
+        '<button type="button" class="btn-danger-sm remove-inv-item" style="padding:.45rem .6rem;flex-shrink:0;"><i class="bi bi-trash"></i></button>'
+
+      invItems.appendChild(row)
+    })
+  }
+
+  if (invItems) {
+    invItems.addEventListener('click', function (e) {
+      const removeBtn = e.target.closest('.remove-inv-item')
+      if (!removeBtn) return
+
+      const rows = invItems.querySelectorAll('.inv-item-row')
+
+      if (rows.length <= 1) {
+        alert('حداقل یک آیتم برای فاکتور لازم است.')
+        return
+      }
+
+      const row = removeBtn.closest('.inv-item-row')
+      if (row) row.remove()
+    })
+  }
+
+  if (clientSelect && projectSelect) {
+    clientSelect.addEventListener('change', async function () {
+      const clientId = clientSelect.value
+
+      projectSelect.innerHTML = '<option value="">در حال دریافت پروژه‌ها…</option>'
+
+      if (!clientId) {
+        projectSelect.innerHTML = '<option value="">ابتدا مشتری را انتخاب کنید…</option>'
+        return
+      }
+
+      try {
+        const res = await fetch('/sw-admin/clients/' + clientId + '/projects')
+
+        if (!res.ok) {
+          throw new Error('Failed to fetch projects')
+        }
+
+        const projects = await res.json()
+
+        if (!projects.length) {
+          projectSelect.innerHTML = '<option value="">این مشتری پروژه‌ای ندارد</option>'
+          return
+        }
+
+        projectSelect.innerHTML = '<option value="">انتخاب پروژه…</option>'
+
+        projects.forEach(function (project) {
+          const option = document.createElement('option')
+          option.value = project._id
+          option.textContent = project.title
+          projectSelect.appendChild(option)
+        })
+
+      } catch (err) {
+        console.error(err)
+        projectSelect.innerHTML = '<option value="">خطا در دریافت پروژه‌ها</option>'
+      }
+    })
+  }
+
+  if (invoiceForm && invoiceStatusInput) {
+    invoiceForm.addEventListener('click', function (e) {
+      const btn = e.target.closest('[data-invoice-status]')
+      if (!btn) return
+
+      invoiceStatusInput.value = btn.dataset.invoiceStatus || 'sent'
+    })
+  }
+})
+document.addEventListener('DOMContentLoaded', function () {
+  const statusFilter = document.getElementById('invoiceStatusFilter')
+  const rangeFilter = document.getElementById('invoiceRangeFilter')
+  const rows = Array.from(document.querySelectorAll('.invoice-row'))
+  const emptyMessage = document.getElementById('noInvoiceRowsMessage')
+
+  if (!statusFilter || !rangeFilter || !rows.length) return
+
+  function getStartDateByRange(range) {
+    const now = new Date()
+    let startDate = null
+
+    if (range === 'month') {
+      startDate = new Date(now.getFullYear(), now.getMonth(), 1)
+    }
+
+    if (range === '3m') {
+      startDate = new Date(now)
+      startDate.setMonth(startDate.getMonth() - 3)
+    }
+
+    if (range === '6m') {
+      startDate = new Date(now)
+      startDate.setMonth(startDate.getMonth() - 6)
+    }
+
+    if (range === 'year') {
+      startDate = new Date(now.getFullYear(), 0, 1)
+    }
+
+    return startDate
+  }
+
+  function applyInvoiceFilters() {
+    const selectedStatus = statusFilter.value
+    const selectedRange = rangeFilter.value
+
+    const startDate = getStartDateByRange(selectedRange)
+
+    let visibleCount = 0
+
+    rows.forEach(row => {
+      const rowStatus = row.dataset.status || ''
+      const rowCreatedAtRaw = row.dataset.createdAt || ''
+      const rowCreatedAt = rowCreatedAtRaw ? new Date(rowCreatedAtRaw) : null
+
+      let statusMatched = true
+      let rangeMatched = true
+
+      if (selectedStatus !== 'all') {
+        statusMatched = rowStatus === selectedStatus
+      }
+
+      if (selectedRange !== 'all' && startDate) {
+        if (!rowCreatedAt || Number.isNaN(rowCreatedAt.getTime())) {
+          rangeMatched = false
+        } else {
+          rangeMatched = rowCreatedAt >= startDate
+        }
+      }
+
+      const shouldShow = statusMatched && rangeMatched
+
+      row.style.display = shouldShow ? '' : 'none'
+
+      if (shouldShow) visibleCount++
+    })
+
+    if (emptyMessage) {
+      emptyMessage.style.display = visibleCount === 0 ? '' : 'none'
+    }
+  }
+
+  statusFilter.addEventListener('change', applyInvoiceFilters)
+  rangeFilter.addEventListener('change', applyInvoiceFilters)
+
+  applyInvoiceFilters()
+})
 </script>
-`}) %>

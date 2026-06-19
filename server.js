@@ -4,7 +4,8 @@ const bcrypt     = require('bcryptjs')
 const path       = require('path')
 const multer     = require('multer')
 const ExcelJS    = require('exceljs')
-
+const puppeteer  = require('puppeteer-core')
+const ejs        = require('ejs')
 
 const app = express()
 
@@ -16,6 +17,10 @@ app.set('views', path.join(__dirname, 'views'))
 app.use(express.static(path.join(__dirname, 'public')))
 app.use(express.urlencoded({ extended: true }))
 app.use(express.json())
+// browser = await puppeteer.launch({
+//   executablePath: 'C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe',
+//   headless: true
+// })
 
 // ─────────────────────────────────────────
 //  MODELS
@@ -415,14 +420,217 @@ app.post('/sw-admin/messages/:id/delete', async (req, res) => {
 app.get('/sw-admin/invoices', async (req, res) => {
   try {
     const invoices = await Invoice.find()
-      .populate('client',  'name company')
+      .populate('client', 'name company email phone')
       .populate('project', 'title')
       .sort({ createdAt: -1 })
-    res.render('admin/Invoices', { invoices })
+      .lean()
+
+    const clients = await Client.find({ isActive: true })
+      .select('name company email')
+      .sort({ createdAt: -1 })
+      .lean()
+
+    const sumInvoicesByStatus = (status) => {
+      return invoices
+        .filter(inv => inv.status === status)
+        .reduce((sum, inv) => sum + (Number(inv.total) || 0), 0)
+    }
+
+    const invoiceStats = {
+      total: invoices.length,
+
+      draft: invoices.filter(inv => inv.status === 'draft').length,
+      sent: invoices.filter(inv => inv.status === 'sent').length,
+      paid: invoices.filter(inv => inv.status === 'paid').length,
+      overdue: invoices.filter(inv => inv.status === 'overdue').length,
+      cancelled: invoices.filter(inv => inv.status === 'cancelled').length,
+
+      paidAmount: sumInvoicesByStatus('paid'),
+      sentAmount: sumInvoicesByStatus('sent'),
+      overdueAmount: sumInvoicesByStatus('overdue')
+    }
+
+    res.render('admin/invoices', {
+      layout: 'layouts/sw-admin',
+      title: 'مدیریت فاکتورها',
+      invoices,
+      clients,
+      invoiceStats
+    })
   } catch (err) {
-    res.status(500).send('خطا در بارگذاری فاکتورها')
+    console.error('Invoices page error:', err)
+    res.status(500).send('خطا در دریافت فاکتورها')
   }
 })
+
+
+
+
+app.get('/sw-admin/clients/:clientId/projects', async (req, res) => {
+  try {
+    const { clientId } = req.params
+
+    if (!mongoose.Types.ObjectId.isValid(clientId)) {
+      return res.status(400).json({
+        message: 'شناسه مشتری معتبر نیست'
+      })
+    }
+
+    const projects = await Project.find({ client: clientId })
+      .select('title status progress deadline')
+      .sort({ createdAt: -1 })
+      .lean()
+
+    res.json(projects)
+
+  } catch (err) {
+    console.error('Client projects fetch error:', err)
+    res.status(500).json({
+      message: 'خطا در دریافت پروژه‌های مشتری'
+    })
+  }
+})
+
+
+app.post('/sw-admin/invoices/add', async (req, res) => {
+  try {
+    const {
+      client,
+      project,
+      item_desc,
+      item_qty,
+      item_price,
+      issue_date,
+      due_date,
+      note,
+      status
+    } = req.body
+
+    if (!client) {
+      return res.status(400).send('انتخاب مشتری الزامی است')
+    }
+
+    if (!mongoose.Types.ObjectId.isValid(client)) {
+      return res.status(400).send('شناسه مشتری معتبر نیست')
+    }
+
+    if (project && !mongoose.Types.ObjectId.isValid(project)) {
+      return res.status(400).send('شناسه پروژه معتبر نیست')
+    }
+
+    const foundClient = await Client.findById(client).lean()
+
+    if (!foundClient) {
+      return res.status(404).send('مشتری پیدا نشد')
+    }
+
+    let foundProject = null
+
+    if (project) {
+      foundProject = await Project.findOne({
+        _id: project,
+        client
+      }).lean()
+
+      if (!foundProject) {
+        return res.status(400).send('پروژه انتخاب‌شده متعلق به این مشتری نیست')
+      }
+    }
+
+    const normalizeArray = (value) => {
+      if (Array.isArray(value)) return value
+      if (value === undefined || value === null) return []
+      return [value]
+    }
+
+    const descriptions = normalizeArray(item_desc)
+    const quantities = normalizeArray(item_qty)
+    const prices = normalizeArray(item_price)
+
+    const parseMoney = (value) => {
+      if (value === undefined || value === null) return 0
+
+      const normalized = String(value)
+        .replace(/[۰-۹]/g, d => '۰۱۲۳۴۵۶۷۸۹'.indexOf(d))
+        .replace(/[٠-٩]/g, d => '٠١٢٣٤٥٦٧٨٩'.indexOf(d))
+        .replace(/,/g, '')
+        .replace(/،/g, '')
+        .trim()
+
+      const num = Number(normalized)
+
+      return Number.isFinite(num) ? num : 0
+    }
+
+    const parseQuantity = (value) => {
+      const num = parseMoney(value)
+      return num > 0 ? num : 1
+    }
+
+    const items = descriptions
+      .map((desc, index) => {
+        const description = String(desc || '').trim()
+        const quantity = parseQuantity(quantities[index])
+        const unitPrice = parseMoney(prices[index])
+
+        return {
+          description,
+          quantity,
+          unitPrice
+        }
+      })
+      .filter(item => item.description && item.unitPrice > 0)
+
+    if (!items.length) {
+      return res.status(400).send('حداقل یک آیتم معتبر برای فاکتور لازم است')
+    }
+
+    const normalizeDate = (value) => {
+      if (!value) return null
+
+      const date = new Date(value)
+
+      if (Number.isNaN(date.getTime())) return null
+
+      return date
+    }
+
+    const generateInvoiceNumber = async () => {
+      const count = await Invoice.countDocuments()
+      const nextNumber = count + 1001
+      return `INV-${nextNumber}`
+    }
+
+    let invoiceNumber = await generateInvoiceNumber()
+
+    let exists = await Invoice.exists({ invoiceNumber })
+
+    while (exists) {
+      invoiceNumber = `INV-${Date.now()}`
+      exists = await Invoice.exists({ invoiceNumber })
+    }
+
+    await Invoice.create({
+      invoiceNumber,
+      client,
+      project: project || null,
+      items,
+      issueDate: normalizeDate(issue_date) || new Date(),
+      dueDate: normalizeDate(due_date),
+      notes: note ? String(note).trim() : '',
+      status: ['draft', 'sent'].includes(status) ? status : 'sent',
+      currency: 'IRR',
+      createdBy: req.user?._id || undefined
+    })
+
+    res.redirect('/sw-admin/invoices')
+
+  } catch (err) {
+    console.error('Invoice create error:', err)
+    res.status(500).send('خطا در ثبت فاکتور')
+  }
+})
+
 
 app.post('/sw-admin/invoices', async (req, res) => {
   try {
@@ -1034,6 +1242,83 @@ app.get('/sw-admin/projects/export', async (req, res) => {
     res.status(500).send('خطا در خروجی Excel')
   }
 })
+
+
+
+app.get('/sw-admin/invoices/export/pdf', async (req, res) => {
+  let browser
+
+  try {
+    const invoices = await Invoice.find()
+      .populate('client', 'name company email phone')
+      .populate('project', 'title')
+      .sort({ createdAt: -1 })
+      .lean()
+
+    const invoiceStats = {
+      total: invoices.length,
+      draft: invoices.filter(inv => inv.status === 'draft').length,
+      sent: invoices.filter(inv => inv.status === 'sent').length,
+      paid: invoices.filter(inv => inv.status === 'paid').length,
+      overdue: invoices.filter(inv => inv.status === 'overdue').length,
+      cancelled: invoices.filter(inv => inv.status === 'cancelled').length
+    }
+
+    const html = await ejs.renderFile(
+      path.join(__dirname, 'views', 'admin', 'invoices-pdf.ejs'),
+      {
+        title: 'گزارش فاکتورها',
+        invoices,
+        invoiceStats
+      }
+    )
+
+    browser = await puppeteer.launch({
+      executablePath: 'C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe',
+      headless: true,
+      args: [
+        '--no-sandbox',
+        '--disable-setuid-sandbox'
+      ]
+    })
+
+    const page = await browser.newPage()
+
+    await page.setContent(html, {
+      waitUntil: 'networkidle0'
+    })
+
+    const pdfBuffer = await page.pdf({
+      format: 'A4',
+      printBackground: true,
+      margin: {
+        top: '14mm',
+        right: '10mm',
+        bottom: '14mm',
+        left: '10mm'
+      }
+    })
+
+    await browser.close()
+    browser = null
+
+    const fileName = `invoices-${Date.now()}.pdf`
+
+    res.setHeader('Content-Type', 'application/pdf')
+    res.setHeader('Content-Disposition', `inline; filename="${fileName}"`)
+    res.send(pdfBuffer)
+
+  } catch (err) {
+    if (browser) {
+      await browser.close()
+    }
+
+    console.error('Invoices PDF export error:', err)
+    res.status(500).send('خطا در تولید خروجی PDF فاکتورها')
+  }
+})
+
+
 // ─────────────────────────────────────────
 //  404
 // ─────────────────────────────────────────

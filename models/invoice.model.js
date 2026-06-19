@@ -33,6 +33,7 @@ const invoiceSchema = new mongoose.Schema({
     enum: ['draft', 'sent', 'paid', 'overdue', 'cancelled'],
     default: 'draft'
   },
+  issueDate: { type: Date, default: Date.now },
   dueDate:  { type: Date },
   paidAt:   { type: Date },
   notes:    { type: String },
@@ -43,14 +44,26 @@ const invoiceSchema = new mongoose.Schema({
 }, { timestamps: true });
 
 // Auto-calculate total before save
-invoiceSchema.pre('save', function(next) {
-  const itemsTotal = this.items.reduce((sum, i) => {
-    i.total = i.quantity * i.unitPrice;
-    return sum + i.total;
-  }, 0);
-  this.subtotal = itemsTotal;
-  this.total = itemsTotal + (itemsTotal * this.tax / 100) - this.discount;
-  next();
-});
+// Auto-calculate total before save
+invoiceSchema.pre('save', function () {
+  const itemsTotal = this.items.reduce((sum, item) => {
+    const quantity = Number(item.quantity) || 0
+    const unitPrice = Number(item.unitPrice) || 0
+
+    item.total = quantity * unitPrice
+
+    return sum + item.total
+  }, 0)
+
+  const tax = Number(this.tax) || 0
+  const discount = Number(this.discount) || 0
+
+  this.subtotal = itemsTotal
+  this.total = Math.max(
+    itemsTotal + (itemsTotal * tax / 100) - discount,
+    0
+  )
+})
+
 
 module.exports = mongoose.model('Invoice', invoiceSchema);

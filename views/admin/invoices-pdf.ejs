@@ -1,0 +1,330 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <title><%= title %></title>
+
+  <style>
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      padding: 24px;
+      direction: rtl;
+      font-family: Tahoma, Arial, sans-serif;
+      color: #111827;
+      background: #ffffff;
+      font-size: 12px;
+    }
+
+    .pdf-header {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 16px;
+      margin-bottom: 20px;
+      padding-bottom: 14px;
+      border-bottom: 2px solid #e5e7eb;
+    }
+
+    .pdf-title {
+      margin: 0 0 6px;
+      font-size: 22px;
+      font-weight: 800;
+      color: #111827;
+    }
+
+    .pdf-subtitle {
+      margin: 0;
+      color: #6b7280;
+      font-size: 12px;
+    }
+
+    .pdf-date {
+      text-align: left;
+      color: #6b7280;
+      font-size: 11px;
+      line-height: 1.8;
+    }
+
+    .stats {
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      gap: 8px;
+      margin-bottom: 18px;
+    }
+
+    .stat-card {
+      border: 1px solid #e5e7eb;
+      border-radius: 10px;
+      padding: 10px;
+      background: #f9fafb;
+    }
+
+    .stat-label {
+      color: #6b7280;
+      font-size: 10px;
+      margin-bottom: 6px;
+    }
+
+    .stat-value {
+      font-weight: 800;
+      font-size: 16px;
+      color: #111827;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      overflow: hidden;
+    }
+
+    thead {
+      display: table-header-group;
+    }
+
+    th {
+      background: #f3f4f6;
+      color: #374151;
+      font-size: 11px;
+      padding: 9px 8px;
+      border: 1px solid #e5e7eb;
+      text-align: right;
+      white-space: nowrap;
+    }
+
+    td {
+      padding: 8px;
+      border: 1px solid #e5e7eb;
+      font-size: 11px;
+      vertical-align: middle;
+    }
+
+    tr {
+      page-break-inside: avoid;
+    }
+
+    .amount {
+      direction: ltr;
+      text-align: right;
+      font-weight: 700;
+      white-space: nowrap;
+    }
+
+    .invoice-num {
+      direction: ltr;
+      font-family: monospace;
+      color: #2563eb;
+      font-weight: 700;
+      white-space: nowrap;
+    }
+
+    .muted {
+      color: #6b7280;
+    }
+
+    .badge {
+      display: inline-block;
+      padding: 3px 8px;
+      border-radius: 999px;
+      font-size: 10px;
+      font-weight: 700;
+      white-space: nowrap;
+    }
+
+    .badge-draft {
+      color: #374151;
+      background: #f3f4f6;
+    }
+
+    .badge-sent {
+      color: #1d4ed8;
+      background: #dbeafe;
+    }
+
+    .badge-paid {
+      color: #047857;
+      background: #d1fae5;
+    }
+
+    .badge-overdue {
+      color: #b91c1c;
+      background: #fee2e2;
+    }
+
+    .badge-cancelled {
+      color: #6b7280;
+      background: #e5e7eb;
+    }
+
+    .empty {
+      text-align: center;
+      padding: 24px;
+      color: #6b7280;
+    }
+  </style>
+</head>
+
+<body>
+  <%
+    function formatMoney(value) {
+      const num = Number(value) || 0
+      return num.toLocaleString('fa-IR')
+    }
+
+    function formatDate(date) {
+      if (!date) return '—'
+
+      try {
+        return new Date(date).toLocaleDateString('fa-IR', {
+          year: 'numeric',
+          month: '2-digit',
+          day: '2-digit'
+        })
+      } catch (e) {
+        return '—'
+      }
+    }
+
+    function getClientName(client) {
+      if (!client) return 'بدون مشتری'
+      return client.company || client.name || 'بدون نام'
+    }
+
+    function getProjectTitle(project) {
+      if (!project) return 'بدون پروژه'
+      return project.title || 'بدون عنوان'
+    }
+
+    function getStatusLabel(status) {
+      const map = {
+        draft: 'پیش‌نویس',
+        sent: 'در انتظار پرداخت',
+        paid: 'پرداخت‌شده',
+        overdue: 'معوق',
+        cancelled: 'لغوشده'
+      }
+
+      return map[status] || 'نامشخص'
+    }
+
+    function getStatusClass(status) {
+      const map = {
+        draft: 'draft',
+        sent: 'sent',
+        paid: 'paid',
+        overdue: 'overdue',
+        cancelled: 'cancelled'
+      }
+
+      return map[status] || 'draft'
+    }
+  %>
+
+  <div class="pdf-header">
+    <div>
+      <h1 class="pdf-title">گزارش فاکتورها</h1>
+      <p class="pdf-subtitle">
+        <%= (invoiceStats.total || 0).toLocaleString('fa-IR') %>
+        فاکتور کل
+        ·
+        <%= (invoiceStats.sent || 0).toLocaleString('fa-IR') %>
+        فاکتور در انتظار پرداخت
+      </p>
+    </div>
+
+    <div class="pdf-date">
+      <div>تاریخ خروجی:</div>
+      <strong><%= new Date().toLocaleDateString('fa-IR') %></strong>
+    </div>
+  </div>
+
+  <div class="stats">
+    <div class="stat-card">
+      <div class="stat-label">کل فاکتورها</div>
+      <div class="stat-value"><%= (invoiceStats.total || 0).toLocaleString('fa-IR') %></div>
+    </div>
+
+    <div class="stat-card">
+      <div class="stat-label">در انتظار پرداخت</div>
+      <div class="stat-value"><%= (invoiceStats.sent || 0).toLocaleString('fa-IR') %></div>
+    </div>
+
+    <div class="stat-card">
+      <div class="stat-label">پرداخت‌شده</div>
+      <div class="stat-value"><%= (invoiceStats.paid || 0).toLocaleString('fa-IR') %></div>
+    </div>
+
+    <div class="stat-card">
+      <div class="stat-label">معوق</div>
+      <div class="stat-value"><%= (invoiceStats.overdue || 0).toLocaleString('fa-IR') %></div>
+    </div>
+
+    <div class="stat-card">
+      <div class="stat-label">پیش‌نویس</div>
+      <div class="stat-value"><%= (invoiceStats.draft || 0).toLocaleString('fa-IR') %></div>
+    </div>
+  </div>
+
+  <table>
+    <thead>
+      <tr>
+        <th>شماره فاکتور</th>
+        <th>مشتری</th>
+        <th>پروژه</th>
+        <th>مبلغ</th>
+        <th>تاریخ صدور</th>
+        <th>سررسید</th>
+        <th>وضعیت</th>
+      </tr>
+    </thead>
+
+    <tbody>
+      <% if (invoices && invoices.length > 0) { %>
+        <% invoices.forEach(function(inv) { %>
+          <tr>
+            <td>
+              <span class="invoice-num"><%= inv.invoiceNumber || '—' %></span>
+            </td>
+
+            <td>
+              <%= getClientName(inv.client) %>
+            </td>
+
+            <td class="muted">
+              <%= getProjectTitle(inv.project) %>
+            </td>
+
+            <td class="amount">
+              <%= formatMoney(inv.total) %>
+              تومان
+            </td>
+
+            <td>
+              <%= formatDate(inv.issueDate || inv.createdAt) %>
+            </td>
+
+            <td>
+              <%= formatDate(inv.dueDate) %>
+            </td>
+
+            <td>
+              <span class="badge badge-<%= getStatusClass(inv.status) %>">
+                <%= getStatusLabel(inv.status) %>
+              </span>
+            </td>
+          </tr>
+        <% }) %>
+      <% } else { %>
+        <tr>
+          <td colspan="7" class="empty">
+            هنوز هیچ فاکتوری ثبت نشده است.
+          </td>
+        </tr>
+      <% } %>
+    </tbody>
+  </table>
+</body>
+</html>

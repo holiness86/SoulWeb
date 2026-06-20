@@ -1,5 +1,6 @@
 <%# views/sw-admin/projects.ejs %>
 <%- include('partials/_head', { title: 'مدیریت پروژه‌ها' }) %>
+<link rel="stylesheet" href="assets/css/jalalidatepicker.min.css">
 
 <div class="sidebar-overlay" id="sidebarOverlay"></div>
 <div class="admin-shell">
@@ -200,6 +201,77 @@
         .join('');
     };
 
+    const toJalaliInputValue = (date) => {
+      if (!date) return '';
+
+      try {
+        const d = new Date(date);
+        if (Number.isNaN(d.getTime())) return '';
+
+        const parts = new Intl.DateTimeFormat('fa-IR-u-nu-latn', {
+          year: 'numeric',
+          month: '2-digit',
+          day: '2-digit'
+        }).formatToParts(d);
+
+        const map = {};
+        parts.forEach(p => { map[p.type] = p.value; });
+
+        return `${map.year}/${map.month}/${map.day}`;
+      } catch (e) {
+        return '';
+      }
+    };
+
+    const defaultTechOptions = [
+      'PHP', 'Laravel', 'وردپرس', 'React', 'Vue.js', 'Next.js',
+      'Node.js', 'Angular', 'TypeScript', 'Tailwind CSS', 'Bootstrap',
+      'MySQL', 'MongoDB', 'jQuery'
+    ];
+
+    const getTechArray = (project) => {
+      if (!project) return [];
+
+      if (Array.isArray(project.techStack) && project.techStack.length) {
+        return project.techStack;
+      }
+
+      if (Array.isArray(project.technologies) && project.technologies.length) {
+        return project.technologies;
+      }
+
+      if (typeof project.technologies === 'string' && project.technologies.trim()) {
+        return project.technologies.split(/[·,/]/).map(t => t.trim()).filter(Boolean);
+      }
+
+      return [];
+    };
+
+    const getClientId = (project) => {
+      if (!project || !project.client) return '';
+      return typeof project.client === 'object' ? (project.client._id || '') : project.client;
+    };
+
+    const getCategoryId = (project) => {
+      if (!project || !project.category) return '';
+      return typeof project.category === 'object' ? (project.category._id || '') : project.category;
+    };
+
+    const buildProjectPayload = (project) => JSON.stringify({
+      id: project._id || '',
+      title: project.title || '',
+      client: getClientId(project),
+      category: getCategoryId(project),
+      categoryTitle: getCategoryTitle(project),
+      status: project.status || 'active',
+      progress: Number(project.progress || 0),
+      startDate: toJalaliInputValue(project.startDate),
+      deadline: toJalaliInputValue(project.deadline),
+      tech: getTechArray(project),
+      description: project.description || '',
+      clientName: getClientName(project)
+    });
+
     const totalProjects = safeProjects.length;
   %>
 
@@ -221,7 +293,7 @@
 </a>
 
 
-      <button class="btn-sol-sm" data-modal-open="projectModal">
+      <button class="btn-sol-sm" id="newProjectBtn" data-modal-open="projectModal">
         <i class="bi bi-plus-lg"></i>
         پروژه جدید
       </button>
@@ -418,6 +490,30 @@
                 data-deadline="<%= project.deadline ? new Date(project.deadline).getTime() : 0 %>"
                 data-created="<%= project.createdAt ? new Date(project.createdAt).getTime() : 0 %>"
               >
+                <div style="display:flex;justify-content:flex-end;gap:.3rem;margin-bottom:.4rem;">
+                  <button
+                    type="button"
+                    class="kcard-action-btn"
+                    title="مشاهده توضیحات"
+                    data-modal-open="projectViewModal"
+                    data-project-view
+                    data-project="<%= buildProjectPayload(project) %>"
+                  >
+                    <i class="bi bi-eye"></i>
+                  </button>
+
+                  <button
+                    type="button"
+                    class="kcard-action-btn"
+                    title="ویرایش پروژه"
+                    data-modal-open="projectModal"
+                    data-project-edit
+                    data-project="<%= buildProjectPayload(project) %>"
+                  >
+                    <i class="bi bi-pencil"></i>
+                  </button>
+                </div>
+
                 <div class="kcard-title">
                   <%= project.title || 'بدون عنوان' %>
                 </div>
@@ -574,23 +670,29 @@
 
                 <td>
                   <div style="display:flex;gap:.4rem;">
-                    <a
-                      href="/sw-admin/projects/<%= project._id %>"
+                    <button
+                      type="button"
                       class="btn-ghost-sm"
                       style="padding:.28rem .6rem;"
                       title="مشاهده"
+                      data-modal-open="projectViewModal"
+                      data-project-view
+                      data-project="<%= buildProjectPayload(project) %>"
                     >
                       <i class="bi bi-eye"></i>
-                    </a>
+                    </button>
 
-                    <a
-                      href="/sw-admin/projects/<%= project._id %>/edit"
+                    <button
+                      type="button"
                       class="btn-ghost-sm"
                       style="padding:.28rem .6rem;"
                       title="ویرایش"
+                      data-modal-open="projectModal"
+                      data-project-edit
+                      data-project="<%= buildProjectPayload(project) %>"
                     >
                       <i class="bi bi-pencil"></i>
-                    </a>
+                    </button>
 
                     <form
                       action="/sw-admin/projects/<%= project._id %>/delete"
@@ -634,18 +736,22 @@
 </div><!-- /main-content -->
 </div><!-- /admin-shell -->
 
-<!-- Modal: پروژه جدید -->
+<!-- دکمه نامرئی برای سوییچ از مدال مشاهده به مدال ویرایش -->
+<button type="button" id="projectModalProxyTrigger" data-modal-open="projectModal" style="display:none;"></button>
+
+<!-- Modal: پروژه جدید / ویرایش پروژه -->
 <div class="modal-overlay" id="projectModal">
   <div class="modal-box">
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1.5rem;">
-      <div class="modal-title" style="margin:0;">پروژه جدید</div>
+      <div class="modal-title" style="margin:0;" id="projectModalTitle">پروژه جدید</div>
 
-      <button data-modal-close style="background:transparent;border:none;font-size:1.2rem;color:var(--color-text-muted);cursor:pointer;">
+      <button type="button" data-modal-close style="background:transparent;border:none;font-size:1.2rem;color:var(--color-text-muted);cursor:pointer;">
         <i class="bi bi-x-lg"></i>
       </button>
     </div>
 
-    <form action="/sw-admin/projects/add" method="POST" id="addProjectForm">
+    <form action="/sw-admin/projects/add" method="POST" id="projectForm">
+      <input type="hidden" name="projectId" id="projectIdInput" value="">
 
       <div class="form-row">
         <label class="sol-label">نام پروژه</label>
@@ -653,6 +759,7 @@
           class="sol-input" 
           type="text" 
           name="title" 
+          id="projectTitleInput"
           placeholder="مثال: وب‌سایت شرکت آلفا" 
           required
         >
@@ -662,7 +769,7 @@
         <div class="form-row">
           <label class="sol-label">مشتری</label>
 
-          <select class="sol-select" name="client" style="width:100%" required>
+          <select class="sol-select" name="client" id="projectClientSelect" style="width:100%" required>
             <option value="" selected disabled>انتخاب مشتری…</option>
 
             <% safeClients.forEach(c => { %>
@@ -676,15 +783,26 @@
         <div class="form-row">
           <label class="sol-label">نوع پروژه</label>
 
-          <select class="sol-select" name="category" style="width:100%" required>
-            <option value="" selected disabled>انتخاب نوع پروژه…</option>
+          <div style="display:flex;gap:.5rem;">
+            <select class="sol-select" name="category" id="projectCategorySelect" style="width:100%" required>
+              <option value="" selected disabled>انتخاب نوع پروژه…</option>
 
-            <% safeServiceCategories.forEach(cat => { %>
-              <option value="<%= cat._id %>">
-                <%= cat.title || cat.name || 'دسته‌بندی بدون عنوان' %>
-              </option>
-            <% }) %>
-          </select>
+              <% safeServiceCategories.forEach(cat => { %>
+                <option value="<%= cat._id %>">
+                  <%= cat.title || cat.name || 'دسته‌بندی بدون عنوان' %>
+                </option>
+              <% }) %>
+            </select>
+
+            <button type="button" class="btn-ghost-sm" id="addCategoryBtn" title="افزودن نوع جدید" style="flex-shrink:0;padding:.5rem .7rem;">
+              <i class="bi bi-plus-lg"></i>
+            </button>
+          </div>
+
+          <div id="addCategoryBox" style="display:none;gap:.5rem;margin-top:.6rem;">
+            <input type="text" class="sol-input" id="newCategoryInput" placeholder="عنوان نوع پروژه جدید…" style="flex:1;">
+            <button type="button" class="btn-sol-sm" id="confirmAddCategory">افزودن</button>
+          </div>
         </div>
       </div>
 
@@ -693,9 +811,13 @@
           <label class="sol-label">تاریخ شروع</label>
           <input 
             class="sol-input" 
-            type="date" 
+            type="text" 
             name="startDate" 
+            id="projectStartDate"
             placeholder="۱۴۰۴/۰۳/۲۱"
+            autocomplete="off"
+            data-jdp
+            data-jdp-only-date
           >
         </div>
 
@@ -703,21 +825,45 @@
           <label class="sol-label">ددلاین</label>
           <input 
             class="sol-input" 
-            type="date" 
+            type="text" 
             name="deadline" 
+            id="projectDeadline"
             placeholder="۱۴۰۴/۰۴/۱۵"
+            autocomplete="off"
+            data-jdp
+            data-jdp-only-date
           >
         </div>
       </div>
 
       <div class="form-row">
-        <label class="sol-label">تکنولوژی</label>
-        <input 
-          class="sol-input" 
-          type="text" 
-          name="techStack" 
-          placeholder="مثال: PHP · Laravel · React"
-        >
+        <label class="sol-label">وضعیت پروژه</label>
+
+        <select class="sol-select" name="status" id="projectStatusSelect" style="width:100%">
+          <% kanbanColumns.forEach(column => { %>
+            <option value="<%= column.key %>"><%= column.title %></option>
+          <% }) %>
+        </select>
+      </div>
+
+      <div class="form-row">
+        <label class="sol-label">تکنولوژی‌ها</label>
+
+        <div class="tech-checklist" id="techChecklist">
+          <% defaultTechOptions.forEach(tech => { %>
+            <label class="tech-check-item">
+              <input type="checkbox" name="techStack[]" value="<%= tech %>">
+              <span><%= tech %></span>
+            </label>
+          <% }) %>
+        </div>
+
+        <div style="display:flex;gap:.5rem;margin-top:.65rem;">
+          <input type="text" class="sol-input" id="newTechInput" placeholder="افزودن تکنولوژی جدید…" style="flex:1;">
+          <button type="button" class="btn-ghost-sm" id="addTechBtn">
+            <i class="bi bi-plus-lg"></i> افزودن
+          </button>
+        </div>
       </div>
 
       <div class="form-row">
@@ -725,6 +871,7 @@
         <textarea 
           class="sol-input" 
           name="description" 
+          id="projectDescriptionInput"
           rows="3" 
           placeholder="توضیح مختصر پروژه…" 
           style="resize:vertical;"
@@ -736,7 +883,7 @@
           انصراف
         </button>
 
-        <button type="submit" class="btn-sol-sm">
+        <button type="submit" class="btn-sol-sm" id="projectSubmitBtn">
           <i class="bi bi-check-lg"></i>
           ثبت پروژه
         </button>
@@ -746,7 +893,66 @@
   </div>
 </div>
 
+<!-- Modal: مشاهده توضیحات پروژه -->
+<div class="modal-overlay" id="projectViewModal">
+  <div class="modal-box" style="width:min(560px,92vw);">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1.5rem;">
+      <div class="modal-title" style="margin:0;" id="projectViewTitle">جزئیات پروژه</div>
+
+      <button type="button" data-modal-close style="background:transparent;border:none;font-size:1.2rem;color:var(--color-text-muted);cursor:pointer;">
+        <i class="bi bi-x-lg"></i>
+      </button>
+    </div>
+
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:.85rem;margin-bottom:1.1rem;">
+      <div class="view-info-box">
+        <span class="view-info-lbl"><i class="bi bi-person"></i> مشتری</span>
+        <span class="view-info-val" id="projectViewClient">—</span>
+      </div>
+
+      <div class="view-info-box">
+        <span class="view-info-lbl"><i class="bi bi-folder"></i> نوع پروژه</span>
+        <span class="view-info-val" id="projectViewCategory">—</span>
+      </div>
+
+      <div class="view-info-box">
+        <span class="view-info-lbl"><i class="bi bi-calendar-event"></i> تاریخ شروع</span>
+        <span class="view-info-val" id="projectViewStart">—</span>
+      </div>
+
+      <div class="view-info-box">
+        <span class="view-info-lbl"><i class="bi bi-calendar-x"></i> ددلاین</span>
+        <span class="view-info-val" id="projectViewDeadline">—</span>
+      </div>
+    </div>
+
+    <div style="margin-bottom:1.1rem;">
+      <span class="view-info-lbl"><i class="bi bi-cpu"></i> تکنولوژی‌ها</span>
+      <div id="projectViewTech" style="display:flex;flex-wrap:wrap;gap:.4rem;margin-top:.55rem;"></div>
+    </div>
+
+    <div>
+      <span class="view-info-lbl"><i class="bi bi-card-text"></i> توضیحات</span>
+      <p id="projectViewDescription" style="font-size:.86rem;line-height:1.9;color:var(--color-text-muted);margin-top:.55rem;background:var(--color-bg);border-radius:var(--radius-md);padding:1rem;">
+        توضیحی ثبت نشده است.
+      </p>
+    </div>
+
+    <div style="display:flex;gap:.75rem;justify-content:flex-end;margin-top:1.5rem;">
+      <button type="button" class="btn-ghost-sm" data-modal-close>
+        بستن
+      </button>
+
+      <button type="button" class="btn-sol-sm" id="projectViewEditBtn">
+        <i class="bi bi-pencil"></i>
+        ویرایش پروژه
+      </button>
+    </div>
+  </div>
+</div>
+
 <%- include('partials/_scripts', { extraScripts: `
+<script src="assets/js/jalalidatepicker.min.js"></script>
 <style>
 .pstat{background:var(--color-surface);border:1px solid var(--color-border);border-radius:var(--radius-lg);padding:1.1rem 1.25rem;display:flex;align-items:center;gap:.85rem;transition:all var(--dur-normal) var(--ease-spring)}
 .pstat:hover{transform:translateY(-2px);box-shadow:var(--shadow-sm);border-color:var(--main-200)}
@@ -811,6 +1017,20 @@
   background:var(--color-border);
   color:var(--color-text-muted);
 }
+
+.tech-checklist{display:flex;flex-wrap:wrap;gap:.5rem .65rem;background:var(--color-bg);border:1px solid var(--color-border);border-radius:var(--radius-md);padding:.85rem 1rem}
+.tech-check-item{display:flex;align-items:center;gap:.4rem;font-size:.8rem;font-weight:600;color:var(--color-text-primary);cursor:pointer;-webkit-user-select:none;user-select:none}
+.tech-check-item input[type="checkbox"]{width:15px;height:15px;accent-color:var(--main-500);cursor:pointer}
+
+.tech-pill{display:inline-flex;align-items:center;font-size:.74rem;font-weight:700;color:var(--main-600);background:var(--main-50);border:1px solid var(--main-200);border-radius:var(--radius-full);padding:.25rem .75rem}
+[data-bs-theme="dark"] .tech-pill{background:rgba(100,71,244,.15);border-color:rgba(100,71,244,.3);color:var(--main-300)}
+
+.view-info-box{background:var(--color-bg);border:1px solid var(--color-border);border-radius:var(--radius-md);padding:.7rem .9rem;display:flex;flex-direction:column;gap:.35rem}
+.view-info-lbl{font-size:.7rem;color:var(--color-text-muted);display:flex;align-items:center;gap:.35rem;font-weight:600}
+.view-info-val{font-size:.86rem;font-weight:700;color:var(--color-text-primary)}
+
+.kcard-action-btn{width:24px;height:24px;border-radius:6px;border:1px solid var(--color-border);background:var(--color-surface);color:var(--color-text-muted);display:flex;align-items:center;justify-content:center;font-size:.72rem;cursor:pointer;transition:all var(--dur-fast)}
+.kcard-action-btn:hover{background:var(--main-500);border-color:var(--main-500);color:#fff}
 
 </style>
 
@@ -969,6 +1189,284 @@ document.addEventListener('DOMContentLoaded', function () {
   if (projectSort) {
     projectSort.addEventListener('change', function () {
       applySort(projectSort.value);
+    });
+  }
+
+  // -----------------------------
+  // Jalali Datepicker
+  // -----------------------------
+  if (window.jalaliDatepicker) {
+    jalaliDatepicker.startWatch();
+  }
+
+  // -----------------------------
+  // Modal پروژه: المان‌های مشترک فرم
+  // -----------------------------
+  const projectModal          = document.getElementById('projectModal');
+  const projectForm           = document.getElementById('projectForm');
+  const projectModalTitle     = document.getElementById('projectModalTitle');
+  const projectSubmitBtn      = document.getElementById('projectSubmitBtn');
+  const projectIdInput        = document.getElementById('projectIdInput');
+  const projectTitleInput     = document.getElementById('projectTitleInput');
+  const projectClientSelect   = document.getElementById('projectClientSelect');
+  const projectCategorySelect = document.getElementById('projectCategorySelect');
+  const projectStatusSelect   = document.getElementById('projectStatusSelect');
+  const projectStartDate      = document.getElementById('projectStartDate');
+  const projectDeadline       = document.getElementById('projectDeadline');
+  const projectDescription    = document.getElementById('projectDescriptionInput');
+  const techChecklist         = document.getElementById('techChecklist');
+  const newProjectBtn         = document.getElementById('newProjectBtn');
+  const projectModalProxy     = document.getElementById('projectModalProxyTrigger');
+
+  function resetTechChecklist() {
+    if (!techChecklist) return;
+
+    techChecklist.querySelectorAll('input[type="checkbox"]').forEach(function (cb) {
+      cb.checked = false;
+    });
+  }
+
+  function ensureTechCheckbox(value, checked) {
+    if (!techChecklist || !value) return;
+
+    let existing = Array.from(techChecklist.querySelectorAll('input[type="checkbox"]'))
+      .find(function (cb) { return cb.value === value; });
+
+    if (!existing) {
+      const label = document.createElement('label');
+      label.className = 'tech-check-item';
+
+      const checkbox = document.createElement('input');
+      checkbox.type = 'checkbox';
+      checkbox.name = 'techStack[]';
+      checkbox.value = value;
+
+      const span = document.createElement('span');
+      span.textContent = value;
+
+      label.appendChild(checkbox);
+      label.appendChild(span);
+      techChecklist.appendChild(label);
+
+      existing = checkbox;
+    }
+
+    existing.checked = !!checked;
+  }
+
+  function ensureCategoryOption(id, title) {
+    if (!projectCategorySelect || !id) return;
+
+    let option = Array.from(projectCategorySelect.options).find(function (o) {
+      return o.value === id;
+    });
+
+    if (!option) {
+      option = document.createElement('option');
+      option.value = id;
+      option.textContent = title || id;
+      projectCategorySelect.appendChild(option);
+    }
+
+    projectCategorySelect.value = id;
+  }
+
+  function setProjectFormMode(mode, data) {
+    data = data || {};
+
+    if (mode === 'edit') {
+      projectModalTitle.textContent = 'ویرایش پروژه';
+      projectSubmitBtn.innerHTML = '<i class="bi bi-check-lg"></i> ذخیره تغییرات';
+      projectForm.action = '/sw-admin/projects/' + data.id + '/edit';
+      projectIdInput.value = data.id || '';
+
+      projectTitleInput.value = data.title || '';
+      projectDescription.value = data.description || '';
+      projectStartDate.value = data.startDate || '';
+      projectDeadline.value = data.deadline || '';
+
+      if (projectStatusSelect) {
+        projectStatusSelect.value = data.status || 'active';
+      }
+
+      if (projectClientSelect && data.client) {
+        projectClientSelect.value = data.client;
+      }
+
+      resetTechChecklist();
+
+      if (data.category) {
+        ensureCategoryOption(data.category, data.categoryTitle);
+      }
+
+      (data.tech || []).forEach(function (tech) {
+        ensureTechCheckbox(tech, true);
+      });
+
+    } else {
+      projectModalTitle.textContent = 'پروژه جدید';
+      projectSubmitBtn.innerHTML = '<i class="bi bi-check-lg"></i> ثبت پروژه';
+      projectForm.action = '/sw-admin/projects/add';
+      projectIdInput.value = '';
+      projectForm.reset();
+      resetTechChecklist();
+    }
+  }
+
+  if (newProjectBtn) {
+    newProjectBtn.addEventListener('click', function () {
+      setProjectFormMode('create');
+    });
+  }
+
+  document.addEventListener('click', function (e) {
+    const editBtn = e.target.closest('[data-project-edit]');
+    if (!editBtn) return;
+
+    try {
+      const data = JSON.parse(editBtn.dataset.project || '{}');
+      setProjectFormMode('edit', data);
+    } catch (err) {
+      console.error('خطا در خواندن اطلاعات پروژه برای ویرایش', err);
+    }
+  });
+
+  // -----------------------------
+  // افزودن «نوع پروژه» جدید به آپشن‌ها
+  // -----------------------------
+  const addCategoryBtn     = document.getElementById('addCategoryBtn');
+  const addCategoryBox     = document.getElementById('addCategoryBox');
+  const newCategoryInput   = document.getElementById('newCategoryInput');
+  const confirmAddCategory = document.getElementById('confirmAddCategory');
+
+  if (addCategoryBtn && addCategoryBox) {
+    addCategoryBtn.addEventListener('click', function () {
+      const isHidden = !addCategoryBox.style.display || addCategoryBox.style.display === 'none';
+      addCategoryBox.style.display = isHidden ? 'flex' : 'none';
+
+      if (isHidden && newCategoryInput) {
+        newCategoryInput.focus();
+      }
+    });
+  }
+
+  function addNewCategory() {
+    if (!newCategoryInput || !projectCategorySelect) return;
+
+    const value = (newCategoryInput.value || '').trim();
+    if (!value) return;
+
+    const option = document.createElement('option');
+    option.value = value;
+    option.textContent = value;
+    projectCategorySelect.appendChild(option);
+    projectCategorySelect.value = value;
+
+    newCategoryInput.value = '';
+    addCategoryBox.style.display = 'none';
+  }
+
+  if (confirmAddCategory) {
+    confirmAddCategory.addEventListener('click', addNewCategory);
+  }
+
+  if (newCategoryInput) {
+    newCategoryInput.addEventListener('keydown', function (e) {
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        addNewCategory();
+      }
+    });
+  }
+
+  // -----------------------------
+  // افزودن «تکنولوژی» جدید به چک‌باکس‌ها
+  // -----------------------------
+  const newTechInput = document.getElementById('newTechInput');
+  const addTechBtn   = document.getElementById('addTechBtn');
+
+  function addNewTech() {
+    if (!newTechInput) return;
+
+    const value = (newTechInput.value || '').trim();
+    if (!value) return;
+
+    ensureTechCheckbox(value, true);
+    newTechInput.value = '';
+  }
+
+  if (addTechBtn) {
+    addTechBtn.addEventListener('click', addNewTech);
+  }
+
+  if (newTechInput) {
+    newTechInput.addEventListener('keydown', function (e) {
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        addNewTech();
+      }
+    });
+  }
+
+  // -----------------------------
+  // Modal مشاهده توضیحات پروژه
+  // -----------------------------
+  const projectViewTitle       = document.getElementById('projectViewTitle');
+  const projectViewClient      = document.getElementById('projectViewClient');
+  const projectViewCategory    = document.getElementById('projectViewCategory');
+  const projectViewStart       = document.getElementById('projectViewStart');
+  const projectViewDeadline    = document.getElementById('projectViewDeadline');
+  const projectViewTech        = document.getElementById('projectViewTech');
+  const projectViewDescription = document.getElementById('projectViewDescription');
+  const projectViewEditBtn     = document.getElementById('projectViewEditBtn');
+
+  let currentViewedProject = null;
+
+  document.addEventListener('click', function (e) {
+    const viewBtn = e.target.closest('[data-project-view]');
+    if (!viewBtn) return;
+
+    try {
+      const data = JSON.parse(viewBtn.dataset.project || '{}');
+      currentViewedProject = data;
+
+      projectViewTitle.textContent = data.title || 'جزئیات پروژه';
+      projectViewClient.textContent = data.clientName || 'بدون مشتری';
+      projectViewCategory.textContent = data.categoryTitle || 'بدون نوع';
+      projectViewStart.textContent = data.startDate || 'ثبت‌نشده';
+      projectViewDeadline.textContent = data.deadline || 'ثبت‌نشده';
+
+      projectViewTech.innerHTML = '';
+
+      if (data.tech && data.tech.length) {
+        data.tech.forEach(function (tech) {
+          const pill = document.createElement('span');
+          pill.className = 'tech-pill';
+          pill.textContent = tech;
+          projectViewTech.appendChild(pill);
+        });
+      } else {
+        projectViewTech.innerHTML = '<span style="font-size:.78rem;color:var(--color-text-light);">تکنولوژی ثبت نشده است.</span>';
+      }
+
+      projectViewDescription.textContent = (data.description && data.description.trim())
+        ? data.description
+        : 'توضیحی ثبت نشده است.';
+    } catch (err) {
+      console.error('خطا در خواندن اطلاعات پروژه برای مشاهده', err);
+    }
+  });
+
+  if (projectViewEditBtn) {
+    projectViewEditBtn.addEventListener('click', function () {
+      if (!currentViewedProject) return;
+
+      setProjectFormMode('edit', currentViewedProject);
+
+      const viewModal = document.getElementById('projectViewModal');
+      if (viewModal) viewModal.classList.remove('show', 'active');
+
+      if (projectModalProxy) projectModalProxy.click();
     });
   }
 });

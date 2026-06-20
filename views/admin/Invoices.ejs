@@ -1,4 +1,5 @@
 <%- include('partials/_head', { title: 'فاکتورها' }) %>
+<link rel="stylesheet" href="assets/css/jalalidatepicker.min.css">
 
 <div class="sidebar-overlay" id="sidebarOverlay"></div>
 <div class="admin-shell">
@@ -173,32 +174,30 @@ function isOverdue(inv){
 
 
 
-  <!-- Filter -->
-  <div style="display:flex;gap:.75rem;align-items:center;flex-wrap:wrap;margin-bottom:1.25rem;" class="fade-up fade-up-2">
-    <div style="flex:1;min-width:200px;display:flex;align-items:center;gap:.5rem;background:var(--color-surface);border:1.5px solid var(--color-border);border-radius:var(--radius-md);padding:.45rem 1rem;">
+  <!-- Filter & Search -->
+  <div class="invoice-toolbar fade-up fade-up-2" style="display:flex;gap:.75rem;align-items:center;flex-wrap:wrap;margin-bottom:1.25rem;">
+    <div style="flex:1;min-width:220px;display:flex;align-items:center;gap:.5rem;background:var(--color-surface);border:1.5px solid var(--color-border);border-radius:var(--radius-md);padding:.45rem 1rem;">
       <i class="bi bi-search" style="color:var(--color-text-light);font-size:.85rem;"></i>
       <input type="text" placeholder="شماره فاکتور، نام مشتری…" style="border:none;background:transparent;outline:none;font-family:var(--font-primary);font-size:.85rem;color:var(--color-text-primary);width:100%;" id="invSearch">
     </div>
-<div class="invoice-filter-bar" style=display:flex;gap:.6rem;align-items:center;flex-wrap:wrap;">
 
-  <select id="invoiceStatusFilter" class="sol-select" style="width:auto;">
-    <option value="all">همه وضعیت‌ها</option>
-    <option value="paid">پرداخت‌شده</option>
-    <option value="sent">در انتظار</option>
-    <option value="overdue">معوق</option>
-    <option value="draft">پیش‌نویس</option>
-    <option value="cancelled">لغوشده</option>
-  </select>
+    <select id="invoiceStatusFilter" class="sol-select" style="width:auto;">
+      <option value="all">همه وضعیت‌ها</option>
+      <option value="paid">پرداخت‌شده</option>
+      <option value="sent">در انتظار</option>
+      <option value="overdue">معوق</option>
+      <option value="draft">پیش‌نویس</option>
+      <option value="cancelled">لغوشده</option>
+    </select>
 
-  <select id="invoiceRangeFilter" class="sol-select" style="width:auto;">
-    <option value="all">همه زمان‌ها</option>
-    <option value="month">این ماه</option>
-    <option value="3m">۳ ماه اخیر</option>
-    <option value="6m">۶ ماه اخیر</option>
-    <option value="year">امسال</option>
-  </select>
-
-</div>
+    <select id="invoiceRangeFilter" class="sol-select" style="width:auto;">
+      <option value="all">همه زمان‌ها</option>
+      <option value="month">این ماه</option>
+      <option value="3m">۳ ماه اخیر</option>
+      <option value="6m">۶ ماه اخیر</option>
+      <option value="year">امسال</option>
+    </select>
+  </div>
 
 
   <!-- Invoices Table -->
@@ -485,12 +484,30 @@ function isOverdue(inv){
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin-top:1rem;">
       <div class="form-row">
         <label class="sol-label">تاریخ صدور</label>
-        <input class="sol-input" type="date" name="issue_date">
+        <input 
+          class="sol-input" 
+          type="text" 
+          name="issue_date" 
+          id="invoiceIssueDate"
+          placeholder="۱۴۰۴/۰۳/۲۱"
+          autocomplete="off"
+          data-jdp
+          data-jdp-only-date
+        >
       </div>
 
       <div class="form-row">
         <label class="sol-label">سررسید پرداخت</label>
-        <input class="sol-input" type="date" name="due_date">
+        <input 
+          class="sol-input" 
+          type="text" 
+          name="due_date" 
+          id="invoiceDueDate"
+          placeholder="۱۴۰۴/۰۴/۱۵"
+          autocomplete="off"
+          data-jdp
+          data-jdp-only-date
+        >
       </div>
     </div>
 
@@ -578,6 +595,13 @@ function isOverdue(inv){
   </div>
 </div>
 <%- include('partials/_scripts') %>
+
+<script src="assets/js/jalalidatepicker.min.js"></script>
+<script>
+  if (window.jalaliDatepicker) {
+    jalaliDatepicker.startWatch();
+  }
+</script>
 
 <style>
   .inv-item-row {

@@ -17,11 +17,11 @@
   <div class="page-header fade-up fade-up-1">
     <div>
       <h1 class="page-title">مدیریت پکیج‌ها</h1>
-      <p class="page-subtitle">۴ پکیج فعال · نمایش در صفحه «پکیج‌ها» وب‌سایت</p>
+      <p class="page-subtitle"><%= stats.activeCount %> پکیج فعال · نمایش در صفحه «پکیج‌ها» وب‌سایت</p>
     </div>
     <div style="display:flex;gap:.6rem;">
-      <button class="btn-ghost-sm"><i class="bi bi-eye"></i> مشاهده در سایت</button>
-      <button class="btn-sol-sm" data-modal-open="packageModal"><i class="bi bi-plus-lg"></i> پکیج جدید</button>
+      <a href="../" class="btn-ghost-sm"><i class="bi bi-eye"></i> مشاهده در سایت</a>
+      <button class="btn-sol-sm" data-modal-open="packageModal" onclick="openNewPackageModal()"><i class="bi bi-plus-lg"></i> پکیج جدید</button>
     </div>
   </div>
 
@@ -29,148 +29,91 @@
   <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:1rem;margin-bottom:1.75rem;" class="fade-up fade-up-2">
     <div class="pstat">
       <div class="pstat-icon" style="background:rgba(100,71,244,.1);color:var(--main-500);"><i class="bi bi-box-seam-fill"></i></div>
-      <div><div class="pstat-val text-grad stat-value" data-count="4" data-suffix="">۴</div><div class="pstat-lbl">پکیج فعال</div></div>
+      <div><div class="pstat-val text-grad stat-value" data-count="<%= stats.activeCount %>" data-suffix=""><%= stats.activeCount %></div><div class="pstat-lbl">پکیج فعال</div></div>
     </div>
     <div class="pstat">
       <div class="pstat-icon" style="background:rgba(34,197,94,.1);color:#16a34a;"><i class="bi bi-graph-up-arrow"></i></div>
-      <div><div class="pstat-val text-grad stat-value" data-count="58" data-suffix="">۵۸</div><div class="pstat-lbl">خرید این ماه</div></div>
+      <div><div class="pstat-val text-grad stat-value" data-count="<%= stats.monthlyPurchases %>" data-suffix=""><%= stats.monthlyPurchases %></div><div class="pstat-lbl">خرید این ماه</div></div>
     </div>
     <div class="pstat">
       <div class="pstat-icon" style="background:rgba(245,158,11,.1);color:#d97706;"><i class="bi bi-star-fill"></i></div>
-      <div><div class="pstat-val text-grad">حرفه‌ای</div><div class="pstat-lbl">پرفروش‌ترین</div></div>
+      <div><div class="pstat-val text-grad"><%= stats.bestSellerName %></div><div class="pstat-lbl">پرفروش‌ترین</div></div>
     </div>
     <div class="pstat">
       <div class="pstat-icon" style="background:rgba(0,144,232,.1);color:var(--accent-500);"><i class="bi bi-cash-stack"></i></div>
-      <div><div class="pstat-val text-grad">۸۴۰M</div><div class="pstat-lbl">درآمد پکیج‌ها</div></div>
+      <div><div class="pstat-val text-grad"><%= stats.totalRevenue %></div><div class="pstat-lbl">درآمد پکیج‌ها</div></div>
     </div>
   </div>
 
   <!-- Packages Grid -->
   <div class="pkg-admin-grid fade-up fade-up-3">
 
-    <!-- پایه -->
-    <div class="pkg-admin-card">
-      <div class="pkg-admin-top">
-        <span class="pkg-admin-badge">پایه</span>
-        <div class="pkg-admin-switch">
-          <label class="sw-toggle">
-            <input type="checkbox" checked>
-            <span class="sw-slider"></span>
-          </label>
+    <% if (packages && packages.length > 0) { %>
+      <% packages.forEach(pkg => { %>
+        <div class="pkg-admin-card <%= pkg.isFeatured ? 'featured' : '' %>">
+          <div class="pkg-admin-top">
+            <span class="pkg-admin-badge <%= pkg.isFeatured ? 'featured' : '' %>">
+              <%= pkg.isFeatured ? 'پرطرفدار ⭐' : (pkg.slug || 'پکیج') %>
+            </span>
+            <div class="pkg-admin-switch">
+              <label class="sw-toggle">
+                <input type="checkbox" <%= pkg.isActive ? 'checked' : '' %> onchange="togglePackageActive('<%= pkg._id %>', this)">
+                <span class="sw-slider"></span>
+              </label>
+            </div>
+          </div>
+          <div class="pkg-admin-icon <%= pkg.isFeatured ? 'featured' : '' %>">
+            <i class="bi <%= pkg.duration && pkg.duration.startsWith('bi-') ? pkg.duration : 'bi-box-seam' %>"></i>
+          </div>
+          <h5 class="pkg-admin-name"><%= pkg.name %></h5>
+          <div class="pkg-admin-price">
+            <%= Number(pkg.price).toLocaleString('fa-IR') %><small>میلیون تومان</small>
+          </div>
+          <p class="pkg-admin-desc"><%= pkg.description || '' %></p>
+          <ul class="pkg-admin-feat">
+            <% if (pkg.features && pkg.features.length > 0) { %>
+              <% pkg.features.forEach(feat => { %>
+                <li><i class="bi bi-check-lg"></i> <%= feat %></li>
+              <% }) %>
+            <% } %>
+          </ul>
+          <div class="pkg-admin-stats">
+            <span><i class="bi bi-cart-check"></i> <%= pkg.sales || 0 %> فروش</span>
+            <span><i class="bi bi-eye"></i> <%= pkg.views || 0 %> بازدید</span>
+          </div>
+          <div class="pkg-admin-actions">
+            <button
+              type="button"
+              class="btn-ghost-sm"
+              style="flex:1;justify-content:center;"
+              data-modal-open="packageModal"
+              onclick='openEditPackageModal(<%- JSON.stringify({
+                _id: pkg._id,
+                name: pkg.name,
+                slug: pkg.slug,
+                price: pkg.price,
+                duration: pkg.duration,
+                description: pkg.description,
+                features: (pkg.features || []).join("\n"),
+                isFeatured: pkg.isFeatured,
+                sales: pkg.sales,
+                views: pkg.views
+              }) %>)'
+            >
+              <i class="bi bi-pencil"></i> ویرایش
+            </button>
+            <form action="/sw-admin/packages/delete/<%= pkg._id %>" method="POST" onsubmit="return confirm('آیا از حذف این پکیج مطمئن هستید؟');" style="display:inline;">
+              <button type="submit" class="btn-danger-sm" style="padding:.42rem .7rem;"><i class="bi bi-trash"></i></button>
+            </form>
+          </div>
         </div>
+      <% }) %>
+    <% } else { %>
+      <div style="grid-column: 1 / -1; text-align:center; padding: 3rem 1rem; color: var(--color-text-muted);">
+        <i class="bi bi-box-seam fs-1 d-block mb-3" style="opacity:.5;"></i>
+        هنوز هیچ پکیجی ثبت نشده است.
       </div>
-      <div class="pkg-admin-icon"><i class="bi bi-file-earmark-code"></i></div>
-      <h5 class="pkg-admin-name">پایه</h5>
-      <div class="pkg-admin-price">۱۲<small>میلیون تومان</small></div>
-      <p class="pkg-admin-desc">طراحی ساده وردپرسی با قالب آماده</p>
-      <ul class="pkg-admin-feat">
-        <li><i class="bi bi-check-lg"></i> قالب وردپرس آماده</li>
-        <li><i class="bi bi-check-lg"></i> ۵ صفحه اصلی</li>
-        <li><i class="bi bi-check-lg"></i> ریسپانسیو</li>
-        <li><i class="bi bi-check-lg"></i> ۱ ماه پشتیبانی</li>
-      </ul>
-      <div class="pkg-admin-stats">
-        <span><i class="bi bi-cart-check"></i> ۲۲ فروش</span>
-        <span><i class="bi bi-eye"></i> ۳۴۰ بازدید</span>
-      </div>
-      <div class="pkg-admin-actions">
-        <button class="btn-ghost-sm" style="flex:1;justify-content:center;" data-modal-open="packageModal"><i class="bi bi-pencil"></i> ویرایش</button>
-        <button class="btn-danger-sm" style="padding:.42rem .7rem;"><i class="bi bi-trash"></i></button>
-      </div>
-    </div>
-
-    <!-- اقتصادی -->
-    <div class="pkg-admin-card">
-      <div class="pkg-admin-top">
-        <span class="pkg-admin-badge">اقتصادی</span>
-        <div class="pkg-admin-switch">
-          <label class="sw-toggle">
-            <input type="checkbox" checked>
-            <span class="sw-slider"></span>
-          </label>
-        </div>
-      </div>
-      <div class="pkg-admin-icon"><i class="bi bi-window-stack"></i></div>
-      <h5 class="pkg-admin-name">اقتصادی</h5>
-      <div class="pkg-admin-price">۲۴<small>میلیون تومان</small></div>
-      <p class="pkg-admin-desc">طراحی وردپرسی با شخصی‌سازی بیشتر</p>
-      <ul class="pkg-admin-feat">
-        <li><i class="bi bi-check-lg"></i> وردپرس شخصی‌سازی‌شده</li>
-        <li><i class="bi bi-check-lg"></i> تا ۱۰ صفحه</li>
-        <li><i class="bi bi-check-lg"></i> سئو پایه</li>
-        <li><i class="bi bi-check-lg"></i> ۳ ماه پشتیبانی</li>
-      </ul>
-      <div class="pkg-admin-stats">
-        <span><i class="bi bi-cart-check"></i> ۱۸ فروش</span>
-        <span><i class="bi bi-eye"></i> ۲۸۰ بازدید</span>
-      </div>
-      <div class="pkg-admin-actions">
-        <button class="btn-ghost-sm" style="flex:1;justify-content:center;" data-modal-open="packageModal"><i class="bi bi-pencil"></i> ویرایش</button>
-        <button class="btn-danger-sm" style="padding:.42rem .7rem;"><i class="bi bi-trash"></i></button>
-      </div>
-    </div>
-
-    <!-- حرفه‌ای (Featured) -->
-    <div class="pkg-admin-card featured">
-      <div class="pkg-admin-top">
-        <span class="pkg-admin-badge featured">پرطرفدار ⭐</span>
-        <div class="pkg-admin-switch">
-          <label class="sw-toggle">
-            <input type="checkbox" checked>
-            <span class="sw-slider"></span>
-          </label>
-        </div>
-      </div>
-      <div class="pkg-admin-icon featured"><i class="bi bi-rocket-takeoff"></i></div>
-      <h5 class="pkg-admin-name">حرفه‌ای</h5>
-      <div class="pkg-admin-price">۴۵<small>میلیون تومان</small></div>
-      <p class="pkg-admin-desc">طراحی کاملاً اختصاصی با PHP یا Node.js</p>
-      <ul class="pkg-admin-feat">
-        <li><i class="bi bi-check-lg"></i> کدنویسی اختصاصی</li>
-        <li><i class="bi bi-check-lg"></i> صفحات نامحدود</li>
-        <li><i class="bi bi-check-lg"></i> سئو پیشرفته</li>
-        <li><i class="bi bi-check-lg"></i> ۶ ماه پشتیبانی</li>
-      </ul>
-      <div class="pkg-admin-stats">
-        <span><i class="bi bi-cart-check"></i> ۱۵ فروش</span>
-        <span><i class="bi bi-eye"></i> ۵۲۰ بازدید</span>
-      </div>
-      <div class="pkg-admin-actions">
-        <button class="btn-ghost-sm" style="flex:1;justify-content:center;" data-modal-open="packageModal"><i class="bi bi-pencil"></i> ویرایش</button>
-        <button class="btn-danger-sm" style="padding:.42rem .7rem;"><i class="bi bi-trash"></i></button>
-      </div>
-    </div>
-
-    <!-- سازمانی -->
-    <div class="pkg-admin-card">
-      <div class="pkg-admin-top">
-        <span class="pkg-admin-badge">پیشرفته</span>
-        <div class="pkg-admin-switch">
-          <label class="sw-toggle">
-            <input type="checkbox">
-            <span class="sw-slider"></span>
-          </label>
-        </div>
-      </div>
-      <div class="pkg-admin-icon"><i class="bi bi-building-gear"></i></div>
-      <h5 class="pkg-admin-name">سازمانی</h5>
-      <div class="pkg-admin-price">۹۰<small>میلیون تومان</small></div>
-      <p class="pkg-admin-desc">پروژه‌های بزرگ با معماری مقیاس‌پذیر</p>
-      <ul class="pkg-admin-feat">
-        <li><i class="bi bi-check-lg"></i> معماری سفارشی</li>
-        <li><i class="bi bi-check-lg"></i> API اختصاصی</li>
-        <li><i class="bi bi-check-lg"></i> یکپارچه‌سازی سیستم‌ها</li>
-        <li><i class="bi bi-check-lg"></i> ۱۲ ماه پشتیبانی</li>
-      </ul>
-      <div class="pkg-admin-stats">
-        <span><i class="bi bi-cart-check"></i> ۳ فروش</span>
-        <span><i class="bi bi-eye"></i> ۹۰ بازدید</span>
-      </div>
-      <div class="pkg-admin-actions">
-        <button class="btn-ghost-sm" style="flex:1;justify-content:center;" data-modal-open="packageModal"><i class="bi bi-pencil"></i> ویرایش</button>
-        <button class="btn-danger-sm" style="padding:.42rem .7rem;"><i class="bi bi-trash"></i></button>
-      </div>
-    </div>
+    <% } %>
 
   </div><!-- /grid -->
 
@@ -180,49 +123,86 @@
 
 <!-- Modal: پکیج جدید/ویرایش -->
 <div class="modal-overlay" id="packageModal">
-  <div class="modal-box">
+  <form class="modal-box" id="packageForm" action="/sw-admin/packages/save" method="POST">
+
+    <input type="hidden" name="id" id="packageId">
+
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1.5rem;">
-      <div class="modal-title" style="margin:0;">افزودن / ویرایش پکیج</div>
-      <button data-modal-close style="background:transparent;border:none;font-size:1.2rem;color:var(--color-text-muted);cursor:pointer;"><i class="bi bi-x-lg"></i></button>
+      <div class="modal-title" style="margin:0;" id="packageModalTitle">افزودن / ویرایش پکیج</div>
+      <button type="button" data-modal-close style="background:transparent;border:none;font-size:1.2rem;color:var(--color-text-muted);cursor:pointer;">
+        <i class="bi bi-x-lg"></i>
+      </button>
     </div>
+
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;">
       <div class="form-row">
         <label class="sol-label">نام پکیج</label>
-        <input class="sol-input" type="text" placeholder="مثال: حرفه‌ای">
+        <input class="sol-input" name="name" id="packageName" type="text" placeholder="مثال: حرفه‌ای" required>
       </div>
+
       <div class="form-row">
         <label class="sol-label">برچسب نمایشی</label>
-        <input class="sol-input" type="text" placeholder="مثال: پرطرفدار">
+        <input class="sol-input" name="slug" id="packageSlug" type="text" placeholder="مثال: پرطرفدار">
       </div>
     </div>
+
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;">
       <div class="form-row">
         <label class="sol-label">قیمت (میلیون تومان)</label>
-        <input class="sol-input" type="number" placeholder="۴۵">
+        <input class="sol-input" name="price" id="packagePrice" type="number" placeholder="۴۵" required>
       </div>
+
       <div class="form-row">
         <label class="sol-label">آیکون (Bootstrap Icons)</label>
-        <input class="sol-input" type="text" placeholder="bi-rocket-takeoff">
+        <input class="sol-input" name="duration" id="packageDuration" type="text" placeholder="bi-rocket-takeoff">
       </div>
     </div>
+
     <div class="form-row">
       <label class="sol-label">توضیح کوتاه</label>
-      <input class="sol-input" type="text" placeholder="توضیح یک‌خطی پکیج">
+      <input class="sol-input" name="description" id="packageDescription" type="text" placeholder="توضیح یک‌خطی پکیج">
     </div>
+
     <div class="form-row">
       <label class="sol-label">ویژگی‌ها (هر خط یک ویژگی)</label>
-      <textarea class="sol-input" rows="4" placeholder="کدنویسی اختصاصی&#10;صفحات نامحدود&#10;سئو پیشرفته" style="resize:vertical;"></textarea>
+      <textarea class="sol-input" name="features" id="packageFeatures" rows="4" placeholder="کدنویسی اختصاصی&#10;صفحات نامحدود&#10;سئو پیشرفته" style="resize:vertical;"></textarea>
     </div>
+
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;">
+      <div class="form-row">
+        <label class="sol-label">تعداد فروش</label>
+        <input class="sol-input" name="sales" id="packageSales" type="number" placeholder="۰" value="0">
+      </div>
+
+      <div class="form-row">
+        <label class="sol-label">تعداد بازدید</label>
+        <input class="sol-input" name="views" id="packageViews" type="number" placeholder="۰" value="0">
+      </div>
+    </div>
+
     <div class="form-row" style="display:flex;align-items:center;gap:.75rem;">
-      <label class="sw-toggle"><input type="checkbox" checked><span class="sw-slider"></span></label>
-      <span style="font-size:.83rem;font-weight:600;">پکیج پرطرفدار (نمایش ویژه)</span>
+      <label class="sw-toggle">
+        <input type="checkbox" name="isFeatured" id="packageIsFeatured">
+        <span class="sw-slider"></span>
+      </label>
+
+      <span style="font-size:.83rem;font-weight:600;">
+        پکیج پرطرفدار (نمایش ویژه)
+      </span>
     </div>
+
     <div style="display:flex;gap:.75rem;justify-content:flex-end;margin-top:1.5rem;">
-      <button class="btn-ghost-sm" data-modal-close>انصراف</button>
-      <button class="btn-sol-sm"><i class="bi bi-check-lg"></i> ذخیره پکیج</button>
+      <button type="button" class="btn-ghost-sm" data-modal-close>انصراف</button>
+
+      <button type="submit" class="btn-sol-sm">
+        <i class="bi bi-check-lg"></i>
+        ذخیره پکیج
+      </button>
     </div>
-  </div>
+
+  </form>
 </div>
+
 
 <%- include('partials/_scripts', { extraScripts: `
 <style>
@@ -278,4 +258,45 @@
 .pkg-admin-card.featured .btn-ghost-sm{background:rgba(255,255,255,.15);border-color:rgba(255,255,255,.3);color:#fff}
 .pkg-admin-card.featured .btn-ghost-sm:hover{background:rgba(255,255,255,.25)}
 </style>
+
+<script>
+// باز کردن مودال برای پکیج جدید (فرم خالی)
+function openNewPackageModal() {
+  document.getElementById('packageForm').reset();
+  document.getElementById('packageId').value = '';
+  document.getElementById('packageModalTitle').textContent = 'افزودن پکیج جدید';
+  document.getElementById('packageSales').value = 0;
+  document.getElementById('packageViews').value = 0;
+}
+
+// باز کردن مودال برای ویرایش پکیج موجود و پر کردن فیلدها با اطلاعات فعلی
+function openEditPackageModal(pkg) {
+  document.getElementById('packageId').value = pkg._id || '';
+  document.getElementById('packageName').value = pkg.name || '';
+  document.getElementById('packageSlug').value = pkg.slug || '';
+  document.getElementById('packagePrice').value = pkg.price || '';
+  document.getElementById('packageDuration').value = pkg.duration || '';
+  document.getElementById('packageDescription').value = pkg.description || '';
+  document.getElementById('packageFeatures').value = pkg.features || '';
+  document.getElementById('packageSales').value = pkg.sales || 0;
+  document.getElementById('packageViews').value = pkg.views || 0;
+  document.getElementById('packageIsFeatured').checked = !!pkg.isFeatured;
+  document.getElementById('packageModalTitle').textContent = 'ویرایش پکیج';
+}
+
+// فعال/غیرفعال کردن پکیج با AJAX از طریق سوییچ بالای کارت
+async function togglePackageActive(packageId, checkboxEl) {
+  try {
+    const response = await fetch('/sw-admin/packages/toggle/' + packageId, { method: 'POST' });
+    const result = await response.json();
+    if (!result.success) {
+      checkboxEl.checked = !checkboxEl.checked; // برگرداندن وضعیت در صورت خطا
+      alert('خطا در تغییر وضعیت پکیج');
+    }
+  } catch (err) {
+    checkboxEl.checked = !checkboxEl.checked;
+    alert('خطای ارتباط با سرور');
+  }
+}
+</script>
 ` }) %>

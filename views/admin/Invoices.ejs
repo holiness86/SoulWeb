@@ -285,17 +285,18 @@ function isOverdue(inv){
               style="padding:.28rem .6rem;" 
               title="مشاهده" 
               data-modal-open="invViewModal"
-              data-invoice-id="<%= inv._id %>"
+              data-id="<%= inv._id %>"
             >
               <i class="bi bi-eye"></i>
             </button>
 
             <a 
-              href="/sw-admin/invoices/<%= inv._id %>/pdf" 
-              class="btn-ghost-sm" 
-              style="padding:.28rem .6rem;" 
+              href="/sw-admin/invoices/<%= inv._id %>/pdf"
+              class="btn-ghost-sm invoice-pdf-btn"
+              style="padding:.28rem .6rem;"
               title="دانلود PDF"
               target="_blank"
+              rel="noopener"
             >
               <i class="bi bi-download"></i>
             </a>
@@ -589,7 +590,9 @@ function isOverdue(inv){
     </div>
     <div style="display:flex;gap:.75rem;justify-content:flex-end;">
       <button class="btn-ghost-sm" data-modal-close>بستن</button>
-      <button class="btn-ghost-sm"><i class="bi bi-download"></i> دانلود PDF</button>
+<a id="modalPdfBtn" class="btn-ghost-sm" target="_blank">
+  <i class="bi bi-download"></i> دانلود PDF
+</a>
       <button class="btn-sol-sm"><i class="bi bi-envelope"></i> ارسال به مشتری</button>
     </div>
   </div>
@@ -866,4 +869,19 @@ document.addEventListener('DOMContentLoaded', function () {
 
   applyInvoiceFilters()
 })
+
+document.querySelectorAll('[data-modal-open="invViewModal"]').forEach(btn => {
+  btn.addEventListener('click', () => {
+
+    const id = btn.dataset.id
+    const pdfBtn = document.getElementById('modalPdfBtn')
+
+    if (pdfBtn && id) {
+      pdfBtn.href = `/sw-admin/invoices/${id}/pdf`
+    }
+
+  })
+})
+
+
 </script>

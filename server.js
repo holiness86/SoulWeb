@@ -17,6 +17,18 @@ app.set('views', path.join(__dirname, 'views'))
 app.use(express.static(path.join(__dirname, 'public')))
 app.use(express.urlencoded({ extended: true }))
 app.use(express.json())
+const CHROME_PATH = 'C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe'
+
+async function launchBrowser() {
+  return await puppeteer.launch({
+    executablePath: CHROME_PATH,
+    headless: true,
+    args: [
+      '--no-sandbox',
+      '--disable-setuid-sandbox'
+    ]
+  })
+}
 // browser = await puppeteer.launch({
 //   executablePath: 'C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe',
 //   headless: true
@@ -417,6 +429,341 @@ app.post('/sw-admin/messages/:id/delete', async (req, res) => {
 // ─────────────────────────────────────────
 //  ADMIN — INVOICES
 // ─────────────────────────────────────────
+
+
+app.get('/sw-admin/invoices/:id/pdf', async (req, res) => {
+  let browser
+
+  try {
+    const { id } = req.params
+
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      return res.status(400).send('شناسه فاکتور نامعتبر است')
+    }
+
+    const invoice = await Invoice.findById(id)
+      .populate('client')
+      .populate('project')
+      .lean()
+
+    if (!invoice) {
+      return res.status(404).send('فاکتور پیدا نشد')
+    }
+
+    const formatMoney = (value) => {
+      const num = Number(value) || 0
+      return num.toLocaleString('fa-IR')
+    }
+
+    const formatDate = (date) => {
+      if (!date) return '—'
+
+      try {
+        return new Date(date).toLocaleDateString('fa-IR', {
+          year: 'numeric',
+          month: '2-digit',
+          day: '2-digit'
+        })
+      } catch (err) {
+        return '—'
+      }
+    }
+
+    const getClientName = (client) => {
+      if (!client) return 'بدون مشتری'
+      return client.company || client.name || 'بدون نام'
+    }
+
+    const getProjectTitle = (project) => {
+      if (!project) return 'بدون پروژه'
+      return project.title || 'بدون عنوان'
+    }
+
+    const getStatusLabel = (status) => {
+      const map = {
+        draft: 'پیش‌نویس',
+        sent: 'ارسال‌شده',
+        paid: 'پرداخت‌شده',
+        overdue: 'معوق',
+        cancelled: 'لغوشده'
+      }
+
+      return map[status] || 'نامشخص'
+    }
+
+    const html = `
+      <!DOCTYPE html>
+      <html lang="fa" dir="rtl">
+      <head>
+        <meta charset="UTF-8" />
+        <style>
+          * {
+            box-sizing: border-box;
+          }
+
+          body {
+            margin: 0;
+            padding: 32px;
+            direction: rtl;
+            font-family: Tahoma, Arial, sans-serif;
+            color: #0f172a;
+            background: #ffffff;
+          }
+
+          .invoice-box {
+            width: 100%;
+            border: 1px solid #e2e8f0;
+            border-radius: 18px;
+            padding: 28px;
+          }
+
+          .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            border-bottom: 2px solid #e2e8f0;
+            padding-bottom: 20px;
+            margin-bottom: 24px;
+          }
+
+          .brand h1 {
+            margin: 0 0 8px;
+            font-size: 26px;
+            color: #2563eb;
+          }
+
+          .brand p {
+            margin: 0;
+            color: #64748b;
+            font-size: 13px;
+          }
+
+          .invoice-meta {
+            text-align: left;
+            direction: rtl;
+            font-size: 13px;
+            line-height: 1.9;
+          }
+
+          .section {
+            margin-bottom: 22px;
+          }
+
+          .section-title {
+            font-size: 15px;
+            font-weight: 700;
+            margin-bottom: 10px;
+            color: #334155;
+          }
+
+          .grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+          }
+
+          .card {
+            border: 1px solid #e2e8f0;
+            border-radius: 14px;
+            padding: 14px;
+            background: #f8fafc;
+          }
+
+          .row {
+            display: flex;
+            justify-content: space-between;
+            gap: 16px;
+            padding: 8px 0;
+            border-bottom: 1px dashed #cbd5e1;
+            font-size: 13px;
+          }
+
+          .row:last-child {
+            border-bottom: 0;
+          }
+
+          .label {
+            color: #64748b;
+          }
+
+          .value {
+            font-weight: 700;
+            color: #0f172a;
+          }
+
+          table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 10px;
+          }
+
+          th {
+            background: #eff6ff;
+            color: #1d4ed8;
+            padding: 12px;
+            font-size: 13px;
+            text-align: right;
+            border: 1px solid #dbeafe;
+          }
+
+          td {
+            padding: 12px;
+            font-size: 13px;
+            border: 1px solid #e2e8f0;
+          }
+
+          .total-box {
+            margin-top: 24px;
+            margin-right: auto;
+            width: 320px;
+            border: 1px solid #dbeafe;
+            border-radius: 14px;
+            overflow: hidden;
+          }
+
+          .total-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 14px 16px;
+            background: #eff6ff;
+            font-size: 15px;
+            font-weight: 800;
+            color: #1d4ed8;
+          }
+
+          .footer {
+            margin-top: 36px;
+            padding-top: 18px;
+            border-top: 1px solid #e2e8f0;
+            color: #64748b;
+            font-size: 12px;
+            text-align: center;
+          }
+        </style>
+      </head>
+
+      <body>
+        <div class="invoice-box">
+          <div class="header">
+            <div class="brand">
+              <h1>فاکتور</h1>
+              <p>سیستم مدیریت SoulWeb</p>
+            </div>
+
+            <div class="invoice-meta">
+              <div><strong>شماره فاکتور:</strong> ${invoice.invoiceNumber || '—'}</div>
+              <div><strong>تاریخ صدور:</strong> ${formatDate(invoice.issueDate || invoice.createdAt)}</div>
+              <div><strong>سررسید:</strong> ${formatDate(invoice.dueDate)}</div>
+              <div><strong>وضعیت:</strong> ${getStatusLabel(invoice.status)}</div>
+            </div>
+          </div>
+
+          <div class="section">
+            <div class="section-title">اطلاعات فاکتور</div>
+
+            <div class="grid">
+              <div class="card">
+                <div class="row">
+                  <span class="label">مشتری</span>
+                  <span class="value">${getClientName(invoice.client)}</span>
+                </div>
+
+                <div class="row">
+                  <span class="label">پروژه</span>
+                  <span class="value">${getProjectTitle(invoice.project)}</span>
+                </div>
+              </div>
+
+              <div class="card">
+                <div class="row">
+                  <span class="label">شماره</span>
+                  <span class="value">${invoice.invoiceNumber || '—'}</span>
+                </div>
+
+                <div class="row">
+                  <span class="label">مبلغ کل</span>
+                  <span class="value">${formatMoney(invoice.total)} تومان</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="section">
+            <div class="section-title">جزئیات</div>
+
+            <table>
+              <thead>
+                <tr>
+                  <th>شرح</th>
+                  <th>مبلغ</th>
+                </tr>
+              </thead>
+
+              <tbody>
+                <tr>
+                  <td>${invoice.description || getProjectTitle(invoice.project) || 'خدمات انجام‌شده'}</td>
+                  <td>${formatMoney(invoice.total)} تومان</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          <div class="total-box">
+            <div class="total-row">
+              <span>جمع کل</span>
+              <span>${formatMoney(invoice.total)} تومان</span>
+            </div>
+          </div>
+
+          <div class="footer">
+            این فاکتور به‌صورت سیستمی تولید شده است.
+          </div>
+        </div>
+      </body>
+      </html>
+    `
+
+browser = await launchBrowser()
+
+
+    const page = await browser.newPage()
+
+    await page.setContent(html, {
+      waitUntil: 'networkidle0'
+    })
+
+    const pdfBuffer = await page.pdf({
+      format: 'A4',
+      printBackground: true,
+      margin: {
+        top: '14mm',
+        right: '14mm',
+        bottom: '14mm',
+        left: '14mm'
+      }
+    })
+
+    await browser.close()
+
+    const fileName = `invoice-${invoice.invoiceNumber || invoice._id}.pdf`
+
+    res.setHeader('Content-Type', 'application/pdf')
+    res.setHeader('Content-Disposition', `attachment; filename="${fileName}"`)
+    res.setHeader('Content-Length', pdfBuffer.length)
+
+    return res.send(pdfBuffer)
+  } catch (err) {
+    if (browser) {
+      await browser.close()
+    }
+
+    console.error('Invoice PDF Error:', err)
+    return res.status(500).send('خطا در ساخت PDF فاکتور')
+  }
+})
+
+
+
 app.get('/sw-admin/invoices', async (req, res) => {
   try {
     const invoices = await Invoice.find()
@@ -844,6 +1191,38 @@ app.get('/sw-admin/packages', async (req, res) => {
     res.status(500).send('خطا در بارگذاری پکیج‌ها')
   }
 })
+// app.get('/sw-admin/packages', async (req, res) => {
+//   try {
+//     // همه پکیج‌ها را بر اساس فیلد order مرتب می‌کنیم (مثل ترتیب پایه/اقتصادی/حرفه‌ای/سازمانی)
+//     const packages = await Package.find().sort({ order: 1, createdAt: 1 });
+ 
+//     // تعداد پکیج‌های فعال
+//     const activeCount = packages.filter(p => p.isActive).length;
+ 
+//     // پرفروش‌ترین پکیج (بر اساس فیلد sales)
+//     let bestSeller = null;
+//     if (packages.length > 0) {
+//       bestSeller = packages.reduce((max, p) => (p.sales > (max ? max.sales : -1) ? p : max), null);
+//     }
+ 
+//     // مجموع خرید این ماه و درآمد پکیج‌ها فعلاً چون مدل سفارش/خرید جداگانه‌ای نداریم صفر است
+//     const monthlyPurchases = 0;
+//     const totalRevenue = 0;
+ 
+//     res.render('sw-admin/packages', {
+//       packages,
+//       stats: {
+//         activeCount,
+//         monthlyPurchases,
+//         bestSellerName: bestSeller ? bestSeller.name : '—',
+//         totalRevenue
+//       }
+//     });
+//   } catch (err) {
+//     console.error('خطا در دریافت پکیج‌ها:', err);
+//     res.status(500).send('خطا در بارگذاری صفحه پکیج‌ها');
+//   }
+// });
 
 app.post('/sw-admin/packages', async (req, res) => {
   try {
@@ -1273,14 +1652,7 @@ app.get('/sw-admin/invoices/export/pdf', async (req, res) => {
       }
     )
 
-    browser = await puppeteer.launch({
-      executablePath: 'C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe',
-      headless: true,
-      args: [
-        '--no-sandbox',
-        '--disable-setuid-sandbox'
-      ]
-    })
+browser = await launchBrowser()
 
     const page = await browser.newPage()
 
@@ -1317,6 +1689,93 @@ app.get('/sw-admin/invoices/export/pdf', async (req, res) => {
     res.status(500).send('خطا در تولید خروجی PDF فاکتورها')
   }
 })
+
+
+
+
+
+app.post('/sw-admin/packages/save', async (req,res)=>{
+
+try{
+
+const {
+  id,
+  name,
+  slug,
+  description,
+  price,
+  duration,
+  category,
+  features,
+  isFeatured
+} = req.body
+
+
+const featureList = (features || '')
+  .split('\n')
+  .map(f => f.trim())
+  .filter(Boolean)
+
+
+if(id){
+
+  await Package.findByIdAndUpdate(id,{
+    name,
+    slug,
+    description,
+    price,
+    duration,
+    category,
+    features: featureList,
+    isFeatured: !!isFeatured
+  })
+
+}else{
+
+  await Package.create({
+    name,
+    slug,
+    description,
+    price,
+    duration,
+    category,
+    features: featureList,
+    isFeatured: !!isFeatured
+  })
+
+}
+
+res.redirect('/sw-admin/packages')
+
+}catch(err){
+
+console.error(err)
+res.status(500).send('Package error')
+
+}
+
+})
+
+
+
+app.post('/sw-admin/packages/:id/delete', async (req,res)=>{
+
+try{
+
+await Package.findByIdAndDelete(req.params.id)
+
+res.redirect('/sw-admin/packages')
+
+}catch(err){
+
+console.error(err)
+res.status(500).send('Delete error')
+
+}
+
+})
+
+
 
 
 // ─────────────────────────────────────────

@@ -1183,46 +1183,46 @@ app.post('/sw-admin/portfolio/:id/delete', async (req, res) => {
 // ─────────────────────────────────────────
 //  ADMIN — PACKAGES
 // ─────────────────────────────────────────
-app.get('/sw-admin/packages', async (req, res) => {
-  try {
-    const packages = await Package.find().sort({ order: 1 })
-    res.render('admin/Packages', { packages })
-  } catch (err) {
-    res.status(500).send('خطا در بارگذاری پکیج‌ها')
-  }
-})
 // app.get('/sw-admin/packages', async (req, res) => {
 //   try {
-//     // همه پکیج‌ها را بر اساس فیلد order مرتب می‌کنیم (مثل ترتیب پایه/اقتصادی/حرفه‌ای/سازمانی)
-//     const packages = await Package.find().sort({ order: 1, createdAt: 1 });
- 
-//     // تعداد پکیج‌های فعال
-//     const activeCount = packages.filter(p => p.isActive).length;
- 
-//     // پرفروش‌ترین پکیج (بر اساس فیلد sales)
-//     let bestSeller = null;
-//     if (packages.length > 0) {
-//       bestSeller = packages.reduce((max, p) => (p.sales > (max ? max.sales : -1) ? p : max), null);
-//     }
- 
-//     // مجموع خرید این ماه و درآمد پکیج‌ها فعلاً چون مدل سفارش/خرید جداگانه‌ای نداریم صفر است
-//     const monthlyPurchases = 0;
-//     const totalRevenue = 0;
- 
-//     res.render('sw-admin/packages', {
-//       packages,
-//       stats: {
-//         activeCount,
-//         monthlyPurchases,
-//         bestSellerName: bestSeller ? bestSeller.name : '—',
-//         totalRevenue
-//       }
-//     });
+//     const packages = await Package.find().sort({ order: 1 })
+//     res.render('admin/Packages', { packages })
 //   } catch (err) {
-//     console.error('خطا در دریافت پکیج‌ها:', err);
-//     res.status(500).send('خطا در بارگذاری صفحه پکیج‌ها');
+//     res.status(500).send('خطا در بارگذاری پکیج‌ها')
 //   }
-// });
+// })
+app.get('/sw-admin/packages', async (req, res) => {
+  try {
+    // همه پکیج‌ها را بر اساس فیلد order مرتب می‌کنیم (مثل ترتیب پایه/اقتصادی/حرفه‌ای/سازمانی)
+    const packages = await Package.find().sort({ order: 1, createdAt: 1 });
+ 
+    // تعداد پکیج‌های فعال
+    const activeCount = packages.filter(p => p.isActive).length;
+ 
+    // پرفروش‌ترین پکیج (بر اساس فیلد sales)
+    let bestSeller = null;
+    if (packages.length > 0) {
+      bestSeller = packages.reduce((max, p) => (p.sales > (max ? max.sales : -1) ? p : max), null);
+    }
+ 
+    // مجموع خرید این ماه و درآمد پکیج‌ها فعلاً چون مدل سفارش/خرید جداگانه‌ای نداریم صفر است
+    const monthlyPurchases = 0;
+    const totalRevenue = 0;
+ 
+    res.render('admin/packages', {
+      packages,
+      stats: {
+        activeCount,
+        monthlyPurchases,
+        bestSellerName: bestSeller ? bestSeller.name : '—',
+        totalRevenue
+      }
+    });
+  } catch (err) {
+    console.error('خطا در دریافت پکیج‌ها:', err);
+    res.status(500).send('خطا در بارگذاری صفحه پکیج‌ها');
+  }
+});
 
 app.post('/sw-admin/packages', async (req, res) => {
   try {

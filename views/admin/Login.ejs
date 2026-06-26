@@ -1,0 +1,624 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl" data-bs-theme="light">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <title>ورود به پنل مدیریت | SoulWeb</title>
+
+  <link rel="stylesheet" href="/assets/css/admin.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+
+  <style>
+    :root {
+      --main-50: #f4f2ff;
+      --main-100: #ebe7ff;
+      --main-400: #8b73ff;
+      --main-500: #6447f4;
+      --main-600: #5638df;
+
+      --accent-500: #0090e8;
+      --accent-600: #0077c2;
+
+      --grad-main: linear-gradient(135deg, #6447f4, #0090e8);
+      --grad-soft: linear-gradient(135deg, rgba(100,71,244,.12), rgba(0,144,232,.12));
+
+      --color-bg: #f6f7fb;
+      --color-surface: #ffffff;
+      --color-border: rgba(15, 23, 42, .08);
+      --color-text-primary: #151528;
+      --color-text-muted: #7b8190;
+      --color-text-light: #a1a7b4;
+
+      --radius-sm: 12px;
+      --radius-md: 18px;
+      --radius-lg: 26px;
+      --radius-full: 999px;
+
+      --shadow-main: 0 18px 45px rgba(100,71,244,.25);
+      --shadow-soft: 0 18px 55px rgba(15,23,42,.08);
+
+      --font-primary: inherit;
+      --dur-fast: .2s;
+      --ease-smooth: cubic-bezier(.22, 1, .36, 1);
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      font-family: var(--font-primary), Tahoma, Arial, sans-serif;
+      background:
+        radial-gradient(circle at top right, rgba(100,71,244,.18), transparent 34%),
+        radial-gradient(circle at bottom left, rgba(0,144,232,.16), transparent 34%),
+        linear-gradient(135deg, #f8f9ff, #eef3ff);
+      color: var(--color-text-primary);
+      overflow-x: hidden;
+    }
+
+    .login-page {
+      min-height: 100vh;
+      display: grid;
+      grid-template-columns: 1.05fr .95fr;
+      align-items: center;
+      gap: 2rem;
+      padding: 2.5rem;
+      position: relative;
+    }
+
+    .login-page::before,
+    .login-page::after {
+      content: "";
+      position: fixed;
+      width: 280px;
+      height: 280px;
+      border-radius: 50%;
+      filter: blur(10px);
+      opacity: .42;
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    .login-page::before {
+      top: 7%;
+      right: 8%;
+      background: rgba(100,71,244,.18);
+    }
+
+    .login-page::after {
+      left: 9%;
+      bottom: 8%;
+      background: rgba(0,144,232,.16);
+    }
+
+    .login-brand-side,
+    .login-card-wrap {
+      position: relative;
+      z-index: 1;
+    }
+
+    .login-brand-side {
+      padding-inline: clamp(1rem, 4vw, 4rem);
+    }
+
+    .brand-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: .55rem;
+      padding: .45rem .85rem;
+      border: 1px solid rgba(100,71,244,.18);
+      background: rgba(255,255,255,.62);
+      backdrop-filter: blur(18px);
+      border-radius: var(--radius-full);
+      color: var(--main-600);
+      font-size: .78rem;
+      font-weight: 800;
+      margin-bottom: 1.25rem;
+      box-shadow: 0 10px 30px rgba(100,71,244,.08);
+    }
+
+    .brand-logo {
+      width: 72px;
+      height: 72px;
+      border-radius: 24px;
+      background: var(--grad-main);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #fff;
+      font-size: 2rem;
+      box-shadow: var(--shadow-main);
+      margin-bottom: 1.35rem;
+    }
+
+    .login-title {
+      font-size: clamp(2rem, 5vw, 3.8rem);
+      line-height: 1.25;
+      margin: 0;
+      letter-spacing: -1px;
+      font-weight: 900;
+    }
+
+    .login-title span {
+      background: var(--grad-main);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    .login-subtitle {
+      max-width: 560px;
+      margin: 1.15rem 0 0;
+      color: var(--color-text-muted);
+      font-size: .98rem;
+      line-height: 2;
+      font-weight: 500;
+    }
+
+    .login-features {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: .9rem;
+      margin-top: 2rem;
+      max-width: 620px;
+    }
+
+    .login-feature {
+      border: 1px solid var(--color-border);
+      background: rgba(255,255,255,.62);
+      backdrop-filter: blur(18px);
+      border-radius: var(--radius-md);
+      padding: 1rem;
+      box-shadow: 0 14px 40px rgba(15,23,42,.05);
+    }
+
+    .login-feature i {
+      width: 36px;
+      height: 36px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 12px;
+      background: var(--grad-soft);
+      color: var(--main-500);
+      font-size: 1rem;
+      margin-bottom: .75rem;
+    }
+
+    .login-feature strong {
+      display: block;
+      font-size: .82rem;
+      margin-bottom: .25rem;
+    }
+
+    .login-feature span {
+      display: block;
+      color: var(--color-text-muted);
+      font-size: .72rem;
+      line-height: 1.8;
+    }
+
+    .login-card-wrap {
+      display: flex;
+      justify-content: center;
+    }
+
+    .login-card {
+      width: min(430px, 100%);
+      border: 1px solid rgba(255,255,255,.75);
+      background: rgba(255,255,255,.78);
+      backdrop-filter: blur(26px);
+      border-radius: 32px;
+      padding: 1.35rem;
+      box-shadow: var(--shadow-soft);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .login-card::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background:
+        radial-gradient(circle at top right, rgba(100,71,244,.14), transparent 38%),
+        radial-gradient(circle at bottom left, rgba(0,144,232,.12), transparent 42%);
+      pointer-events: none;
+    }
+
+    .login-card-inner {
+      position: relative;
+      z-index: 1;
+      background: rgba(255,255,255,.7);
+      border: 1px solid rgba(15,23,42,.06);
+      border-radius: 24px;
+      padding: 1.5rem;
+    }
+
+    .login-card-header {
+      text-align: center;
+      margin-bottom: 1.6rem;
+    }
+
+    .admin-avatar {
+      width: 64px;
+      height: 64px;
+      margin: 0 auto .9rem;
+      border-radius: 22px;
+      background: var(--grad-main);
+      color: #fff;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 900;
+      box-shadow: var(--shadow-main);
+    }
+
+    .login-card-title {
+      margin: 0;
+      font-size: 1.25rem;
+      font-weight: 900;
+    }
+
+    .login-card-subtitle {
+      margin: .45rem 0 0;
+      color: var(--color-text-muted);
+      font-size: .78rem;
+      font-weight: 600;
+    }
+
+    .alert-login {
+      display: flex;
+      align-items: center;
+      gap: .55rem;
+      border-radius: var(--radius-sm);
+      padding: .75rem .85rem;
+      margin-bottom: 1rem;
+      background: rgba(239,68,68,.09);
+      color: #dc2626;
+      border: 1px solid rgba(239,68,68,.14);
+      font-size: .78rem;
+      font-weight: 700;
+    }
+
+    .form-row {
+      margin-bottom: 1rem;
+    }
+
+    .sol-label {
+      display: block;
+      font-size: .78rem;
+      font-weight: 800;
+      margin-bottom: .5rem;
+      color: var(--color-text-primary);
+    }
+
+    .input-wrap {
+      position: relative;
+    }
+
+    .input-wrap i {
+      position: absolute;
+      right: .9rem;
+      top: 50%;
+      transform: translateY(-50%);
+      color: var(--color-text-light);
+      pointer-events: none;
+      font-size: 1rem;
+    }
+
+    .sol-input {
+      width: 100%;
+      height: 46px;
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius-sm);
+      background: rgba(255,255,255,.86);
+      color: var(--color-text-primary);
+      padding: 0 2.55rem 0 .9rem;
+      font-family: var(--font-primary), Tahoma, Arial, sans-serif;
+      font-size: .86rem;
+      outline: none;
+      transition: all var(--dur-fast) var(--ease-smooth);
+    }
+
+    .sol-input:focus {
+      border-color: rgba(100,71,244,.55);
+      box-shadow: 0 0 0 4px rgba(100,71,244,.1);
+      background: #fff;
+    }
+
+    .login-options {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 1rem;
+      margin: .25rem 0 1.15rem;
+      font-size: .76rem;
+    }
+
+    .remember-me {
+      display: flex;
+      align-items: center;
+      gap: .45rem;
+      color: var(--color-text-muted);
+      font-weight: 700;
+      cursor: pointer;
+      user-select: none;
+    }
+
+    .remember-me input {
+      accent-color: var(--main-500);
+    }
+
+    .forgot-link {
+      color: var(--main-500);
+      text-decoration: none;
+      font-weight: 800;
+    }
+
+    .forgot-link:hover {
+      color: var(--main-600);
+    }
+
+    .btn-sol-login {
+      width: 100%;
+      height: 46px;
+      border: none;
+      border-radius: var(--radius-sm);
+      background: var(--grad-main);
+      color: #fff;
+      font-family: var(--font-primary), Tahoma, Arial, sans-serif;
+      font-weight: 900;
+      font-size: .88rem;
+      cursor: pointer;
+      box-shadow: var(--shadow-main);
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: .55rem;
+      transition: all var(--dur-fast) var(--ease-smooth);
+    }
+
+    .btn-sol-login:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 22px 50px rgba(100,71,244,.3);
+    }
+
+    .login-footer {
+      margin-top: 1.25rem;
+      padding-top: 1rem;
+      border-top: 1px solid var(--color-border);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: .75rem;
+      color: var(--color-text-muted);
+      font-size: .72rem;
+      font-weight: 700;
+    }
+
+    .login-footer span {
+      display: inline-flex;
+      align-items: center;
+      gap: .35rem;
+    }
+
+    .security-badge {
+      padding: .35rem .6rem;
+      border-radius: var(--radius-full);
+      background: rgba(34,197,94,.1);
+      color: #16a34a;
+      font-size: .68rem;
+      font-weight: 900;
+    }
+
+    .password-toggle {
+      position: absolute;
+      left: .65rem;
+      top: 50%;
+      transform: translateY(-50%);
+      border: none;
+      background: transparent;
+      color: var(--color-text-muted);
+      cursor: pointer;
+      font-size: 1rem;
+      padding: .2rem;
+      line-height: 1;
+    }
+
+    @media (max-width: 980px) {
+      .login-page {
+        grid-template-columns: 1fr;
+        padding: 1.2rem;
+      }
+
+      .login-brand-side {
+        text-align: center;
+        padding-inline: 0;
+      }
+
+      .brand-logo {
+        margin-inline: auto;
+      }
+
+      .login-subtitle {
+        margin-inline: auto;
+      }
+
+      .login-features {
+        grid-template-columns: 1fr;
+        max-width: 430px;
+        margin-inline: auto;
+      }
+    }
+
+    @media (max-width: 520px) {
+      .login-card {
+        padding: .7rem;
+        border-radius: 24px;
+      }
+
+      .login-card-inner {
+        padding: 1.15rem;
+        border-radius: 20px;
+      }
+
+      .login-page {
+        padding: .8rem;
+      }
+
+      .login-title {
+        font-size: 1.75rem;
+      }
+
+      .login-features {
+        display: none;
+      }
+
+      .login-footer {
+        flex-direction: column;
+        justify-content: center;
+      }
+    }
+  </style>
+</head>
+
+<body>
+
+  <main class="login-page">
+
+    <section class="login-brand-side">
+      <div class="brand-pill">
+        <i class="bi bi-stars"></i>
+        پنل اختصاصی مدیریت SoulWeb
+      </div>
+
+      <div class="brand-logo">
+        <i class="bi bi-command"></i>
+      </div>
+
+      <h1 class="login-title">
+        مدیریت پروژه‌ها، مشتری‌ها و فاکتورها در یک <span>داشبورد هوشمند</span>
+      </h1>
+
+      <p class="login-subtitle">
+        برای ورود به پنل مدیریت، اطلاعات حساب کاربری خود را وارد کنید. این بخش مخصوص مدیران و اعضای مجاز تیم SoulWeb است.
+      </p>
+
+      <div class="login-features">
+        <div class="login-feature">
+          <i class="bi bi-kanban-fill"></i>
+          <strong>مدیریت پروژه</strong>
+          <span>کنترل وضعیت پروژه‌ها، وظایف و نمونه‌کارها</span>
+        </div>
+
+        <div class="login-feature">
+          <i class="bi bi-receipt-cutoff"></i>
+          <strong>فاکتورها</strong>
+          <span>صدور، پیگیری و خروجی PDF فاکتورها</span>
+        </div>
+
+        <div class="login-feature">
+          <i class="bi bi-shield-lock-fill"></i>
+          <strong>امنیت پنل</strong>
+          <span>دسترسی محدود و محافظت‌شده برای مدیران</span>
+        </div>
+      </div>
+    </section>
+
+    <section class="login-card-wrap">
+      <div class="login-card">
+        <div class="login-card-inner">
+
+          <div class="login-card-header">
+            <div class="admin-avatar">ادم</div>
+            <h2 class="login-card-title">ورود به پنل مدیریت</h2>
+            <p class="login-card-subtitle">خوش برگشتی مهندس؛ اطلاعات ورودت رو وارد کن</p>
+          </div>
+
+          <% if (typeof error !== 'undefined' && error) { %>
+            <div class="alert-login">
+              <i class="bi bi-exclamation-triangle-fill"></i>
+              <span><%= error %></span>
+            </div>
+          <% } %>
+
+          <form action="/sw-admin/login" method="POST" autocomplete="on">
+
+            <div class="form-row">
+              <label class="sol-label" for="email">ایمیل یا نام کاربری</label>
+              <div class="input-wrap">
+                <i class="bi bi-person"></i>
+                <input
+                id="email"
+                name="email"
+                type="text"
+                class="form-control"
+                placeholder="ایمیل یا نام کاربری"
+                required
+                >
+
+              </div>
+            </div>
+
+            <div class="form-row">
+              <label class="sol-label" for="password">رمز عبور</label>
+              <div class="input-wrap">
+                <i class="bi bi-lock"></i>
+                <input
+                  class="sol-input"
+                  id="password"
+                  name="password"
+                  type="password"
+                  placeholder="رمز عبور خود را وارد کنید"
+                  required
+                >
+                <button class="password-toggle" type="button" id="togglePassword" aria-label="نمایش رمز عبور">
+                  <i class="bi bi-eye"></i>
+                </button>
+              </div>
+            </div>
+
+            <div class="login-options">
+              <label class="remember-me">
+                <input type="checkbox" name="remember" value="1">
+                مرا به خاطر بسپار
+              </label>
+
+              <a href="/sw-admin/forgot-password" class="forgot-link">فراموشی رمز؟</a>
+            </div>
+
+            <button class="btn-sol-login" type="submit">
+              <i class="bi bi-box-arrow-in-left"></i>
+              ورود به داشبورد
+            </button>
+
+          </form>
+
+          <div class="login-footer">
+            <span><i class="bi bi-cpu"></i> SoulWeb Admin v1.0</span>
+            <span class="security-badge"><i class="bi bi-check-circle-fill"></i> اتصال امن</span>
+          </div>
+
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <script>
+    const togglePassword = document.getElementById('togglePassword');
+    const passwordInput = document.getElementById('password');
+
+    if (togglePassword && passwordInput) {
+      togglePassword.addEventListener('click', function () {
+        const isPassword = passwordInput.type === 'password';
+        passwordInput.type = isPassword ? 'text' : 'password';
+        this.innerHTML = isPassword ? '<i class="bi bi-eye-slash"></i>' : '<i class="bi bi-eye"></i>';
+      });
+    }
+  </script>
+
+</body>
+</html>

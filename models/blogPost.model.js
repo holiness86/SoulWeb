@@ -6,11 +6,12 @@ const blogPostSchema = new mongoose.Schema({
   excerpt:     { type: String, maxlength: 300 },
   body:        { type: String, required: true },  // HTML or Markdown
   coverImage:  { type: String },
-  author: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'User',
-    required: true
-  },
+  // author: {
+  //   type: mongoose.Schema.Types.ObjectId,
+  //   ref: 'User',
+  //   required: true
+  // },
+  author: { type: String, required: true },
   tags:        [{ type: String }],
   category:    { type: String },
   readingTime: { type: Number },                  // minutes — can be auto-calculated

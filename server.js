@@ -6,6 +6,7 @@ const multer     = require('multer')
 const ExcelJS    = require('exceljs')
 const puppeteer  = require('puppeteer-core')
 const ejs        = require('ejs')
+const session    = require('express-session');
 
 const app = express()
 
@@ -28,6 +29,24 @@ async function launchBrowser() {
       '--disable-setuid-sandbox'
     ]
   })
+}
+
+app.use(session({
+  secret: 'soulweb-super-secret-key',
+  resave: false,
+  saveUninitialized: false,
+  cookie: {
+    secure: false, // اگر https داشتی true کن
+    httpOnly: true,
+    maxAge: 1000 * 60 * 60 * 24 // 1 day
+  }
+}));
+
+function requireAdminAuth(req, res, next) {
+  if (!req.session || !req.session.user) {
+    return res.redirect('/sw-admin/login');
+  }
+  next();
 }
 // browser = await puppeteer.launch({
 //   executablePath: 'C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe',
@@ -101,7 +120,7 @@ app.get('/', async (req, res) => {
 // ─────────────────────────────────────────
 //  ADMIN — DASHBOARD
 // ─────────────────────────────────────────
-app.get('/sw-admin', async (req, res) => {
+app.get('/sw-admin' , requireAdminAuth , async (req, res) => {
   try {
     const [
       activeProjects,
@@ -138,7 +157,7 @@ app.get('/sw-admin', async (req, res) => {
 // ─────────────────────────────────────────
 //  ADMIN — PROJECTS
 // ─────────────────────────────────────────
-app.get('/sw-admin/projects', async (req, res) => {
+app.get('/sw-admin/projects' , requireAdminAuth , async (req, res) => {
   try {
     const { status, search } = req.query
 
@@ -219,7 +238,7 @@ app.get('/sw-admin/projects', async (req, res) => {
 //   }
 // })
 
-app.post('/sw-admin/projects/:id/update', async (req, res) => {
+app.post('/sw-admin/projects/:id/update' , requireAdminAuth , async (req, res) => {
   try {
     const { title, status, progress, deadline } = req.body
     await Project.findByIdAndUpdate(req.params.id, {
@@ -235,7 +254,7 @@ app.post('/sw-admin/projects/:id/update', async (req, res) => {
   }
 })
 
-app.post('/sw-admin/projects/:id/delete', async (req, res) => {
+app.post('/sw-admin/projects/:id/delete' , requireAdminAuth , async (req, res) => {
   try {
     await Project.findByIdAndDelete(req.params.id)
     res.redirect('/sw-admin/projects')
@@ -249,7 +268,7 @@ app.post('/sw-admin/projects/:id/delete', async (req, res) => {
 //  ADMIN — CLIENTS
 // ─────────────────────────────────────────
 
-app.get('/sw-admin/clients', async (req, res) => {
+app.get('/sw-admin/clients', requireAdminAuth , async (req, res) => {
   try {
     const page = Math.max(parseInt(req.query.page) || 1, 1)
     const limit = 6
@@ -340,7 +359,7 @@ app.get('/sw-admin/clients', async (req, res) => {
 
 
 
-app.post('/sw-admin/clients', async (req, res) => {
+app.post('/sw-admin/clients' , requireAdminAuth , async (req, res) => {
   try {
     const { name, company, email, phone, address, notes, avatar, category } = req.body
 
@@ -364,7 +383,7 @@ app.post('/sw-admin/clients', async (req, res) => {
 
 
 
-app.post('/sw-admin/clients/:id/delete', async (req, res) => {
+app.post('/sw-admin/clients/:id/delete' , requireAdminAuth , async (req, res) => {
   try {
     await Client.findByIdAndDelete(req.params.id)
     res.redirect('/sw-admin/clients')
@@ -373,7 +392,7 @@ app.post('/sw-admin/clients/:id/delete', async (req, res) => {
   }
 })
 
-app.get('/sw-admin/clients/export', async (req, res) => {
+app.get('/sw-admin/clients/export' , requireAdminAuth , async (req, res) => {
   try {
     const clients = await Client.find().sort({ createdAt: -1 })
 
@@ -397,7 +416,7 @@ app.get('/sw-admin/clients/export', async (req, res) => {
 // ─────────────────────────────────────────
 //  ADMIN — MESSAGES
 // ─────────────────────────────────────────
-app.get('/sw-admin/messages', async (req, res) => {
+app.get('/sw-admin/messages' , requireAdminAuth , async (req, res) => {
   try {
     const messages = await Message.find()
       .populate('client', 'name')
@@ -408,7 +427,7 @@ app.get('/sw-admin/messages', async (req, res) => {
   }
 })
 
-app.post('/sw-admin/messages/:id/read', async (req, res) => {
+app.post('/sw-admin/messages/:id/read' , requireAdminAuth , async (req, res) => {
   try {
     await Message.findByIdAndUpdate(req.params.id, { isRead: true })
     res.redirect('/sw-admin/messages')
@@ -417,7 +436,7 @@ app.post('/sw-admin/messages/:id/read', async (req, res) => {
   }
 })
 
-app.post('/sw-admin/messages/:id/delete', async (req, res) => {
+app.post('/sw-admin/messages/:id/delete' , requireAdminAuth , async (req, res) => {
   try {
     await Message.findByIdAndDelete(req.params.id)
     res.redirect('/sw-admin/messages')
@@ -431,7 +450,7 @@ app.post('/sw-admin/messages/:id/delete', async (req, res) => {
 // ─────────────────────────────────────────
 
 
-app.get('/sw-admin/invoices/:id/pdf', async (req, res) => {
+app.get('/sw-admin/invoices/:id/pdf' , requireAdminAuth , async (req, res) => {
   let browser
 
   try {
@@ -764,7 +783,7 @@ browser = await launchBrowser()
 
 
 
-app.get('/sw-admin/invoices', async (req, res) => {
+app.get('/sw-admin/invoices' , requireAdminAuth , async (req, res) => {
   try {
     const invoices = await Invoice.find()
       .populate('client', 'name company email phone')
@@ -813,7 +832,7 @@ app.get('/sw-admin/invoices', async (req, res) => {
 
 
 
-app.get('/sw-admin/clients/:clientId/projects', async (req, res) => {
+app.get('/sw-admin/clients/:clientId/projects' , requireAdminAuth , async (req, res) => {
   try {
     const { clientId } = req.params
 
@@ -839,7 +858,7 @@ app.get('/sw-admin/clients/:clientId/projects', async (req, res) => {
 })
 
 
-app.post('/sw-admin/invoices/add', async (req, res) => {
+app.post('/sw-admin/invoices/add' , requireAdminAuth , async (req, res) => {
   try {
     const {
       client,
@@ -979,7 +998,7 @@ app.post('/sw-admin/invoices/add', async (req, res) => {
 })
 
 
-app.post('/sw-admin/invoices', async (req, res) => {
+app.post('/sw-admin/invoices' , requireAdminAuth , async (req, res) => {
   try {
     // items از فرم به صورت JSON string میاد
     const items = JSON.parse(req.body.items || '[]')
@@ -1008,7 +1027,7 @@ app.post('/sw-admin/invoices', async (req, res) => {
   }
 })
 
-app.post('/sw-admin/invoices/:id/paid', async (req, res) => {
+app.post('/sw-admin/invoices/:id/paid' , requireAdminAuth , async (req, res) => {
   try {
     await Invoice.findByIdAndUpdate(req.params.id, {
       status: 'paid',
@@ -1037,7 +1056,7 @@ app.post('/sw-admin/invoices/:id/paid', async (req, res) => {
 // ─────────────────────────────────────────────────────────────
 
 // GET — list
-app.get('/sw-admin/portfolio', async (req, res) => {
+app.get('/sw-admin/portfolio' , requireAdminAuth , async (req, res) => {
   try {
 
     const [items, clients, categories] = await Promise.all([
@@ -1079,7 +1098,7 @@ app.get('/sw-admin/portfolio', async (req, res) => {
 
 
 // POST — create new
-app.post('/sw-admin/portfolio', upload.single('coverImage'), async (req, res) => {
+app.post('/sw-admin/portfolio' , requireAdminAuth , upload.single('coverImage'), async (req, res) => {
   try {
     const {
       title, description, category,
@@ -1117,7 +1136,7 @@ app.post('/sw-admin/portfolio', upload.single('coverImage'), async (req, res) =>
 
 
 // POST — update existing
-app.post('/sw-admin/portfolio/:id/update', upload.single('coverImage'), async (req, res) => {
+app.post('/sw-admin/portfolio/:id/update' , requireAdminAuth , upload.single('coverImage'), async (req, res) => {
 
   try {
 
@@ -1159,7 +1178,7 @@ app.post('/sw-admin/portfolio/:id/update', upload.single('coverImage'), async (r
 
 
 // POST — publish (toggle draft → published)
-app.post('/sw-admin/portfolio/:id/publish', async (req, res) => {
+app.post('/sw-admin/portfolio/:id/publish' , requireAdminAuth ,  async (req, res) => {
   try {
     await Portfolio.findByIdAndUpdate(req.params.id, { isPublished: true })
     res.redirect('/sw-admin/portfolio')
@@ -1170,7 +1189,7 @@ app.post('/sw-admin/portfolio/:id/publish', async (req, res) => {
 })
 
 // POST — delete
-app.post('/sw-admin/portfolio/:id/delete', async (req, res) => {
+app.post('/sw-admin/portfolio/:id/delete' , requireAdminAuth , async (req, res) => {
   try {
     await Portfolio.findByIdAndDelete(req.params.id)
     res.redirect('/sw-admin/portfolio')
@@ -1183,15 +1202,7 @@ app.post('/sw-admin/portfolio/:id/delete', async (req, res) => {
 // ─────────────────────────────────────────
 //  ADMIN — PACKAGES
 // ─────────────────────────────────────────
-// app.get('/sw-admin/packages', async (req, res) => {
-//   try {
-//     const packages = await Package.find().sort({ order: 1 })
-//     res.render('admin/Packages', { packages })
-//   } catch (err) {
-//     res.status(500).send('خطا در بارگذاری پکیج‌ها')
-//   }
-// })
-app.get('/sw-admin/packages', async (req, res) => {
+app.get('/sw-admin/packages' , requireAdminAuth , async (req, res) => {
   try {
     // همه پکیج‌ها را بر اساس فیلد order مرتب می‌کنیم (مثل ترتیب پایه/اقتصادی/حرفه‌ای/سازمانی)
     const packages = await Package.find().sort({ order: 1, createdAt: 1 });
@@ -1224,7 +1235,7 @@ app.get('/sw-admin/packages', async (req, res) => {
   }
 });
 
-app.post('/sw-admin/packages', async (req, res) => {
+app.post('/sw-admin/packages' , requireAdminAuth , async (req, res) => {
   try {
     const { name, description, price, currency,
             duration, features, category, isFeatured } = req.body
@@ -1248,7 +1259,7 @@ app.post('/sw-admin/packages', async (req, res) => {
 // ─────────────────────────────────────────
 //  ADMIN — REVIEWS
 // ─────────────────────────────────────────
-app.get('/sw-admin/reviews', async (req, res) => {
+app.get('/sw-admin/reviews' , requireAdminAuth , async (req, res) => {
   try {
     const reviews = await Review.find()
       .populate('client',  'name')
@@ -1260,7 +1271,7 @@ app.get('/sw-admin/reviews', async (req, res) => {
   }
 })
 
-app.post('/sw-admin/reviews/:id/approve', async (req, res) => {
+app.post('/sw-admin/reviews/:id/approve', requireAdminAuth , async (req, res) => {
   try {
     await Review.findByIdAndUpdate(req.params.id, {
       isApproved : true,
@@ -1275,7 +1286,7 @@ app.post('/sw-admin/reviews/:id/approve', async (req, res) => {
 // ─────────────────────────────────────────
 //  ADMIN — BLOG
 // ─────────────────────────────────────────
-app.get('/sw-admin/blog', async (req, res) => {
+app.get('/sw-admin/blog' , requireAdminAuth , async (req, res) => {
   try {
     const posts = await BlogPost.find()
       .populate('author', 'name')
@@ -1286,7 +1297,7 @@ app.get('/sw-admin/blog', async (req, res) => {
   }
 })
 
-app.post('/sw-admin/blog', async (req, res) => {
+app.post('/sw-admin/blog' , requireAdminAuth , async (req, res) => {
   try {
     const { title, excerpt, body, tags, category, status, coverImage } = req.body
     const slug = title
@@ -1312,7 +1323,7 @@ app.post('/sw-admin/blog', async (req, res) => {
   }
 })
 
-app.post('/sw-admin/blog/:id/delete', async (req, res) => {
+app.post('/sw-admin/blog/:id/delete' , requireAdminAuth , async (req, res) => {
   try {
     await BlogPost.findByIdAndDelete(req.params.id)
     res.redirect('/sw-admin/blog')
@@ -1324,7 +1335,7 @@ app.post('/sw-admin/blog/:id/delete', async (req, res) => {
 // ─────────────────────────────────────────
 //  ADMIN — TASKS (AJAX-friendly)
 // ─────────────────────────────────────────
-app.get('/sw-admin/tasks', async (req, res) => {
+app.get('/sw-admin/tasks' , requireAdminAuth , async (req, res) => {
   try {
     const tasks = await Task.find()
       .populate('project', 'title')
@@ -1335,7 +1346,7 @@ app.get('/sw-admin/tasks', async (req, res) => {
   }
 })
 
-app.post('/sw-admin/tasks', async (req, res) => {
+app.post('/sw-admin/tasks' , requireAdminAuth , async (req, res) => {
   try {
     const { title, priority, dueDate, project } = req.body
     await Task.create({
@@ -1353,7 +1364,7 @@ app.post('/sw-admin/tasks', async (req, res) => {
 })
 
 // toggle done — returns JSON for fetch calls from dashboard
-app.post('/sw-admin/tasks/:id/toggle', async (req, res) => {
+app.post('/sw-admin/tasks/:id/toggle' , requireAdminAuth , async (req, res) => {
   try {
     const task   = await Task.findById(req.params.id)
     task.isDone  = !task.isDone
@@ -1365,7 +1376,7 @@ app.post('/sw-admin/tasks/:id/toggle', async (req, res) => {
   }
 })
 
-app.post('/sw-admin/tasks/:id/delete', async (req, res) => {
+app.post('/sw-admin/tasks/:id/delete' , requireAdminAuth , async (req, res) => {
   try {
     await Task.findByIdAndDelete(req.params.id)
     res.redirect(req.get('Referer') || '/sw-admin')
@@ -1377,7 +1388,7 @@ app.post('/sw-admin/tasks/:id/delete', async (req, res) => {
 // ─────────────────────────────────────────
 //  ADMIN — REPORTS
 // ─────────────────────────────────────────
-app.get('/sw-admin/reports', async (req, res) => {
+app.get('/sw-admin/reports' , requireAdminAuth , async (req, res) => {
   try {
     const [totalProjects, totalClients, totalInvoices,
            paidInvoices, totalReviews] = await Promise.all([
@@ -1409,7 +1420,7 @@ app.get('/sw-admin/reports', async (req, res) => {
 // ─────────────────────────────────────────
 //  ADMIN — SETTINGS
 // ─────────────────────────────────────────
-app.get('/sw-admin/settings', async (req, res) => {
+app.get('/sw-admin/settings' , requireAdminAuth , async (req, res) => {
   try {
     // getOrCreate the singleton
     let setting = await Setting.findOne()
@@ -1420,7 +1431,7 @@ app.get('/sw-admin/settings', async (req, res) => {
   }
 })
 
-app.post('/sw-admin/settings', async (req, res) => {
+app.post('/sw-admin/settings' , requireAdminAuth , async (req, res) => {
   try {
     const { siteName, siteUrl, email, phone, address,
             'social.instagram': instagram,
@@ -1448,7 +1459,7 @@ app.post('/sw-admin/settings', async (req, res) => {
 // ─────────────────────────────────────────
 //  PUBLIC CONTACT FORM (from front-end site)
 // ─────────────────────────────────────────
-app.post('/contact', async (req, res) => {
+app.post('/contact' , requireAdminAuth , async (req, res) => {
   try {
     const { name, email, phone, subject, body } = req.body
     await Message.create({
@@ -1473,7 +1484,7 @@ app.post('/contact', async (req, res) => {
   }
 })
 
-app.post('/sw-admin/projects/add', async (req, res) => {
+app.post('/sw-admin/projects/add' , requireAdminAuth , async (req, res) => {
   try {
     const {
       title,
@@ -1540,7 +1551,7 @@ app.post('/sw-admin/projects/add', async (req, res) => {
 
 
 // خرجی اکسل پروژه ها
-app.get('/sw-admin/projects/export', async (req, res) => {
+app.get('/sw-admin/projects/export' , requireAdminAuth , async (req, res) => {
   try {
 
     const projects = await Project.find()
@@ -1624,7 +1635,7 @@ app.get('/sw-admin/projects/export', async (req, res) => {
 
 
 
-app.get('/sw-admin/invoices/export/pdf', async (req, res) => {
+app.get('/sw-admin/invoices/export/pdf' , requireAdminAuth , async (req, res) => {
   let browser
 
   try {
@@ -1694,7 +1705,7 @@ browser = await launchBrowser()
 
 
 
-app.post('/sw-admin/packages/save', async (req,res)=>{
+app.post('/sw-admin/packages/save' , requireAdminAuth , async (req,res)=>{
 
 try{
 
@@ -1758,7 +1769,7 @@ res.status(500).send('Package error')
 
 
 
-app.post('/sw-admin/packages/:id/delete', async (req,res)=>{
+app.post('/sw-admin/packages/:id/delete' , requireAdminAuth , async (req,res)=>{
 
 try{
 
@@ -1775,8 +1786,60 @@ res.status(500).send('Delete error')
 
 })
 
+app.get('/sw-admin/login' , async (req , res) => {
+  res.render('./admin/Login')
+})
 
 
+app.post('/sw-admin/login', async (req, res) => {
+  try {
+    const { email, password } = req.body;
+
+    if (!email || !password) {
+      return res.status(400).render('admin/Login', {
+        error: 'ایمیل و رمز عبور الزامی هستند'
+      });
+    }
+
+    const user = await User.findOne({
+      email: email.toLowerCase().trim()
+    }).select('+password');
+
+    if (!user) {
+      return res.status(401).render('admin/Login', {
+        error: 'ایمیل یا رمز عبور اشتباه است'
+      });
+    }
+
+    if (!user.isActive) {
+      return res.status(403).render('admin/Login', {
+        error: 'حساب کاربری شما غیرفعال شده است'
+      });
+    }
+
+    const isMatch = await user.comparePassword(password);
+
+    if (!isMatch) {
+      return res.status(401).render('admin/Login', {
+        error: 'ایمیل یا رمز عبور اشتباه است'
+      });
+    }
+
+    req.session.user = {
+      id: user._id,
+      name: user.name,
+      email: user.email,
+      role: user.role
+    };
+
+    res.redirect('/sw-admin');
+  } catch (err) {
+    console.error(err);
+    res.status(500).render('admin/Login', {
+      error: 'خطا در ورود به پنل'
+    });
+  }
+});
 
 // ─────────────────────────────────────────
 //  404

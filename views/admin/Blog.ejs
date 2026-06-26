@@ -201,55 +201,110 @@
 
 <!-- Modal: مقاله جدید/ویرایش -->
 <div class="modal-overlay" id="postModal">
-  <div class="modal-box" style="width:min(640px,92vw);">
+  <form class="modal-box" id="postForm" action="/sw-admin/posts/save" method="POST" enctype="multipart/form-data" style="width:min(640px,92vw);">
+    
+    <!-- آیدی مخفی برای حالت ویرایش -->
+    <input type="hidden" name="id" id="postId">
+
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1.5rem;">
-      <div class="modal-title" style="margin:0;">افزودن / ویرایش مقاله</div>
-      <button data-modal-close style="background:transparent;border:none;font-size:1.2rem;color:var(--color-text-muted);cursor:pointer;"><i class="bi bi-x-lg"></i></button>
+      <div class="modal-title" style="margin:0;" id="postModalTitle">افزودن / ویرایش مقاله</div>
+      <button type="button" data-modal-close style="background:transparent;border:none;font-size:1.2rem;color:var(--color-text-muted);cursor:pointer;"><i class="bi bi-x-lg"></i></button>
     </div>
+
     <div class="form-row">
       <label class="sol-label">عنوان مقاله</label>
-      <input class="sol-input" type="text" placeholder="عنوان جذاب مقاله…">
+      <input class="sol-input" name="title" id="postTitle" type="text" placeholder="عنوان جذاب مقاله…" required>
     </div>
+
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;">
       <div class="form-row">
         <label class="sol-label">دسته‌بندی</label>
-        <select class="sol-select" style="width:100%">
-          <option>طراحی وب</option><option>سئو</option><option>برندینگ</option><option>تکنولوژی</option><option>فروشگاه</option>
+        <select class="sol-select" name="category" id="postCategory" style="width:100%">
+          <option value="طراحی وب">طراحی وب</option>
+          <option value="سئو">سئو</option>
+          <option value="برندینگ">برندینگ</option>
+          <option value="تکنولوژی">تکنولوژی</option>
+          <option value="فروشگاه">فروشگاه</option>
         </select>
       </div>
       <div class="form-row">
         <label class="sol-label">نویسنده</label>
-        <select class="sol-select" style="width:100%">
-          <option>علی مدیری</option><option>سارا طاهری</option><option>محسن مظاهر</option>
+        <select class="sol-select" name="author" id="postAuthor" style="width:100%">
+          <option value="علی مدیری">علی مدیری</option>
+          <option value="سارا طاهری">سارا طاهری</option>
+          <option value="محسن مظاهر">محسن مظاهر</option>
         </select>
       </div>
     </div>
+
     <div class="form-row">
       <label class="sol-label">تصویر شاخص</label>
-      <div style="border:2px dashed var(--color-border);border-radius:var(--radius-md);padding:1.5rem;text-align:center;cursor:pointer;color:var(--color-text-muted);transition:all var(--dur-fast);" class="upload-zone">
+      <!-- فیلد فایل مخفی که با کلیک روی منطقه آپلود باز می‌شود -->
+      <input type="file" name="image" id="postImageInput" style="display: none;" accept="image/*">
+      
+      <div 
+        style="border:2px dashed var(--color-border);border-radius:var(--radius-md);padding:1.5rem;text-align:center;cursor:pointer;color:var(--color-text-muted);transition:all var(--dur-fast);" 
+        class="upload-zone"
+        onclick="document.getElementById('postImageInput').click()"
+      >
         <i class="bi bi-cloud-arrow-up" style="font-size:1.5rem;display:block;margin-bottom:.4rem;"></i>
-        <span style="font-size:.8rem;">برای آپلود تصویر کلیک کنید یا فایل را اینجا بکشید</span>
+        <span id="uploadZoneText" style="font-size:.8rem;">برای آپلود تصویر کلیک کنید یا فایل را اینجا بکشید</span>
+      </div>
+      <div id="imagePreviewContainer" style="margin-top: 0.5rem; display: none;">
+        <img id="imagePreview" src="" style="max-height: 100px; border-radius: var(--radius-sm);">
       </div>
     </div>
+
     <div class="form-row">
       <label class="sol-label">خلاصه مقاله</label>
-      <textarea class="sol-input" rows="2" placeholder="چکیده کوتاه برای نمایش در لیست مقالات…" style="resize:vertical;"></textarea>
+      <textarea class="sol-input" name="excerpt" id="postExcerpt" rows="2" placeholder="چکیده کوتاه برای نمایش در لیست مقالات…" style="resize:vertical;"></textarea>
     </div>
+
     <div class="form-row">
       <label class="sol-label">متن کامل مقاله</label>
-      <textarea class="sol-input" rows="6" placeholder="محتوای کامل مقاله را اینجا بنویسید…" style="resize:vertical;"></textarea>
+      <textarea class="sol-input" name="content" id="postContent" rows="6" placeholder="محتوای کامل مقاله را اینجا بنویسید…" style="resize:vertical;"></textarea>
     </div>
+
     <div class="form-row" style="display:flex;align-items:center;gap:.75rem;">
-      <label class="sw-toggle"><input type="checkbox" checked><span class="sw-slider"></span></label>
+      <label class="sw-toggle">
+        <input type="checkbox" name="status" id="postStatus" value="published" checked>
+        <span class="sw-slider"></span>
+      </label>
       <span style="font-size:.83rem;font-weight:600;">انتشار فوری (در غیر این صورت پیش‌نویس می‌ماند)</span>
     </div>
+
     <div style="display:flex;gap:.75rem;justify-content:flex-end;margin-top:1.5rem;">
-      <button class="btn-ghost-sm" data-modal-close>انصراف</button>
-      <button class="btn-ghost-sm"><i class="bi bi-save"></i> ذخیره پیش‌نویس</button>
-      <button class="btn-sol-sm"><i class="bi bi-send-fill"></i> انتشار مقاله</button>
+      <button type="button" class="btn-ghost-sm" data-modal-close>انصراف</button>
+      <!-- دکمه ذخیره پیش‌نویس (وضعیت را غیرفعال/draft می‌کند قبل از سابمیت) -->
+      <button type="button" class="btn-ghost-sm" onclick="saveAsDraft()"><i class="bi bi-save"></i> ذخیره پیش‌نویس</button>
+      <button type="submit" class="btn-sol-sm"><i class="bi bi-send-fill"></i> انتشار مقاله</button>
     </div>
-  </div>
+
+  </form>
 </div>
+
+<script>
+// تغییر متن باکس آپلود با انتخاب عکس
+document.getElementById('postImageInput').addEventListener('change', function(e) {
+  const file = e.target.files[0];
+  if (file) {
+    document.getElementById('uploadZoneText').textContent = 'انتخاب شد: ' + file.name;
+    const reader = new FileReader();
+    reader.onload = function(evt) {
+      document.getElementById('imagePreview').src = evt.target.result;
+      document.getElementById('imagePreviewContainer').style.display = 'block';
+    }
+    reader.readAsDataURL(file);
+  }
+});
+
+// ارسال فرم به عنوان پیش‌نویس (draft)
+function saveAsDraft() {
+  document.getElementById('postStatus').checked = false; // تیک انتشار برداشته می‌شود تا استاتوس draft شود
+  document.getElementById('postForm').submit();
+}
+</script>
+
 
 <%- include('partials/_scripts', { extraScripts: `
 <style>

@@ -497,7 +497,7 @@
 
 <!-- ═══════════════════════════════════════
      PACKAGES / PRICING
-═══════════════════════════════════════ -->
+════════════════════════════════════════ -->
 <section class="packages-section" id="packages">
   <div class="container">
 
@@ -514,85 +514,87 @@
 
     <div class="row g-4 justify-content-center">
 
-      <!-- Package 1: Basic -->
-      <div class="col-md-6 col-lg-3 reveal reveal-delay-1">
-        <div class="card-sol card-package h-100">
-          <div class="package-badge">پایه</div>
-          <div class="package-icon"><i class="bi bi-file-earmark-code"></i></div>
-          <h4 class="package-name">پایه</h4>
-          <p class="package-desc">طراحی ساده وردپرسی با قالب آماده — مناسب کسب‌وکارهای نوپا</p>
-          <ul class="package-features">
-            <li><i class="bi bi-check-lg"></i> قالب وردپرس آماده</li>
-            <li><i class="bi bi-check-lg"></i> ۵ صفحه اصلی</li>
-            <li><i class="bi bi-check-lg"></i> ریسپانسیو</li>
-            <li><i class="bi bi-check-lg"></i> ۱ ماه پشتیبانی</li>
-            <li class="disabled"><i class="bi bi-x-lg"></i> سئو پیشرفته</li>
-            <li class="disabled"><i class="bi bi-x-lg"></i> طراحی اختصاصی</li>
-          </ul>
-          <a href="contact.html" class="btn btn-outline-main w-100 mt-auto">مشاوره رایگان</a>
-        </div>
-      </div>
+      <% if (packages && packages.length > 0) { %>
+        <% packages.forEach((pkg, index) => { %>
 
-      <!-- Package 2: Economy -->
-      <div class="col-md-6 col-lg-3 reveal reveal-delay-2">
-        <div class="card-sol card-package h-100">
-          <div class="package-badge">اقتصادی</div>
-          <div class="package-icon"><i class="bi bi-window-stack"></i></div>
-          <h4 class="package-name">اقتصادی</h4>
-          <p class="package-desc">طراحی وردپرسی با شخصی‌سازی بیشتر — ایده‌آل برای کسب‌وکارهای متوسط</p>
-          <ul class="package-features">
-            <li><i class="bi bi-check-lg"></i> وردپرس شخصی‌سازی‌شده</li>
-            <li><i class="bi bi-check-lg"></i> تا ۱۰ صفحه</li>
-            <li><i class="bi bi-check-lg"></i> سئو پایه</li>
-            <li><i class="bi bi-check-lg"></i> ۳ ماه پشتیبانی</li>
-            <li><i class="bi bi-check-lg"></i> فرم تماس</li>
-            <li class="disabled"><i class="bi bi-x-lg"></i> کد اختصاصی</li>
-          </ul>
-          <a href="contact.html" class="btn btn-outline-main w-100 mt-auto">مشاوره رایگان</a>
-        </div>
-      </div>
+          <div class="col-md-6 col-lg-3 reveal reveal-delay-<%= index + 1 %>">
+            <div class="card-sol card-package h-100 <%= pkg.isFeatured ? 'card-package-featured' : '' %>">
 
-      <!-- Package 3: Pro -->
-      <div class="col-md-6 col-lg-3 reveal reveal-delay-3">
-        <div class="card-sol card-package card-package-featured h-100">
-          <div class="package-badge package-badge-featured">پرطرفدار</div>
-          <div class="package-icon"><i class="bi bi-rocket-takeoff"></i></div>
-          <h4 class="package-name">حرفه‌ای</h4>
-          <p class="package-desc">طراحی کاملاً اختصاصی با PHP یا Node.js — بدون محدودیت</p>
-          <ul class="package-features">
-            <li><i class="bi bi-check-lg"></i> کدنویسی اختصاصی</li>
-            <li><i class="bi bi-check-lg"></i> صفحات نامحدود</li>
-            <li><i class="bi bi-check-lg"></i> سئو پیشرفته</li>
-            <li><i class="bi bi-check-lg"></i> ۶ ماه پشتیبانی</li>
-            <li><i class="bi bi-check-lg"></i> پنل مدیریت</li>
-            <li><i class="bi bi-check-lg"></i> بهینه‌سازی سرعت</li>
-          </ul>
-          <a href="contact.html" class="btn btn-main w-100 mt-auto">مشاوره رایگان</a>
-        </div>
-      </div>
+              <div class="package-badge <%= pkg.isFeatured ? 'package-badge-featured' : '' %>">
+                <%= pkg.isFeatured ? 'پرطرفدار' : pkg.categoryLabel || 'پکیج' %>
+              </div>
 
-      <!-- Package 4: Enterprise -->
-      <div class="col-md-6 col-lg-3 reveal reveal-delay-4">
-        <div class="card-sol card-package h-100">
-          <div class="package-badge">پیشرفته</div>
-          <div class="package-icon"><i class="bi bi-building-gear"></i></div>
-          <h4 class="package-name">سازمانی</h4>
-          <p class="package-desc">پروژه‌های بزرگ و سازمانی با معماری مقیاس‌پذیر و امنیت بالا</p>
-          <ul class="package-features">
-            <li><i class="bi bi-check-lg"></i> معماری سفارشی</li>
-            <li><i class="bi bi-check-lg"></i> API اختصاصی</li>
-            <li><i class="bi bi-check-lg"></i> یکپارچه‌سازی سیستم‌ها</li>
-            <li><i class="bi bi-check-lg"></i> ۱۲ ماه پشتیبانی</li>
-            <li><i class="bi bi-check-lg"></i> امنیت پیشرفته</li>
-            <li><i class="bi bi-check-lg"></i> SLA اختصاصی</li>
-          </ul>
-          <a href="contact.html" class="btn btn-outline-main w-100 mt-auto">مشاوره رایگان</a>
+              <div class="package-icon">
+                <% if (pkg.category === 'web') { %>
+                  <i class="bi bi-window-stack"></i>
+                <% } else if (pkg.category === 'store') { %>
+                  <i class="bi bi-cart-check"></i>
+                <% } else if (pkg.category === 'ui_ux') { %>
+                  <i class="bi bi-palette"></i>
+                <% } else if (pkg.category === 'seo') { %>
+                  <i class="bi bi-graph-up-arrow"></i>
+                <% } else if (pkg.category === 'maintenance') { %>
+                  <i class="bi bi-tools"></i>
+                <% } else { %>
+                  <i class="bi bi-box-seam"></i>
+                <% } %>
+              </div>
+
+              <h4 class="package-name"><%= pkg.name %></h4>
+
+              <p class="package-desc">
+                <%= pkg.description %>
+              </p>
+
+              <% if (pkg.price && pkg.price > 0) { %>
+                <div class="package-price mb-3">
+                  <strong>
+                    <%= pkg.price.toLocaleString('fa-IR') %>
+                  </strong>
+                  <span>
+                    <%= pkg.currency === 'IRR' ? 'تومان' : pkg.currency %>
+                  </span>
+                </div>
+              <% } %>
+
+              <% if (pkg.duration) { %>
+                <div class="package-duration mb-3">
+                  <i class="bi bi-clock"></i>
+                  <span><%= pkg.duration %></span>
+                </div>
+              <% } %>
+
+              <ul class="package-features">
+                <% if (pkg.features && pkg.features.length > 0) { %>
+                  <% pkg.features.forEach(feature => { %>
+                    <li>
+                      <i class="bi bi-check-lg"></i>
+                      <%= feature %>
+                    </li>
+                  <% }) %>
+                <% } %>
+              </ul>
+
+              <a href="/contact?package=<%= pkg.slug || pkg._id %>" class="btn <%= pkg.isFeatured ? 'btn-main' : 'btn-outline-main' %> w-100 mt-auto">
+                مشاوره رایگان
+              </a>
+
+            </div>
+          </div>
+
+        <% }) %>
+      <% } else { %>
+
+        <div class="col-12 text-center">
+          <p>در حال حاضر پکیجی برای نمایش وجود ندارد.</p>
         </div>
-      </div>
+
+      <% } %>
 
     </div>
   </div>
 </section>
+
 
 
 <!-- ═══════════════════════════════════════

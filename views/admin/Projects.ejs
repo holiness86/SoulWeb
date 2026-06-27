@@ -1277,7 +1277,7 @@ document.addEventListener('DOMContentLoaded', function () {
     if (mode === 'edit') {
       projectModalTitle.textContent = 'ویرایش پروژه';
       projectSubmitBtn.innerHTML = '<i class="bi bi-check-lg"></i> ذخیره تغییرات';
-      projectForm.action = '/sw-admin/projects/' + data.id + '/edit';
+      projectForm.action = '/sw-admin/projects/' + data.id + '/update';
       projectIdInput.value = data.id || '';
 
       projectTitleInput.value = data.title || '';

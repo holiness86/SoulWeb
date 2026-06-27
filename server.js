@@ -7,6 +7,7 @@ const ExcelJS    = require('exceljs')
 const puppeteer  = require('puppeteer-core')
 const ejs        = require('ejs')
 const session    = require('express-session');
+const moment     = require('jalali-moment');
 
 const app = express()
 
@@ -110,12 +111,23 @@ const upload = multer({ storage })
 // ─────────────────────────────────────────
 app.get('/', async (req, res) => {
   try {
-    const portfolio = await Portfolio.find().sort({ order : 1 })
-    res.render('index' , { portfolio })
+    const [portfolio, packages] = await Promise.all([
+      Portfolio.find().sort({ order: 1 }),
+      Package.find({ isActive: true }).sort({ order: 1, createdAt: -1 })
+    ]);
+
+    res.render('index', {
+      portfolio,
+      packages
+    });
+
   } catch (err) {
-    res.status(500).send('Server Error')
+    console.error(err);
+    res.status(500).send('Server Error');
   }
-})
+});
+
+
 
 // ─────────────────────────────────────────
 //  ADMIN — DASHBOARD

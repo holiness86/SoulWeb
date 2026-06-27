@@ -1,624 +1,942 @@
+<%# views/sw-admin/login.ejs — صفحه ورود به پنل مدیریت سُل وب %>
 <!DOCTYPE html>
 <html lang="fa" dir="rtl" data-bs-theme="light">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>سُل وب — ورود به پنل مدیریت</title>
 
-  <title>ورود به پنل مدیریت | SoulWeb</title>
-
-  <link rel="stylesheet" href="/assets/css/admin.css">
-  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+  <link rel="stylesheet" href="../assets/css/bootstrap.rtl.min.css">
+  <link rel="stylesheet" href="../assets/css/icons-1.13.1/font/bootstrap-icons.min.css">
+  <link rel="stylesheet" href="../assets/css/admin.css">
 
   <style>
-    :root {
-      --main-50: #f4f2ff;
-      --main-100: #ebe7ff;
-      --main-400: #8b73ff;
-      --main-500: #6447f4;
-      --main-600: #5638df;
+    /* ══════════════════════════════════════════
+       LOGIN PAGE — استایل‌های اختصاصی صفحه ورود
+    ══════════════════════════════════════════ */
 
-      --accent-500: #0090e8;
-      --accent-600: #0077c2;
+    /* صفحه لاگین باید تمام‌صفحه باشه و از layout پنل جدا */
+    body { background: var(--color-bg); overflow: hidden; }
 
-      --grad-main: linear-gradient(135deg, #6447f4, #0090e8);
-      --grad-soft: linear-gradient(135deg, rgba(100,71,244,.12), rgba(0,144,232,.12));
-
-      --color-bg: #f6f7fb;
-      --color-surface: #ffffff;
-      --color-border: rgba(15, 23, 42, .08);
-      --color-text-primary: #151528;
-      --color-text-muted: #7b8190;
-      --color-text-light: #a1a7b4;
-
-      --radius-sm: 12px;
-      --radius-md: 18px;
-      --radius-lg: 26px;
-      --radius-full: 999px;
-
-      --shadow-main: 0 18px 45px rgba(100,71,244,.25);
-      --shadow-soft: 0 18px 55px rgba(15,23,42,.08);
-
-      --font-primary: inherit;
-      --dur-fast: .2s;
-      --ease-smooth: cubic-bezier(.22, 1, .36, 1);
-    }
-
-    * {
-      box-sizing: border-box;
-    }
-
-    body {
-      margin: 0;
-      min-height: 100vh;
-      font-family: var(--font-primary), Tahoma, Arial, sans-serif;
-      background:
-        radial-gradient(circle at top right, rgba(100,71,244,.18), transparent 34%),
-        radial-gradient(circle at bottom left, rgba(0,144,232,.16), transparent 34%),
-        linear-gradient(135deg, #f8f9ff, #eef3ff);
-      color: var(--color-text-primary);
-      overflow-x: hidden;
-    }
-
+    /* ── Wrapper اصلی ── */
     .login-page {
       min-height: 100vh;
       display: grid;
-      grid-template-columns: 1.05fr .95fr;
-      align-items: center;
-      gap: 2rem;
-      padding: 2.5rem;
-      position: relative;
-    }
-
-    .login-page::before,
-    .login-page::after {
-      content: "";
-      position: fixed;
-      width: 280px;
-      height: 280px;
-      border-radius: 50%;
-      filter: blur(10px);
-      opacity: .42;
-      pointer-events: none;
-      z-index: 0;
-    }
-
-    .login-page::before {
-      top: 7%;
-      right: 8%;
-      background: rgba(100,71,244,.18);
-    }
-
-    .login-page::after {
-      left: 9%;
-      bottom: 8%;
-      background: rgba(0,144,232,.16);
-    }
-
-    .login-brand-side,
-    .login-card-wrap {
-      position: relative;
-      z-index: 1;
-    }
-
-    .login-brand-side {
-      padding-inline: clamp(1rem, 4vw, 4rem);
-    }
-
-    .brand-pill {
-      display: inline-flex;
-      align-items: center;
-      gap: .55rem;
-      padding: .45rem .85rem;
-      border: 1px solid rgba(100,71,244,.18);
-      background: rgba(255,255,255,.62);
-      backdrop-filter: blur(18px);
-      border-radius: var(--radius-full);
-      color: var(--main-600);
-      font-size: .78rem;
-      font-weight: 800;
-      margin-bottom: 1.25rem;
-      box-shadow: 0 10px 30px rgba(100,71,244,.08);
-    }
-
-    .brand-logo {
-      width: 72px;
-      height: 72px;
-      border-radius: 24px;
-      background: var(--grad-main);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      color: #fff;
-      font-size: 2rem;
-      box-shadow: var(--shadow-main);
-      margin-bottom: 1.35rem;
-    }
-
-    .login-title {
-      font-size: clamp(2rem, 5vw, 3.8rem);
-      line-height: 1.25;
-      margin: 0;
-      letter-spacing: -1px;
-      font-weight: 900;
-    }
-
-    .login-title span {
-      background: var(--grad-main);
-      -webkit-background-clip: text;
-      -webkit-text-fill-color: transparent;
-    }
-
-    .login-subtitle {
-      max-width: 560px;
-      margin: 1.15rem 0 0;
-      color: var(--color-text-muted);
-      font-size: .98rem;
-      line-height: 2;
-      font-weight: 500;
-    }
-
-    .login-features {
-      display: grid;
-      grid-template-columns: repeat(3, minmax(0, 1fr));
-      gap: .9rem;
-      margin-top: 2rem;
-      max-width: 620px;
-    }
-
-    .login-feature {
-      border: 1px solid var(--color-border);
-      background: rgba(255,255,255,.62);
-      backdrop-filter: blur(18px);
-      border-radius: var(--radius-md);
-      padding: 1rem;
-      box-shadow: 0 14px 40px rgba(15,23,42,.05);
-    }
-
-    .login-feature i {
-      width: 36px;
-      height: 36px;
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      border-radius: 12px;
-      background: var(--grad-soft);
-      color: var(--main-500);
-      font-size: 1rem;
-      margin-bottom: .75rem;
-    }
-
-    .login-feature strong {
-      display: block;
-      font-size: .82rem;
-      margin-bottom: .25rem;
-    }
-
-    .login-feature span {
-      display: block;
-      color: var(--color-text-muted);
-      font-size: .72rem;
-      line-height: 1.8;
-    }
-
-    .login-card-wrap {
-      display: flex;
-      justify-content: center;
-    }
-
-    .login-card {
-      width: min(430px, 100%);
-      border: 1px solid rgba(255,255,255,.75);
-      background: rgba(255,255,255,.78);
-      backdrop-filter: blur(26px);
-      border-radius: 32px;
-      padding: 1.35rem;
-      box-shadow: var(--shadow-soft);
+      grid-template-columns: 1fr 480px;
       position: relative;
       overflow: hidden;
     }
+    @media (max-width: 900px) {
+      .login-page { grid-template-columns: 1fr; }
+      body { overflow: auto; }
+    }
 
-    .login-card::before {
-      content: "";
+    /* ══════════════════════════════════════════
+       LEFT PANEL — بخش تصویری/برندینگ
+    ══════════════════════════════════════════ */
+    .login-visual {
+      background: var(--grad-hero);
+      position: relative;
+      display: flex;
+      flex-direction: column;
+      align-items: flex-start;
+      justify-content: center;
+      padding: 3.5rem 4rem;
+      overflow: hidden;
+    }
+    @media (max-width: 900px) { .login-visual { display: none; } }
+
+    /* Blob‌های متحرک پس‌زمینه */
+    .lv-blob {
+      position: absolute;
+      border-radius: 50%;
+      filter: blur(70px);
+      pointer-events: none;
+    }
+    .lv-blob-1 {
+      width: 420px; height: 420px;
+      background: rgba(100,71,244,.45);
+      top: -120px; right: -80px;
+      animation: blobMove 12s ease-in-out infinite;
+    }
+    .lv-blob-2 {
+      width: 350px; height: 350px;
+      background: rgba(0,144,232,.35);
+      bottom: -80px; left: -60px;
+      animation: blobMove 16s ease-in-out infinite reverse;
+    }
+    .lv-blob-3 {
+      width: 200px; height: 200px;
+      background: rgba(163,148,251,.3);
+      top: 50%; left: 40%;
+      animation: blobMove 9s ease-in-out infinite;
+      animation-delay: -4s;
+    }
+    @keyframes blobMove {
+      0%,100% { transform: translate(0,0) scale(1); }
+      33%      { transform: translate(25px,-18px) scale(1.04); }
+      66%      { transform: translate(-15px,12px) scale(.97); }
+    }
+
+    /* Dot pattern */
+    .lv-dots {
       position: absolute;
       inset: 0;
-      background:
-        radial-gradient(circle at top right, rgba(100,71,244,.14), transparent 38%),
-        radial-gradient(circle at bottom left, rgba(0,144,232,.12), transparent 42%);
+      background-image: radial-gradient(circle, rgba(255,255,255,.12) 1px, transparent 1px);
+      background-size: 28px 28px;
       pointer-events: none;
     }
 
-    .login-card-inner {
-      position: relative;
-      z-index: 1;
-      background: rgba(255,255,255,.7);
-      border: 1px solid rgba(15,23,42,.06);
-      border-radius: 24px;
-      padding: 1.5rem;
-    }
+    /* محتوای بخش چپ */
+    .lv-content { position: relative; z-index: 2; color: #fff; }
 
-    .login-card-header {
-      text-align: center;
-      margin-bottom: 1.6rem;
+    .lv-logo {
+      display: flex;
+      align-items: center;
+      gap: .85rem;
+      margin-bottom: 3.5rem;
     }
-
-    .admin-avatar {
-      width: 64px;
-      height: 64px;
-      margin: 0 auto .9rem;
-      border-radius: 22px;
-      background: var(--grad-main);
-      color: #fff;
+    .lv-logo-icon {
+      width: 48px; height: 48px;
+      border-radius: var(--radius-md);
+      background: rgba(255,255,255,.15);
+      border: 1.5px solid rgba(255,255,255,.25);
       display: flex;
       align-items: center;
       justify-content: center;
+      font-size: .95rem;
       font-weight: 900;
-      box-shadow: var(--shadow-main);
+      color: #fff;
+      backdrop-filter: blur(10px);
     }
-
-    .login-card-title {
-      margin: 0;
-      font-size: 1.25rem;
+    .lv-logo-text {
+      font-size: 1.35rem;
       font-weight: 900;
+      color: #fff;
+      letter-spacing: -.02em;
+    }
+    .lv-logo-sub {
+      font-size: .72rem;
+      color: rgba(255,255,255,.55);
+      margin-top: .1rem;
     }
 
-    .login-card-subtitle {
-      margin: .45rem 0 0;
-      color: var(--color-text-muted);
-      font-size: .78rem;
-      font-weight: 600;
+    .lv-title {
+      font-size: clamp(1.7rem, 2.5vw, 2.4rem);
+      font-weight: 900;
+      line-height: 1.25;
+      letter-spacing: -.025em;
+      margin-bottom: 1rem;
+      color: #fff;
+    }
+    .lv-title span {
+      display: block;
+      background: linear-gradient(90deg, #c4bcfd, #4dc3ff);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
     }
 
-    .alert-login {
+    .lv-desc {
+      font-size: .95rem;
+      color: rgba(255,255,255,.65);
+      line-height: 1.8;
+      max-width: 380px;
+      margin-bottom: 2.5rem;
+    }
+
+    /* Feature list */
+    .lv-features {
+      display: flex;
+      flex-direction: column;
+      gap: .85rem;
+      margin-bottom: 3rem;
+    }
+    .lv-feature {
       display: flex;
       align-items: center;
-      gap: .55rem;
+      gap: .75rem;
+      font-size: .85rem;
+      color: rgba(255,255,255,.8);
+    }
+    .lv-feature-icon {
+      width: 32px; height: 32px;
       border-radius: var(--radius-sm);
-      padding: .75rem .85rem;
-      margin-bottom: 1rem;
-      background: rgba(239,68,68,.09);
-      color: #dc2626;
-      border: 1px solid rgba(239,68,68,.14);
-      font-size: .78rem;
-      font-weight: 700;
+      background: rgba(255,255,255,.12);
+      border: 1px solid rgba(255,255,255,.2);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: .9rem;
+      flex-shrink: 0;
     }
 
-    .form-row {
-      margin-bottom: 1rem;
+    /* Stats row */
+    .lv-stats {
+      display: flex;
+      gap: 2rem;
+      padding-top: 1.75rem;
+      border-top: 1px solid rgba(255,255,255,.12);
     }
+    .lv-stat strong {
+      display: block;
+      font-size: 1.35rem;
+      font-weight: 900;
+      color: #fff;
+    }
+    .lv-stat span {
+      font-size: .75rem;
+      color: rgba(255,255,255,.5);
+    }
+
+    /* Floating card decoration */
+    .lv-card {
+      position: absolute;
+      background: rgba(255,255,255,.1);
+      backdrop-filter: blur(16px);
+      border: 1px solid rgba(255,255,255,.18);
+      border-radius: var(--radius-lg);
+      padding: .75rem 1.1rem;
+      color: #fff;
+      white-space: nowrap;
+      font-size: .8rem;
+      font-weight: 600;
+      animation: floatCard 5s ease-in-out infinite;
+      z-index: 2;
+    }
+    .lv-card-1 {
+      bottom: 10rem;
+      left: 2rem;
+      animation-delay: .4s;
+    }
+    .lv-card-2 {
+      top: 8rem;
+      left: 3rem;
+      animation-delay: 1.2s;
+    }
+    @keyframes floatCard {
+      0%,100% { transform: translateY(0); }
+      50%      { transform: translateY(-10px); }
+    }
+    .lv-card-inner { display: flex; align-items: center; gap: .5rem; }
+    .lv-green-dot {
+      width: 8px; height: 8px; border-radius: 50%;
+      background: #4ade80;
+      animation: pulse 2s ease-in-out infinite;
+    }
+    @keyframes pulse {
+      0%,100% { box-shadow: 0 0 0 0 rgba(74,222,128,.4); }
+      50%      { box-shadow: 0 0 0 6px rgba(74,222,128,0); }
+    }
+
+    /* ══════════════════════════════════════════
+       RIGHT PANEL — فرم ورود
+    ══════════════════════════════════════════ */
+    .login-form-side {
+      background: var(--color-surface);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 2.5rem 2.75rem;
+      position: relative;
+      z-index: 5;
+      border-right: 1px solid var(--color-border);
+    }
+    @media (max-width: 900px) {
+      .login-form-side {
+        min-height: 100vh;
+        padding: 2rem 1.5rem;
+        border-right: none;
+      }
+    }
+    @media (max-width: 480px) {
+      .login-form-side { padding: 1.5rem 1.1rem; }
+    }
+
+    /* Theme toggle — گوشه بالا */
+    .login-theme-btn {
+      position: absolute;
+      top: 1.25rem;
+      left: 1.25rem;
+      width: 36px; height: 36px;
+      border-radius: var(--radius-sm);
+      border: 1.5px solid var(--color-border);
+      background: var(--color-bg);
+      color: var(--color-text-muted);
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1rem;
+      transition: all var(--dur-fast) var(--ease-smooth);
+    }
+    .login-theme-btn:hover {
+      background: var(--main-50);
+      border-color: var(--main-300);
+      color: var(--main-500);
+      transform: rotate(20deg);
+    }
+    [data-bs-theme="dark"] .login-theme-btn:hover { background: rgba(100,71,244,.15); }
+
+    /* Mobile logo (فقط موبایل) */
+    .login-mobile-logo {
+      display: none;
+      align-items: center;
+      gap: .75rem;
+      margin-bottom: 2.5rem;
+      text-decoration: none;
+    }
+    @media (max-width: 900px) { .login-mobile-logo { display: flex; } }
+    .lml-icon {
+      width: 44px; height: 44px;
+      border-radius: var(--radius-md);
+      background: var(--grad-main);
+      display: flex; align-items: center; justify-content: center;
+      font-size: .88rem; font-weight: 900; color: #fff;
+      box-shadow: var(--shadow-main);
+    }
+    .lml-text {
+      font-size: 1.25rem; font-weight: 900;
+      background: var(--grad-main);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    /* Form container */
+    .login-box { width: 100%; max-width: 380px; }
+
+    .login-header { margin-bottom: 2.25rem; text-align: center; }
+    .login-header h1 {
+      font-size: 1.55rem;
+      font-weight: 900;
+      letter-spacing: -.025em;
+      margin-bottom: .4rem;
+      color: var(--color-text-primary);
+    }
+    .login-header p {
+      font-size: .85rem;
+      color: var(--color-text-muted);
+      margin: 0;
+    }
+
+    /* ── Form rows ── */
+    .form-row { margin-bottom: 1.1rem; }
 
     .sol-label {
       display: block;
       font-size: .78rem;
-      font-weight: 800;
-      margin-bottom: .5rem;
-      color: var(--color-text-primary);
+      font-weight: 700;
+      color: var(--color-text-muted);
+      margin-bottom: .4rem;
     }
 
+    /* Input wrapper با آیکون */
     .input-wrap {
       position: relative;
+      display: flex;
+      align-items: center;
     }
-
-    .input-wrap i {
+    .input-wrap > i {
       position: absolute;
       right: .9rem;
-      top: 50%;
-      transform: translateY(-50%);
+      font-size: 1rem;
       color: var(--color-text-light);
       pointer-events: none;
-      font-size: 1rem;
+      transition: color var(--dur-fast);
+      z-index: 2;
     }
+    .input-wrap:focus-within > i { color: var(--main-500); }
 
-    .sol-input {
+    /* Input اصلی */
+    .input-wrap .sol-input,
+    .input-wrap .form-control {
       width: 100%;
-      height: 46px;
-      border: 1px solid var(--color-border);
-      border-radius: var(--radius-sm);
-      background: rgba(255,255,255,.86);
+      padding: .75rem 2.75rem .75rem 1rem;
+      font-family: var(--font-primary);
+      font-size: .9rem;
       color: var(--color-text-primary);
-      padding: 0 2.55rem 0 .9rem;
-      font-family: var(--font-primary), Tahoma, Arial, sans-serif;
-      font-size: .86rem;
+      background: var(--color-bg);
+      border: 1.5px solid var(--color-border);
+      border-radius: var(--radius-md);
       outline: none;
       transition: all var(--dur-fast) var(--ease-smooth);
+      -webkit-appearance: none;
+      appearance: none;
+    }
+    .input-wrap .sol-input::placeholder,
+    .input-wrap .form-control::placeholder { color: var(--color-text-light); }
+
+    .input-wrap .sol-input:focus,
+    .input-wrap .form-control:focus {
+      border-color: var(--main-400);
+      background: var(--color-surface);
+      box-shadow: 0 0 0 3.5px rgba(100,71,244,.14);
+    }
+    [data-bs-theme="dark"] .input-wrap .sol-input,
+    [data-bs-theme="dark"] .input-wrap .form-control {
+      background: rgba(255,255,255,.05);
+    }
+    [data-bs-theme="dark"] .input-wrap .sol-input:focus,
+    [data-bs-theme="dark"] .input-wrap .form-control:focus {
+      background: rgba(255,255,255,.07);
     }
 
-    .sol-input:focus {
-      border-color: rgba(100,71,244,.55);
-      box-shadow: 0 0 0 4px rgba(100,71,244,.1);
-      background: #fff;
+    /* وضعیت خطا */
+    .input-wrap.has-error .sol-input,
+    .input-wrap.has-error .form-control {
+      border-color: #ef4444;
+      box-shadow: 0 0 0 3px rgba(239,68,68,.12);
+    }
+    .input-wrap.has-error > i { color: #ef4444; }
+    .error-msg {
+      display: none;
+      font-size: .73rem;
+      color: #ef4444;
+      margin-top: .35rem;
+      font-weight: 600;
+    }
+    .input-wrap.has-error ~ .error-msg { display: block; }
+
+    /* دکمه نمایش/مخفی رمز */
+    .password-toggle {
+      position: absolute;
+      left: .8rem;
+      background: transparent;
+      border: none;
+      color: var(--color-text-light);
+      cursor: pointer;
+      padding: .25rem;
+      font-size: 1rem;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: color var(--dur-fast);
+      z-index: 2;
+    }
+    .password-toggle:hover { color: var(--main-500); }
+
+    /* Password با آیکون toggle — فضای چپ */
+    .input-wrap:has(.password-toggle) .sol-input,
+    .input-wrap:has(.password-toggle) .form-control {
+      padding-left: 2.75rem;
     }
 
+    /* ── Options row ── */
     .login-options {
       display: flex;
       align-items: center;
       justify-content: space-between;
-      gap: 1rem;
-      margin: .25rem 0 1.15rem;
-      font-size: .76rem;
+      margin-bottom: 1.5rem;
     }
 
     .remember-me {
       display: flex;
       align-items: center;
       gap: .45rem;
+      font-size: .82rem;
       color: var(--color-text-muted);
-      font-weight: 700;
       cursor: pointer;
       user-select: none;
     }
-
-    .remember-me input {
-      accent-color: var(--main-500);
+    .remember-me input[type="checkbox"] {
+      width: 16px; height: 16px;
+      border-radius: 4px;
+      border: 1.5px solid var(--color-border);
+      background: var(--color-surface);
+      appearance: none;
+      -webkit-appearance: none;
+      cursor: pointer;
+      transition: all var(--dur-fast);
+      position: relative;
+      flex-shrink: 0;
+    }
+    .remember-me input[type="checkbox"]:checked {
+      background: var(--main-500);
+      border-color: var(--main-500);
+    }
+    .remember-me input[type="checkbox"]:checked::after {
+      content: '';
+      position: absolute;
+      top: 2px; right: 4px;
+      width: 5px; height: 8px;
+      border: 2px solid #fff;
+      border-top: none;
+      border-right: none;
+      transform: rotate(-45deg);
     }
 
     .forgot-link {
+      font-size: .82rem;
       color: var(--main-500);
+      font-weight: 600;
       text-decoration: none;
-      font-weight: 800;
+      transition: color var(--dur-fast);
     }
+    .forgot-link:hover { color: var(--main-700); text-decoration: underline; }
 
-    .forgot-link:hover {
-      color: var(--main-600);
-    }
-
+    /* ── Submit button ── */
     .btn-sol-login {
       width: 100%;
-      height: 46px;
-      border: none;
-      border-radius: var(--radius-sm);
+      padding: .88rem 1.5rem;
       background: var(--grad-main);
       color: #fff;
-      font-family: var(--font-primary), Tahoma, Arial, sans-serif;
-      font-weight: 900;
-      font-size: .88rem;
+      border: none;
+      border-radius: var(--radius-md);
+      font-family: var(--font-primary);
+      font-size: .95rem;
+      font-weight: 800;
       cursor: pointer;
-      box-shadow: var(--shadow-main);
-      display: inline-flex;
+      display: flex;
       align-items: center;
       justify-content: center;
       gap: .55rem;
-      transition: all var(--dur-fast) var(--ease-smooth);
+      box-shadow: var(--shadow-main);
+      transition: all var(--dur-normal) var(--ease-spring);
+      letter-spacing: -.01em;
+      position: relative;
+      overflow: hidden;
     }
-
+    /* Ripple effect */
+    .btn-sol-login::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: rgba(255,255,255,0);
+      transition: background var(--dur-fast);
+    }
     .btn-sol-login:hover {
       transform: translateY(-2px);
-      box-shadow: 0 22px 50px rgba(100,71,244,.3);
+      box-shadow: 0 14px 40px rgba(100,71,244,.45);
     }
+    .btn-sol-login:hover::before { background: rgba(255,255,255,.07); }
+    .btn-sol-login:active {
+      transform: translateY(0);
+      box-shadow: var(--shadow-main);
+    }
+    /* حالت loading */
+    .btn-sol-login.loading {
+      pointer-events: none;
+      opacity: .85;
+    }
+    .btn-sol-login.loading i { display: none; }
+    .btn-sol-login .spinner {
+      display: none;
+      width: 18px; height: 18px;
+      border: 2.5px solid rgba(255,255,255,.4);
+      border-top-color: #fff;
+      border-radius: 50%;
+      animation: spin .7s linear infinite;
+    }
+    .btn-sol-login.loading .spinner { display: block; }
+    @keyframes spin { to { transform: rotate(360deg); } }
 
-    .login-footer {
-      margin-top: 1.25rem;
-      padding-top: 1rem;
-      border-top: 1px solid var(--color-border);
+    /* ── Divider ── */
+    .login-divider {
       display: flex;
       align-items: center;
-      justify-content: space-between;
-      gap: .75rem;
-      color: var(--color-text-muted);
-      font-size: .72rem;
-      font-weight: 700;
+      gap: .85rem;
+      margin: 1.5rem 0;
+      color: var(--color-text-light);
+      font-size: .75rem;
+    }
+    .login-divider::before,
+    .login-divider::after {
+      content: '';
+      flex: 1;
+      height: 1px;
+      background: var(--color-border);
     }
 
-    .login-footer span {
-      display: inline-flex;
-      align-items: center;
-      gap: .35rem;
+    /* ── Alert خطای سرور ── */
+    .login-alert {
+      display: none;
+      align-items: flex-start;
+      gap: .6rem;
+      background: rgba(239,68,68,.08);
+      border: 1px solid rgba(239,68,68,.2);
+      border-radius: var(--radius-md);
+      padding: .75rem 1rem;
+      margin-bottom: 1.25rem;
+      font-size: .82rem;
+      color: #dc2626;
+      font-weight: 600;
+      animation: slideDown .25s var(--ease-smooth);
+    }
+    .login-alert.show { display: flex; }
+    @keyframes slideDown {
+      from { opacity: 0; transform: translateY(-8px); }
+      to   { opacity: 1; transform: translateY(0); }
     }
 
-    .security-badge {
-      padding: .35rem .6rem;
-      border-radius: var(--radius-full);
-      background: rgba(34,197,94,.1);
-      color: #16a34a;
-      font-size: .68rem;
-      font-weight: 900;
-    }
-
-    .password-toggle {
+    /* ── Footer لاگین ── */
+    .login-footer {
       position: absolute;
-      left: .65rem;
-      top: 50%;
-      transform: translateY(-50%);
-      border: none;
-      background: transparent;
-      color: var(--color-text-muted);
-      cursor: pointer;
-      font-size: 1rem;
-      padding: .2rem;
-      line-height: 1;
+      bottom: 1.25rem;
+      left: 0; right: 0;
+      text-align: center;
+      font-size: .73rem;
+      color: var(--color-text-light);
+    }
+    .login-footer a {
+      color: var(--main-500);
+      text-decoration: none;
+      font-weight: 600;
+    }
+    .login-footer a:hover { text-decoration: underline; }
+
+    /* ── Animations ── */
+    .fade-in-up {
+      opacity: 0;
+      transform: translateY(20px);
+      animation: fadeInUp .5s var(--ease-smooth) forwards;
+    }
+    .delay-1 { animation-delay: .05s; }
+    .delay-2 { animation-delay: .1s; }
+    .delay-3 { animation-delay: .15s; }
+    .delay-4 { animation-delay: .2s; }
+    .delay-5 { animation-delay: .25s; }
+    .delay-6 { animation-delay: .3s; }
+    @keyframes fadeInUp {
+      to { opacity: 1; transform: translateY(0); }
     }
 
-    @media (max-width: 980px) {
-      .login-page {
-        grid-template-columns: 1fr;
-        padding: 1.2rem;
-      }
-
-      .login-brand-side {
-        text-align: center;
-        padding-inline: 0;
-      }
-
-      .brand-logo {
-        margin-inline: auto;
-      }
-
-      .login-subtitle {
-        margin-inline: auto;
-      }
-
-      .login-features {
-        grid-template-columns: 1fr;
-        max-width: 430px;
-        margin-inline: auto;
-      }
+    /* ══════════════════════════════════════════
+       DARK MODE tweaks
+    ══════════════════════════════════════════ */
+    [data-bs-theme="dark"] .login-form-side {
+      border-right-color: var(--color-border);
     }
-
-    @media (max-width: 520px) {
-      .login-card {
-        padding: .7rem;
-        border-radius: 24px;
-      }
-
-      .login-card-inner {
-        padding: 1.15rem;
-        border-radius: 20px;
-      }
-
-      .login-page {
-        padding: .8rem;
-      }
-
-      .login-title {
-        font-size: 1.75rem;
-      }
-
-      .login-features {
-        display: none;
-      }
-
-      .login-footer {
-        flex-direction: column;
-        justify-content: center;
-      }
+    [data-bs-theme="dark"] .lv-card {
+      background: rgba(255,255,255,.08);
+      border-color: rgba(255,255,255,.12);
     }
   </style>
 </head>
-
 <body>
 
-  <main class="login-page">
+<div class="login-page">
 
-    <section class="login-brand-side">
-      <div class="brand-pill">
-        <i class="bi bi-stars"></i>
-        پنل اختصاصی مدیریت SoulWeb
+  <!-- ══════════════════════════════════
+       LEFT — Visual / Branding
+  ══════════════════════════════════ -->
+  <div class="login-visual">
+    <!-- Blobs -->
+    <div class="lv-blob lv-blob-1"></div>
+    <div class="lv-blob lv-blob-2"></div>
+    <div class="lv-blob lv-blob-3"></div>
+    <div class="lv-dots"></div>
+
+    <!-- Floating decoration cards -->
+    <div class="lv-card lv-card-2">
+      <div class="lv-card-inner">
+        <i class="bi bi-check-circle-fill" style="color:#4ade80;"></i>
+        پروژه جدید تأیید شد!
+      </div>
+    </div>
+    <div class="lv-card lv-card-1">
+      <div class="lv-card-inner">
+        <div class="lv-green-dot"></div>
+        ۲۴ پروژه فعال در حال اجرا
+      </div>
+    </div>
+
+    <!-- Content -->
+    <div class="lv-content">
+
+      <div class="lv-logo">
+        <div class="lv-logo-icon">سل</div>
+        <div>
+          <div class="lv-logo-text">سُل وب</div>
+          <div class="lv-logo-sub">پنل مدیریت حرفه‌ای</div>
+        </div>
       </div>
 
-      <div class="brand-logo">
-        <i class="bi bi-command"></i>
-      </div>
-
-      <h1 class="login-title">
-        مدیریت پروژه‌ها، مشتری‌ها و فاکتورها در یک <span>داشبورد هوشمند</span>
+      <h1 class="lv-title">
+        مدیریت هوشمند
+        <span>کسب‌وکار آنلاین</span>
       </h1>
 
-      <p class="login-subtitle">
-        برای ورود به پنل مدیریت، اطلاعات حساب کاربری خود را وارد کنید. این بخش مخصوص مدیران و اعضای مجاز تیم SoulWeb است.
+      <p class="lv-desc">
+        از مدیریت پروژه‌ها تا فاکتورها، همه چیز در یک پنل مدرن و سریع — طراحی‌شده برای تیم سُل وب.
       </p>
 
-      <div class="login-features">
-        <div class="login-feature">
-          <i class="bi bi-kanban-fill"></i>
-          <strong>مدیریت پروژه</strong>
-          <span>کنترل وضعیت پروژه‌ها، وظایف و نمونه‌کارها</span>
+      <div class="lv-features">
+        <div class="lv-feature">
+          <div class="lv-feature-icon"><i class="bi bi-kanban-fill"></i></div>
+          مدیریت کامل پروژه‌ها با کانبان هوشمند
         </div>
-
-        <div class="login-feature">
-          <i class="bi bi-receipt-cutoff"></i>
-          <strong>فاکتورها</strong>
-          <span>صدور، پیگیری و خروجی PDF فاکتورها</span>
+        <div class="lv-feature">
+          <div class="lv-feature-icon"><i class="bi bi-people-fill"></i></div>
+          مدیریت مشتریان و پیام‌ها در یک جا
         </div>
-
-        <div class="login-feature">
-          <i class="bi bi-shield-lock-fill"></i>
-          <strong>امنیت پنل</strong>
-          <span>دسترسی محدود و محافظت‌شده برای مدیران</span>
+        <div class="lv-feature">
+          <div class="lv-feature-icon"><i class="bi bi-bar-chart-line-fill"></i></div>
+          گزارش‌های آنالیتیکس و آمار عملکرد
+        </div>
+        <div class="lv-feature">
+          <div class="lv-feature-icon"><i class="bi bi-receipt"></i></div>
+          صدور و مدیریت فاکتورهای حرفه‌ای
         </div>
       </div>
-    </section>
 
-    <section class="login-card-wrap">
-      <div class="login-card">
-        <div class="login-card-inner">
+      <div class="lv-stats">
+        <div class="lv-stat">
+          <strong>+۱۵۳</strong>
+          <span>پروژه موفق</span>
+        </div>
+        <div class="lv-stat">
+          <strong>+۸۶</strong>
+          <span>مشتری فعال</span>
+        </div>
+        <div class="lv-stat">
+          <strong>۹۸٪</strong>
+          <span>رضایت‌مندی</span>
+        </div>
+      </div>
 
-          <div class="login-card-header">
-            <div class="admin-avatar">ادم</div>
-            <h2 class="login-card-title">ورود به پنل مدیریت</h2>
-            <p class="login-card-subtitle">خوش برگشتی مهندس؛ اطلاعات ورودت رو وارد کن</p>
+    </div>
+  </div><!-- /login-visual -->
+
+
+  <!-- ══════════════════════════════════
+       RIGHT — Login Form
+  ══════════════════════════════════ -->
+  <div class="login-form-side">
+
+    <!-- Theme Toggle -->
+    <button class="login-theme-btn" id="themeToggle" title="تغییر تم" aria-label="تغییر تم">
+      <i class="bi bi-moon-stars-fill"></i>
+    </button>
+
+    <!-- Mobile logo -->
+    <a href="/" class="login-mobile-logo">
+      <div class="lml-icon">سل</div>
+      <span class="lml-text">سُل وب</span>
+    </a>
+
+    <div class="login-box">
+
+      <!-- Header -->
+      <div class="login-header fade-in-up delay-1">
+        <h1>خوش آمدید 👋</h1>
+        <p>برای ورود به پنل مدیریت، اطلاعات خود را وارد کنید</p>
+      </div>
+
+      <!-- Server error alert (در صورت وجود خطا از سرور نمایش داده می‌شود) -->
+      <div class="login-alert <%= locals.error ? 'show' : '' %>" id="loginAlert" role="alert">
+        <i class="bi bi-exclamation-circle-fill"></i>
+        <span id="alertText"><%= locals.error || 'ایمیل یا رمز عبور اشتباه است.' %></span>
+      </div>
+
+      <!-- Form -->
+      <form action="/sw-admin/login" method="POST" autocomplete="on" id="loginForm" novalidate>
+
+        <!-- Email / Username -->
+        <div class="form-row fade-in-up delay-2">
+          <label class="sol-label" for="email">ایمیل یا نام کاربری</label>
+          <div class="input-wrap" id="wrapEmail">
+            <i class="bi bi-person"></i>
+            <input
+              id="email"
+              name="email"
+              type="text"
+              class="form-control"
+              placeholder="ایمیل یا نام کاربری"
+              autocomplete="username"
+              required
+              value="<%= locals.email || '' %>"
+            >
           </div>
+          <p class="error-msg" id="emailError">لطفاً ایمیل یا نام کاربری را وارد کنید.</p>
+        </div>
 
-          <% if (typeof error !== 'undefined' && error) { %>
-            <div class="alert-login">
-              <i class="bi bi-exclamation-triangle-fill"></i>
-              <span><%= error %></span>
-            </div>
-          <% } %>
-
-          <form action="/sw-admin/login" method="POST" autocomplete="on">
-
-            <div class="form-row">
-              <label class="sol-label" for="email">ایمیل یا نام کاربری</label>
-              <div class="input-wrap">
-                <i class="bi bi-person"></i>
-                <input
-                id="email"
-                name="email"
-                type="text"
-                class="form-control"
-                placeholder="ایمیل یا نام کاربری"
-                required
-                >
-
-              </div>
-            </div>
-
-            <div class="form-row">
-              <label class="sol-label" for="password">رمز عبور</label>
-              <div class="input-wrap">
-                <i class="bi bi-lock"></i>
-                <input
-                  class="sol-input"
-                  id="password"
-                  name="password"
-                  type="password"
-                  placeholder="رمز عبور خود را وارد کنید"
-                  required
-                >
-                <button class="password-toggle" type="button" id="togglePassword" aria-label="نمایش رمز عبور">
-                  <i class="bi bi-eye"></i>
-                </button>
-              </div>
-            </div>
-
-            <div class="login-options">
-              <label class="remember-me">
-                <input type="checkbox" name="remember" value="1">
-                مرا به خاطر بسپار
-              </label>
-
-              <a href="/sw-admin/forgot-password" class="forgot-link">فراموشی رمز؟</a>
-            </div>
-
-            <button class="btn-sol-login" type="submit">
-              <i class="bi bi-box-arrow-in-left"></i>
-              ورود به داشبورد
+        <!-- Password -->
+        <div class="form-row fade-in-up delay-3">
+          <label class="sol-label" for="password">رمز عبور</label>
+          <div class="input-wrap" id="wrapPassword">
+            <i class="bi bi-lock"></i>
+            <input
+              class="sol-input"
+              id="password"
+              name="password"
+              type="password"
+              placeholder="رمز عبور خود را وارد کنید"
+              autocomplete="current-password"
+              required
+            >
+            <button
+              class="password-toggle"
+              type="button"
+              id="togglePassword"
+              aria-label="نمایش/مخفی رمز عبور"
+              title="نمایش/مخفی رمز عبور"
+            >
+              <i class="bi bi-eye" id="toggleIcon"></i>
             </button>
-
-          </form>
-
-          <div class="login-footer">
-            <span><i class="bi bi-cpu"></i> SoulWeb Admin v1.0</span>
-            <span class="security-badge"><i class="bi bi-check-circle-fill"></i> اتصال امن</span>
           </div>
-
+          <p class="error-msg" id="passwordError">لطفاً رمز عبور را وارد کنید.</p>
         </div>
-      </div>
-    </section>
 
-  </main>
+        <!-- Remember + Forgot -->
+        <div class="login-options fade-in-up delay-4">
+          <label class="remember-me">
+            <input type="checkbox" name="remember" value="1">
+            مرا به خاطر بسپار
+          </label>
+          <a href="/sw-admin/forgot-password" class="forgot-link">فراموشی رمز؟</a>
+        </div>
 
-  <script>
-    const togglePassword = document.getElementById('togglePassword');
-    const passwordInput = document.getElementById('password');
+        <!-- Submit -->
+        <button class="btn-sol-login fade-in-up delay-5" type="submit" id="submitBtn">
+          <span class="spinner"></span>
+          <i class="bi bi-box-arrow-in-left"></i>
+          ورود به داشبورد
+        </button>
 
-    if (togglePassword && passwordInput) {
-      togglePassword.addEventListener('click', function () {
-        const isPassword = passwordInput.type === 'password';
-        passwordInput.type = isPassword ? 'text' : 'password';
-        this.innerHTML = isPassword ? '<i class="bi bi-eye-slash"></i>' : '<i class="bi bi-eye"></i>';
-      });
+      </form>
+
+      <!-- Divider -->
+      <div class="login-divider fade-in-up delay-6">یا</div>
+
+      <!-- Go to site -->
+      <a
+        href="/"
+        style="
+          display:flex; align-items:center; justify-content:center; gap:.5rem;
+          width:100%; padding:.75rem; border-radius:var(--radius-md);
+          border:1.5px solid var(--color-border); background:transparent;
+          color:var(--color-text-muted); font-size:.85rem; font-weight:600;
+          text-decoration:none; transition:all var(--dur-fast);
+          font-family:var(--font-primary);
+        "
+        class="fade-in-up delay-6"
+        onmouseenter="this.style.background='var(--color-bg)';this.style.borderColor='var(--main-300)';this.style.color='var(--main-500)';"
+        onmouseleave="this.style.background='transparent';this.style.borderColor='var(--color-border)';this.style.color='var(--color-text-muted)';"
+      >
+        <i class="bi bi-globe2"></i>
+        بازگشت به وب‌سایت
+      </a>
+
+    </div><!-- /login-box -->
+
+    <!-- Footer -->
+    <div class="login-footer">
+      <span>© ۱۴۰۴ تیم سُل وب</span>
+      &nbsp;·&nbsp;
+      <a href="/privacy">حریم خصوصی</a>
+      &nbsp;·&nbsp;
+      <a href="/sw-admin/login">پشتیبانی</a>
+    </div>
+
+  </div><!-- /login-form-side -->
+
+</div><!-- /login-page -->
+
+
+<script src="../assets/js/admin.js"></script>
+<script src="../assets/js/script.js"></script>
+<script>
+(function () {
+  'use strict';
+
+  /* ── Theme Toggle ── */
+  const html      = document.documentElement;
+  const themeBtn  = document.getElementById('themeToggle');
+  const TKEY      = 'sol-admin-theme';
+
+  applyTheme(localStorage.getItem(TKEY) || 'light');
+
+  themeBtn.addEventListener('click', function () {
+    const next = html.getAttribute('data-bs-theme') === 'dark' ? 'light' : 'dark';
+    applyTheme(next);
+    localStorage.setItem(TKEY, next);
+  });
+
+  function applyTheme(t) {
+    html.setAttribute('data-bs-theme', t);
+    themeBtn.innerHTML = t === 'dark'
+      ? '<i class="bi bi-sun-fill"></i>'
+      : '<i class="bi bi-moon-stars-fill"></i>';
+  }
+
+  /* ── Password Toggle ── */
+  const toggleBtn  = document.getElementById('togglePassword');
+  const passInput  = document.getElementById('password');
+  const toggleIcon = document.getElementById('toggleIcon');
+
+  toggleBtn.addEventListener('click', function () {
+    const isHidden = passInput.type === 'password';
+    passInput.type = isHidden ? 'text' : 'password';
+    toggleIcon.className = isHidden ? 'bi bi-eye-slash' : 'bi bi-eye';
+    passInput.focus();
+  });
+
+  /* ── Client-side Validation ── */
+  const form        = document.getElementById('loginForm');
+  const emailInput  = document.getElementById('email');
+  const wrapEmail   = document.getElementById('wrapEmail');
+  const wrapPass    = document.getElementById('wrapPassword');
+  const submitBtn   = document.getElementById('submitBtn');
+  const loginAlert  = document.getElementById('loginAlert');
+
+  function clearError(wrap) {
+    wrap.classList.remove('has-error');
+  }
+
+  emailInput.addEventListener('input', function () { clearError(wrapEmail); });
+  passInput.addEventListener('input',  function () { clearError(wrapPass); });
+
+  form.addEventListener('submit', function (e) {
+    let valid = true;
+
+    /* بستن alert قبلی */
+    loginAlert.classList.remove('show');
+
+    /* اعتبارسنجی ایمیل */
+    if (!emailInput.value.trim()) {
+      wrapEmail.classList.add('has-error');
+      valid = false;
     }
-  </script>
+
+    /* اعتبارسنجی رمز عبور */
+    if (!passInput.value.trim()) {
+      wrapPass.classList.add('has-error');
+      valid = false;
+    }
+
+    if (!valid) {
+      e.preventDefault();
+      return;
+    }
+
+    /* نمایش loading روی دکمه */
+    submitBtn.classList.add('loading');
+    submitBtn.innerHTML = '<span class="spinner"></span>';
+  });
+
+  /* ── Shake animation روی خطای سرور ── */
+  <% if (locals.error) { %>
+    const box = document.querySelector('.login-box');
+    box.style.animation = 'none';
+    setTimeout(function () {
+      box.style.animation = 'shake .45s var(--ease-smooth)';
+    }, 0);
+  <% } %>
+
+})();
+</script>
+
+<style>
+  @keyframes shake {
+    0%,100% { transform: translateX(0); }
+    20%      { transform: translateX(-8px); }
+    40%      { transform: translateX(8px); }
+    60%      { transform: translateX(-5px); }
+    80%      { transform: translateX(5px); }
+  }
+</style>
 
 </body>
 </html>

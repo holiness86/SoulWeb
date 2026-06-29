@@ -169,51 +169,52 @@ app.get('/sw-admin' , requireAdminAuth , async (req, res) => {
 // ─────────────────────────────────────────
 //  ADMIN — PROJECTS
 // ─────────────────────────────────────────
-app.get('/sw-admin/projects' , requireAdminAuth , async (req, res) => {
+app.get('/sw-admin/projects', requireAdminAuth, async (req, res) => {
   try {
-    const { status, search } = req.query
 
+    const { status, search } = req.query
     const filter = {}
 
-    if (status) {
-      filter.status = status
-    }
+    if (status) filter.status = status
+    if (search) filter.title = { $regex: search, $options: 'i' }
 
-    if (search) {
-      filter.title = { $regex: search, $options: 'i' }
-    }
+    const projects = await Project.find(filter)
+      .populate('client', 'name company')
+      .populate('category', 'title slug')
+      .sort({ createdAt: -1 })
+      .lean()
 
-    const [projects, clients, serviceCategories] = await Promise.all([
-      Project.find(filter)
-        .populate('client', 'name company')
-        .populate('category', 'title slug')
-        .sort({ createdAt: -1 })
-        .lean(),
+    const clients = await Client.find({ isActive: true })
+      .sort({ name: 1 })
+      .lean()
 
-      Client.find({ isActive: true })
-        .sort({ name: 1 })
-        .lean(),
+    const serviceCategories = await Category.find({ type: 'service' }).lean()
+const kanbanColumns = [
+  { key: 'todo', title: 'در انتظار' },
+  { key: 'inprogress', title: 'در حال انجام' },
+  { key: 'review', title: 'در حال بررسی' },
+  { key: 'done', title: 'انجام‌شده' }
+];
 
-      Category.find({
-        type: 'service',
-        isActive: true
-      })
-        .sort({ order: 1 })
-        .lean()
-    ])
+const defaultTechOptions = ['HTML', 'CSS', 'JavaScript', 'Node.js', 'React', 'MongoDB'];
 
-    res.render('admin/Projects', {
-      projects,
-      clients,
-      serviceCategories,
-      query: req.query
-    })
+res.render('admin/projects', {
+  projects,
+  clients,
+  serviceCategories,
+  kanbanColumns,
+  defaultTechOptions,
+  query: req.query
+});
+
+
 
   } catch (err) {
     console.error(err)
     res.status(500).send('خطا در بارگذاری پروژه‌ها')
   }
 })
+
 
 
 // app.post('/sw-admin/projects', async (req, res) => {
@@ -1853,6 +1854,43 @@ app.post('/sw-admin/login', async (req, res) => {
   }
 });
 
+
+
+app.post('/sw-admin/categories/add', requireAdminAuth, async (req, res) => {
+  try {
+
+    const { title } = req.body
+
+    if (!title) {
+      return res.status(400).json({ error: 'عنوان الزامی است' })
+    }
+
+    const slug = title
+      .trim()
+      .toLowerCase()
+      .replace(/\s+/g, '-')
+
+    const category = await Category.create({
+      title: title.trim(),
+      slug,
+      type: 'service'
+    })
+
+    res.json({
+      success: true,
+      category
+    })
+
+  } catch (err) {
+
+    console.error(err)
+
+    res.status(500).json({
+      error: 'خطا در ساخت دسته‌بندی'
+    })
+
+  }
+})
 // ─────────────────────────────────────────
 //  404
 // ─────────────────────────────────────────

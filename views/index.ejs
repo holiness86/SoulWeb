@@ -17,6 +17,72 @@
       z-index: 9998;
       transition: width .1s linear;
     }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+    /* مخفی کردن موس اصلی */
+body{
+  cursor:none;
+}
+
+/* نقطه مرکزی */
+.cursor-dot{
+  width:6px;
+  height:6px;
+  background:#7c3aed;
+  border-radius:50%;
+  position:fixed;
+  pointer-events:none;
+  z-index:9999;
+  transform:translate(-50%,-50%);
+}
+
+/* حلقه بیرونی */
+.cursor-ring{
+  width:28px;
+  height:28px;
+  border:2px solid #7c3aed;
+  border-radius:50%;
+  position:fixed;
+  pointer-events:none;
+  z-index:9998;
+  transform:translate(-50%,-50%);
+  transition:
+    width .2s ease,
+    height .2s ease,
+    border-color .2s ease,
+    background .2s ease;
+}
+
+/* حالت hover */
+.cursor-hover{
+  width:45px !important;
+  height:45px !important;
+  background:rgba(124,58,237,0.1);
+}
+
   </style>
 </head>
 <body>
@@ -848,10 +914,57 @@
   <i class="bi bi-chevron-up"></i>
 </button>
 
-
+<div class="cursor-dot"></div>
+<div class="cursor-ring"></div>
 <!-- ═══════════ Scripts ═══════════ -->
 <script src="assets/js/jquery-3.7.1.min.js"></script>
 <script src="assets/js/bootstrap.bundle.min.js"></script>
 <script src="assets/js/script.js"></script>
+<script>
+  const dot = document.querySelector('.cursor-dot')
+const ring = document.querySelector('.cursor-ring')
+
+let mouseX = 0
+let mouseY = 0
+let ringX = 0
+let ringY = 0
+
+document.addEventListener('mousemove', e => {
+
+  mouseX = e.clientX
+  mouseY = e.clientY
+
+  dot.style.left = mouseX + 'px'
+  dot.style.top = mouseY + 'px'
+})
+
+function animate(){
+  ringX += (mouseX - ringX) * 0.15
+  ringY += (mouseY - ringY) * 0.15
+
+  ring.style.left = ringX + 'px'
+  ring.style.top = ringY + 'px'
+
+  requestAnimationFrame(animate)
+}
+
+animate()
+
+/* hover روی لینک و دکمه */
+const hoverItems = document.querySelectorAll('a, button')
+
+hoverItems.forEach(el => {
+
+  el.addEventListener('mouseenter', () => {
+    ring.classList.add('cursor-hover')
+  })
+
+  el.addEventListener('mouseleave', () => {
+    ring.classList.remove('cursor-hover')
+  })
+
+})
+
+</script>
 </body>
 </html>

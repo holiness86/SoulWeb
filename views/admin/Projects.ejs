@@ -1,9 +1,11 @@
 <%# views/sw-admin/projects.ejs %>
 <%- include('partials/_head', { title: 'مدیریت پروژه‌ها' }) %>
+
 <link rel="stylesheet" href="assets/css/jalalidatepicker.min.css">
 
 <div class="sidebar-overlay" id="sidebarOverlay"></div>
 <div class="admin-shell">
+
 
 <%- include('partials/_sidebar', { 
   activePage: 'projects', 
@@ -866,6 +868,20 @@
         </div>
       </div>
 
+<!--                                 -->
+      <div class="form-row">
+  <label class="sol-label">پیشرفت پروژه</label>
+  <input
+    class="sol-input"
+    type="number"
+    name="progress"
+    id="projectProgressInput"
+    min="0"
+    max="100"
+    placeholder="0 تا 100"
+  >
+</div>
+<!--                                 -->
       <div class="form-row">
         <label class="sol-label">توضیحات</label>
         <textarea 

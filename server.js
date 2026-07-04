@@ -61,7 +61,7 @@ const User      = require('./models/user.model')
 const Client    = require('./models/client.model')
 const Project   = require('./models/project.model')
 const Invoice   = require('./models/invoice.model')
-const Message   = require('./models/message.model')
+const Ticket    = require('./models/ticket.model')
 const Task      = require('./models/task.model')
 const Activity  = require('./models/activity.model')
 const Portfolio = require('./models/portfolio.model')
@@ -138,14 +138,14 @@ app.get('/sw-admin' , requireAdminAuth , async (req, res) => {
       activeProjects,
       totalClients,
       deliveredProjects,
-      unreadMessages,
+      openTickets,
       recentActivities,
       todayTasks
     ] = await Promise.all([
       Project.countDocuments({ status: 'active' }),
       Client.countDocuments({ isActive: true }),
       Project.countDocuments({ status: 'done' }),
-      Message.countDocuments({ isRead: false }),
+      Ticket.countDocuments({ status: 'open' }),
       Activity.find().sort({ createdAt: -1 }).limit(7),
       Task.find().sort({ createdAt: -1 }).limit(7)
     ])
@@ -155,7 +155,7 @@ app.get('/sw-admin' , requireAdminAuth , async (req, res) => {
         activeProjects,
         totalClients,
         deliveredProjects,
-        unreadMessages
+        openTickets
       },
       recentActivities,
       todayTasks
@@ -427,34 +427,45 @@ app.get('/sw-admin/clients/export' , requireAdminAuth , async (req, res) => {
 
 
 // ─────────────────────────────────────────
-//  ADMIN — MESSAGES
+//  ADMIN — TICKETS
 // ─────────────────────────────────────────
-app.get('/sw-admin/messages' , requireAdminAuth , async (req, res) => {
+app.get('/sw-admin/tickets', requireAdminAuth, async (req, res) => {
   try {
-    const messages = await Message.find()
+    const tickets = await Ticket.find()
       .populate('client', 'name')
       .sort({ createdAt: -1 })
-    res.render('admin/Messages', { messages })
+    res.render('admin/Tickets', { tickets })
   } catch (err) {
-    res.status(500).send('خطا در بارگذاری پیام‌ها')
+    res.status(500).send('خطا در بارگذاری تیکت‌ها')
   }
 })
 
-app.post('/sw-admin/messages/:id/read' , requireAdminAuth , async (req, res) => {
+app.post('/sw-admin/tickets/:id/status', requireAdminAuth, async (req, res) => {
   try {
-    await Message.findByIdAndUpdate(req.params.id, { isRead: true })
-    res.redirect('/sw-admin/messages')
+    // req.body.status باید یکی از مقادیر 'open' | 'pending' | 'closed' باشد
+    await Ticket.findByIdAndUpdate(req.params.id, { status: req.body.status })
+    res.redirect('/sw-admin/tickets')
   } catch (err) {
-    res.status(500).send('خطا')
+    res.status(500).send('خطا در تغییر وضعیت تیکت')
   }
 })
 
-app.post('/sw-admin/messages/:id/delete' , requireAdminAuth , async (req, res) => {
+app.post('/sw-admin/tickets/:id/priority', requireAdminAuth, async (req, res) => {
   try {
-    await Message.findByIdAndDelete(req.params.id)
-    res.redirect('/sw-admin/messages')
+    // req.body.priority باید یکی از مقادیر 'urgent' | 'medium' | 'low' باشد
+    await Ticket.findByIdAndUpdate(req.params.id, { priority: req.body.priority })
+    res.redirect('/sw-admin/tickets')
   } catch (err) {
-    res.status(500).send('خطا در حذف پیام')
+    res.status(500).send('خطا در تغییر اولویت تیکت')
+  }
+})
+
+app.post('/sw-admin/tickets/:id/delete', requireAdminAuth, async (req, res) => {
+  try {
+    await Ticket.findByIdAndDelete(req.params.id)
+    res.redirect('/sw-admin/tickets')
+  } catch (err) {
+    res.status(500).send('خطا در حذف تیکت')
   }
 })
 
@@ -1474,26 +1485,32 @@ app.post('/sw-admin/settings' , requireAdminAuth , async (req, res) => {
 // ─────────────────────────────────────────
 app.post('/contact' , requireAdminAuth , async (req, res) => {
   try {
-    const { name, email, phone, subject, body } = req.body
-    await Message.create({
-      senderName : name,
-      senderEmail: email,
-      senderPhone: phone  || '',
-      subject    : subject || '',
-      body,
-      source     : 'contact_form'
+    const { name, email, phone, subject, body, department } = req.body
+    await Ticket.create({
+      requesterName : name,
+      requesterEmail: email,
+      requesterPhone: phone  || '',
+      subject       : subject || 'بدون موضوع',
+      department    : department || 'general',
+      priority      : 'medium',
+      status        : 'open',
+      source        : 'contact_form',
+      messages: [{
+        sender : 'client',
+        body
+      }]
     })
 
     await Activity.create({
-      type        : 'message_received',
-      title       : `پیام جدید از ${name}`,
-      icon        : 'bi-chat-left-dots-fill',
+      type        : 'ticket_created',
+      title       : `تیکت جدید از ${name}`,
+      icon        : 'bi-ticket-detailed-fill',
       colorVariant: 'warning'
     })
 
-    res.json({ success: true, message: 'پیام شما با موفقیت ارسال شد' })
+    res.json({ success: true, message: 'تیکت شما با موفقیت ثبت شد' })
   } catch (err) {
-    res.status(500).json({ success: false, message: 'خطا در ارسال پیام' })
+    res.status(500).json({ success: false, message: 'خطا در ثبت تیکت' })
   }
 })
 

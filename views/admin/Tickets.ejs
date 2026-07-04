@@ -1,0 +1,404 @@
+<%- include('partials/_head', { title: 'تیکت‌های پشتیبانی' }) %>
+
+<div class="sidebar-overlay" id="sidebarOverlay"></div>
+<div class="admin-shell">
+
+<%- include('partials/_sidebar', {
+  activePage: 'tickets',
+  adminUser: { name: 'علی مدیری', role: 'مدیر کل سیستم', initials: 'ادم' }
+}) %>
+
+<div class="main-content" id="mainContent">
+<%- include('partials/_header', {
+  breadcrumbs: [{ label: 'داشبورد', href: '/sw-admin' }, { label: 'تیکت‌های پشتیبانی' }],
+  searchPlaceholder: 'جستجو در تیکت‌ها…'
+}) %>
+
+<main class="page-content">
+
+  <div class="page-header fade-up fade-up-1">
+    <div>
+      <h1 class="page-title">تیکت‌های پشتیبانی</h1>
+      <p class="page-subtitle">۵ تیکت باز · ۱۲ تیکت در حال بررسی · ۲۳ تیکت کل</p>
+    </div>
+    <button class="btn-sol-sm" data-modal-open="composeModal">
+      <i class="bi bi-plus-lg"></i> ایجاد تیکت جدید
+    </button>
+  </div>
+
+  <div class="msg-layout fade-up fade-up-2">
+
+    <!-- Sidebar Ticket List -->
+    <div class="msg-sidebar dash-panel">
+      <div class="msg-sidebar-header">
+        <div class="msg-search">
+          <i class="bi bi-search"></i>
+          <input type="text" placeholder="جستجو در تیکت‌ها…" id="msgSearch">
+        </div>
+        <div class="msg-tabs">
+          <button class="msg-tab active" data-tab="all">همه</button>
+          <button class="msg-tab" data-tab="open">باز <span class="msg-count">۵</span></button>
+          <button class="msg-tab" data-tab="pending">در حال بررسی</button>
+          <button class="msg-tab" data-tab="closed">بسته شده</button>
+        </div>
+      </div>
+      <div class="msg-list" id="msgList">
+        <%
+        const statusMeta = {
+          open:    { label:'باز',           cls:'tkt-badge-open'    },
+          pending: { label:'در حال بررسی',  cls:'tkt-badge-pending' },
+          closed:  { label:'بسته شده',      cls:'tkt-badge-closed'  }
+        };
+        const priorityMeta = {
+          urgent: { label:'فوری',   cls:'tkt-prio-urgent' },
+          medium: { label:'متوسط',  cls:'tkt-prio-medium' },
+          low:    { label:'کم',     cls:'tkt-prio-low'    }
+        };
+        const msgs = [
+          { id:1, ticketNo:'#TCK-1024', name:'محسن رضایی',  init:'محر', color:'var(--grad-main)',                         dept:'فنی',   sub:'مشکل در اتصال درگاه پرداخت', prev:'سلام، میخواستم یه چیزی بپرسم…', time:'الان',   status:'open',    priority:'urgent', active:true  },
+          { id:2, ticketNo:'#TCK-1023', name:'سارا طاهری',  init:'سار', color:'linear-gradient(135deg,#0090e8,#4dc3ff)', dept:'فنی',   sub:'درخواست تغییر طراحی هدر',    prev:'فقط یه تغییر کوچیک میخوام…',     time:'۲۰ د',   status:'pending', priority:'medium', active:false },
+          { id:3, ticketNo:'#TCK-1022', name:'رضا محمدی',   init:'رضا', color:'linear-gradient(135deg,#a394fb,#6447f4)', dept:'مالی',  sub:'تأیید پیش‌فاکتور',           prev:'پیش‌فاکتور رو دیدم، تأیید…',    time:'۱ س',    status:'open',    priority:'medium', active:false },
+          { id:4, ticketNo:'#TCK-1021', name:'علی امینی',   init:'علی', color:'linear-gradient(135deg,#22c55e,#0090e8)', dept:'عمومی', sub:'سوال درباره لانچ سایت',      prev:'سایت فروشگاه رو لانچ کردیم!',    time:'دیروز',  status:'closed',  priority:'low',     active:false },
+          { id:5, ticketNo:'#TCK-1020', name:'نگار صادقی',  init:'نگر', color:'linear-gradient(135deg,#f59e0b,#ef4444)', dept:'فنی',   sub:'اضافه کردن قابلیت بلاگ',     prev:'آیا امکان اضافه کردن بلاگ…',     time:'دیروز',  status:'pending', priority:'low',     active:false },
+          { id:6, ticketNo:'#TCK-1019', name:'کیانی لباس',  init:'کیا', color:'linear-gradient(135deg,#6447f4,#1e1274)', dept:'مالی',  sub:'پیگیری وضعیت فاکتور',        prev:'سلام، پروژه در چه مرحله‌ای…',    time:'۲ روز',  status:'open',    priority:'urgent', active:false },
+          { id:7, ticketNo:'#TCK-1018', name:'گروه پارسیان',init:'پار', color:'linear-gradient(135deg,#0090e8,#005896)', dept:'فنی',   sub:'باگ در صفحه ورود پرتال',     prev:'یه باگ پیدا کردیم در صفحه…',     time:'۳ روز',  status:'closed',  priority:'medium', active:false },
+        ]; %>
+        <% msgs.forEach(function(m){ const st = statusMeta[m.status]; const pr = priorityMeta[m.priority]; %>
+        <div class="msg-item tkt-item <%= m.status === 'open' ? 'unread' : '' %> <%= m.active ? 'active' : '' %>"
+             data-id="<%= m.id %>" data-status="<%= m.status %>">
+          <div class="msg-av" style="background:<%= m.color %>;"><%= m.init %></div>
+          <div class="msg-item-body">
+            <div class="msg-item-top">
+              <span class="msg-item-name"><%= m.name %></span>
+              <span class="msg-item-time"><%= m.time %></span>
+            </div>
+            <div class="tkt-item-meta">
+              <span class="tkt-no"><%= m.ticketNo %></span>
+              <span class="tkt-dept-tag"><%= m.dept %></span>
+            </div>
+            <div class="msg-item-sub"><%= m.sub %></div>
+            <div class="msg-item-prev"><%= m.prev %></div>
+            <div class="tkt-item-badges">
+              <span class="tkt-badge <%= st.cls %>"><%= st.label %></span>
+              <span class="tkt-prio <%= pr.cls %>"><i class="bi bi-flag-fill"></i> <%= pr.label %></span>
+            </div>
+          </div>
+        </div>
+        <% }); %>
+      </div>
+    </div>
+
+    <!-- Chat / Ticket Thread Area -->
+    <div class="msg-chat dash-panel">
+      <div class="msg-chat-header tkt-chat-header">
+        <div style="display:flex;align-items:center;gap:.85rem;">
+          <div class="msg-av" style="background:var(--grad-main);width:40px;height:40px;font-size:.82rem;">محر</div>
+          <div>
+            <div style="display:flex;align-items:center;gap:.5rem;">
+              <span style="font-weight:700;font-size:.9rem;">محسن رضایی</span>
+              <span class="tkt-no" style="font-size:.72rem;">#TCK-1024</span>
+            </div>
+            <div style="font-size:.73rem;color:var(--color-text-muted); display:flex; align-items:center; gap:.4rem; margin-top:.15rem;">
+              <span class="tkt-dept-tag"><i class="bi bi-tools"></i> فنی</span>
+              <span class="tkt-badge tkt-badge-open" id="currentStatusBadge">باز</span>
+              <span class="tkt-prio tkt-prio-urgent" id="currentPriorityBadge"><i class="bi bi-flag-fill"></i> فوری</span>
+            </div>
+          </div>
+        </div>
+        <div style="display:flex;gap:.5rem;">
+          <button class="hdr-btn" title="تغییر اولویت" id="btnChangePriority"><i class="bi bi-flag"></i></button>
+          <button class="hdr-btn" title="باز/بسته کردن تیکت" id="btnToggleStatus"><i class="bi bi-check2-circle"></i></button>
+          <button class="hdr-btn" title="بیشتر"><i class="bi bi-three-dots"></i></button>
+        </div>
+      </div>
+
+      <div class="msg-chat-body" id="chatBody">
+        <div class="msg-date-sep"><span>دیروز</span></div>
+
+        <div class="msg-bubble received">
+          <div class="bubble-sender"><i class="bi bi-person-circle"></i> محسن رضایی (کاربر)</div>
+          <div class="bubble-text">سلام! میخواستم درباره مشکل اتصال درگاه پرداخت یه سوال بپرسم.</div>
+          <div class="bubble-time">۱۴:۲۰</div>
+        </div>
+        <div class="msg-bubble sent">
+          <div class="bubble-sender"><i class="bi bi-headset"></i> تیم پشتیبانی (ادمین)</div>
+          <div class="bubble-text">سلام محسن جان! بفرمایید، چه مشکلی پیش اومده؟</div>
+          <div class="bubble-time">۱۴:۲۵</div>
+        </div>
+        <div class="msg-bubble received">
+          <div class="bubble-sender"><i class="bi bi-person-circle"></i> محسن رضایی (کاربر)</div>
+          <div class="bubble-text">درگاه زرین‌پال بعد از پرداخت، کاربر رو ریدایرکت نمی‌کنه. این عکس خطای مربوطه رو ببینید.</div>
+          <div class="bubble-attachment">
+            <i class="bi bi-file-earmark-image"></i>
+            <span class="att-name">error-screenshot.png</span>
+            <span class="att-size">۲۴۰ کیلوبایت</span>
+            <a href="#" class="att-download" title="دانلود"><i class="bi bi-download"></i></a>
+          </div>
+          <div class="bubble-time">۱۴:۲۸</div>
+        </div>
+        <div class="msg-bubble sent">
+          <div class="bubble-sender"><i class="bi bi-headset"></i> تیم پشتیبانی (ادمین)</div>
+          <div class="bubble-text">دریافت شد، تیم فنی در حال بررسی لاگ‌های تراکنش هستند.</div>
+          <div class="bubble-attachment">
+            <i class="bi bi-file-earmark-pdf"></i>
+            <span class="att-name">payment-log-report.pdf</span>
+            <span class="att-size">۱۱۰ کیلوبایت</span>
+            <a href="#" class="att-download" title="دانلود"><i class="bi bi-download"></i></a>
+          </div>
+          <div class="bubble-time">۱۴:۳۵</div>
+        </div>
+
+        <div class="msg-date-sep"><span>امروز</span></div>
+
+        <div class="msg-bubble received">
+          <div class="bubble-sender"><i class="bi bi-person-circle"></i> محسن رضایی (کاربر)</div>
+          <div class="bubble-text">خیلی ممنون! منتظر نتیجه بررسی هستم.</div>
+          <div class="bubble-time">۰۹:۱۵</div>
+        </div>
+        <div class="msg-bubble sent">
+          <div class="bubble-sender"><i class="bi bi-headset"></i> تیم پشتیبانی (ادمین)</div>
+          <div class="bubble-text">حتماً، به محض رفع مشکل شما رو در جریان می‌ذاریم 🙏</div>
+          <div class="bubble-time">۰۹:۲۰</div>
+        </div>
+        <div class="msg-bubble received">
+          <div class="bubble-sender"><i class="bi bi-person-circle"></i> محسن رضایی (کاربر)</div>
+          <div class="bubble-text">آیا امکان تست مجدد پرداخت الان هست؟</div>
+          <div class="bubble-time">الان</div>
+        </div>
+      </div>
+
+      <div class="msg-input-area">
+        <button class="hdr-btn" title="پیوست فایل"><i class="bi bi-paperclip"></i></button>
+        <div class="msg-input-box">
+          <input type="text" id="msgInput" placeholder="پاسخ خود را به عنوان پشتیبانی بنویسید…">
+        </div>
+        <button class="msg-emoji-btn" title="ایموجی"><i class="bi bi-emoji-smile"></i></button>
+        <button class="btn-sol-sm msg-send-btn" id="msgSend">
+          <i class="bi bi-send-fill"></i>
+        </button>
+      </div>
+    </div>
+
+  </div>
+
+</main>
+</div>
+</div>
+
+<!-- Modal: ایجاد تیکت جدید از طرف مدیریت -->
+<div class="modal-overlay" id="composeModal">
+  <div class="modal-box">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1.5rem;">
+      <div class="modal-title" style="margin:0;">ایجاد تیکت جدید از طرف مدیریت</div>
+      <button data-modal-close style="background:transparent;border:none;font-size:1.2rem;color:var(--color-text-muted);cursor:pointer;"><i class="bi bi-x-lg"></i></button>
+    </div>
+    <div class="form-row">
+      <label class="sol-label">کاربر</label>
+      <select class="sol-select" style="width:100%">
+        <option>انتخاب کاربر…</option>
+        <option>محسن رضایی — آفیلیو</option>
+        <option>علی امینی — اسیل</option>
+        <option>سارا طاهری — نگاه</option>
+        <option>رضا محمدی — آوا</option>
+      </select>
+    </div>
+    <div class="form-row" style="display:flex; gap:.75rem;">
+      <div style="flex:1;">
+        <label class="sol-label">دپارتمان</label>
+        <select class="sol-select" style="width:100%">
+          <option value="fni">فنی</option>
+          <option value="mali">مالی</option>
+          <option value="sale">فروش</option>
+        </select>
+      </div>
+      <div style="flex:1;">
+        <label class="sol-label">اولویت</label>
+        <select class="sol-select" style="width:100%">
+          <option value="urgent">فوری</option>
+          <option value="medium" selected>متوسط</option>
+          <option value="low">کم</option>
+        </select>
+      </div>
+    </div>
+    <div class="form-row">
+      <label class="sol-label">موضوع تیکت</label>
+      <input class="sol-input" type="text" placeholder="موضوع تیکت را بنویسید…">
+    </div>
+    <div class="form-row">
+      <label class="sol-label">متن اولین پیام</label>
+      <textarea class="sol-input" rows="5" placeholder="شرح مشکل یا درخواست را بنویسید…" style="resize:vertical;"></textarea>
+    </div>
+    <div style="display:flex;gap:.75rem;justify-content:flex-end;margin-top:1.5rem;">
+      <button class="btn-ghost-sm" data-modal-close>انصراف</button>
+      <button class="btn-sol-sm"><i class="bi bi-plus-lg"></i> ایجاد تیکت</button>
+    </div>
+  </div>
+</div>
+
+<%- include('partials/_scripts', { extraScripts: `
+<style>
+.msg-layout { display:grid; grid-template-columns:320px 1fr; gap:1.25rem; height:calc(100vh - 180px); min-height:500px; }
+@media(max-width:900px){ .msg-layout{ grid-template-columns:1fr; } .msg-sidebar{ display:none; } }
+.msg-sidebar { display:flex; flex-direction:column; overflow:hidden; }
+.msg-sidebar-header { padding:.85rem 1rem; border-bottom:1px solid var(--color-border); flex-shrink:0; }
+.msg-search { display:flex; align-items:center; gap:.5rem; background:var(--color-bg); border:1.5px solid var(--color-border); border-radius:var(--radius-md); padding:.38rem .85rem; margin-bottom:.75rem; }
+.msg-search i { color:var(--color-text-light); font-size:.82rem; }
+.msg-search input { border:none; background:transparent; outline:none; font-family:var(--font-primary); font-size:.82rem; color:var(--color-text-primary); width:100%; }
+.msg-tabs { display:flex; gap:.35rem; flex-wrap:wrap; }
+.msg-tab { flex:1; font-family:var(--font-primary); font-size:.72rem; font-weight:600; padding:.38rem .5rem; border:1.5px solid var(--color-border); border-radius:var(--radius-sm); background:transparent; color:var(--color-text-muted); cursor:pointer; transition:all var(--dur-fast); display:flex; align-items:center; justify-content:center; gap:.3rem; white-space:nowrap; }
+.msg-tab.active { background:var(--main-500); border-color:var(--main-500); color:#fff; }
+.msg-count { background:rgba(255,255,255,.3); color:#fff; font-size:.62rem; padding:.05rem .35rem; border-radius:99px; }
+.msg-list { flex:1; overflow-y:auto; }
+.msg-item { display:flex; align-items:flex-start; gap:.75rem; padding:.85rem 1rem; cursor:pointer; transition:background var(--dur-fast); border-bottom:1px solid var(--color-border); position:relative; }
+.msg-item:hover { background:var(--color-bg); }
+.msg-item.active { background:rgba(100,71,244,.07); border-right:3px solid var(--main-500); }
+.msg-item.unread .msg-item-name { font-weight:800; color:var(--color-text-primary); }
+.msg-av { width:36px; height:36px; border-radius:var(--radius-sm); display:flex; align-items:center; justify-content:center; font-size:.7rem; font-weight:800; color:#fff; flex-shrink:0; }
+.msg-item-body { flex:1; min-width:0; }
+.msg-item-top { display:flex; justify-content:space-between; align-items:center; margin-bottom:.15rem; }
+.msg-item-name { font-size:.82rem; font-weight:600; color:var(--color-text-primary); }
+.msg-item-time { font-size:.68rem; color:var(--color-text-light); white-space:nowrap; }
+.msg-item-sub { font-size:.77rem; font-weight:600; color:var(--color-text-muted); margin-bottom:.1rem; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.msg-item-prev { font-size:.72rem; color:var(--color-text-light); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; margin-bottom:.4rem; }
+
+/* Ticket-specific meta */
+.tkt-item-meta { display:flex; align-items:center; gap:.4rem; margin-bottom:.2rem; }
+.tkt-no { font-size:.68rem; font-weight:700; color:var(--main-500); font-family:var(--font-mono); }
+.tkt-dept-tag { font-size:.66rem; font-weight:600; color:var(--color-text-muted); background:var(--color-bg); border:1px solid var(--color-border); border-radius:var(--radius-sm); padding:.05rem .5rem; display:inline-flex; align-items:center; gap:.25rem; }
+.tkt-item-badges { display:flex; align-items:center; gap:.4rem; flex-wrap:wrap; }
+.tkt-badge { font-size:.65rem; font-weight:700; padding:.15rem .55rem; border-radius:var(--radius-full); display:inline-block; }
+.tkt-badge-open { background:rgba(34,197,94,.12); color:#16a34a; }
+.tkt-badge-pending { background:rgba(245,158,11,.14); color:#b45309; }
+.tkt-badge-closed { background:rgba(108,117,125,.14); color:var(--color-text-muted); }
+.tkt-prio { font-size:.65rem; font-weight:700; display:inline-flex; align-items:center; gap:.25rem; }
+.tkt-prio-urgent { color:#ef4444; }
+.tkt-prio-medium { color:#f59e0b; }
+.tkt-prio-low { color:var(--color-text-light); }
+
+.msg-chat { display:flex; flex-direction:column; overflow:hidden; }
+.msg-chat-header { display:flex; align-items:center; justify-content:space-between; padding:.85rem 1.25rem; border-bottom:1px solid var(--color-border); flex-shrink:0; }
+.msg-chat-body { flex:1; overflow-y:auto; padding:1.25rem; display:flex; flex-direction:column; gap:.65rem; }
+.msg-date-sep { text-align:center; position:relative; margin:.5rem 0; }
+.msg-date-sep::before { content:''; position:absolute; top:50%; right:0; left:0; height:1px; background:var(--color-border); }
+.msg-date-sep span { position:relative; background:var(--color-surface); padding:0 .75rem; font-size:.7rem; color:var(--color-text-light); }
+.msg-bubble { display:flex; flex-direction:column; max-width:65%; }
+.msg-bubble.received { align-self:flex-start; align-items:flex-start; }
+.msg-bubble.sent { align-self:flex-end; align-items:flex-end; }
+.bubble-sender { font-size:.68rem; font-weight:700; color:var(--color-text-muted); margin-bottom:.25rem; display:flex; align-items:center; gap:.3rem; }
+.msg-bubble.received .bubble-sender { color:var(--accent-600); }
+.msg-bubble.sent .bubble-sender { color:var(--main-500); }
+.bubble-text { padding:.65rem 1rem; border-radius:var(--radius-lg); font-size:.84rem; line-height:1.55; }
+.msg-bubble.received .bubble-text { background:var(--color-bg); border-bottom-right-radius:.35rem; color:var(--color-text-primary); border:1.5px solid var(--color-border); }
+.msg-bubble.sent .bubble-text { background:var(--grad-main); color:#fff; border-bottom-left-radius:.35rem; }
+.bubble-time { font-size:.67rem; color:var(--color-text-light); margin-top:.25rem; padding:0 .25rem; }
+.bubble-attachment { display:flex; align-items:center; gap:.5rem; margin-top:.4rem; padding:.5rem .75rem; border-radius:var(--radius-md); background:var(--color-surface); border:1.5px solid var(--color-border); font-size:.75rem; max-width:100%; }
+.msg-bubble.sent .bubble-attachment { background:rgba(255,255,255,.15); border-color:rgba(255,255,255,.3); color:#fff; }
+.bubble-attachment i.bi-file-earmark-image,
+.bubble-attachment i.bi-file-earmark-pdf { font-size:1.1rem; color:var(--main-500); flex-shrink:0; }
+.msg-bubble.sent .bubble-attachment i.bi-file-earmark-image,
+.msg-bubble.sent .bubble-attachment i.bi-file-earmark-pdf { color:#fff; }
+.att-name { font-weight:600; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; flex:1; }
+.att-size { color:var(--color-text-light); white-space:nowrap; font-size:.68rem; }
+.msg-bubble.sent .att-size { color:rgba(255,255,255,.75); }
+.att-download { color:var(--main-500); flex-shrink:0; }
+.msg-bubble.sent .att-download { color:#fff; }
+
+.msg-input-area { display:flex; align-items:center; gap:.65rem; padding:.85rem 1.25rem; border-top:1px solid var(--color-border); flex-shrink:0; }
+.msg-input-box { flex:1; background:var(--color-bg); border:1.5px solid var(--color-border); border-radius:var(--radius-full); padding:.5rem 1.1rem; transition:all var(--dur-fast); }
+.msg-input-box:focus-within { border-color:var(--main-400); box-shadow:0 0 0 3px rgba(100,71,244,.1); }
+.msg-input-box input { border:none; background:transparent; outline:none; font-family:var(--font-primary); font-size:.85rem; color:var(--color-text-primary); width:100%; }
+.msg-emoji-btn { background:transparent; border:none; font-size:1.1rem; color:var(--color-text-light); cursor:pointer; transition:color var(--dur-fast); }
+.msg-emoji-btn:hover { color:var(--main-500); }
+.msg-send-btn { border-radius:var(--radius-full) !important; padding:.5rem .9rem !important; }
+</style>
+<script>
+// send on click / enter
+const msgSend = document.getElementById('msgSend');
+const msgInput = document.getElementById('msgInput');
+const chatBody = document.getElementById('chatBody');
+
+function sendMessage() {
+  const val = msgInput.value.trim();
+  if(!val) return;
+  const now = new Date();
+  const time = now.getHours().toString().padStart(2,'0') + ':' + now.getMinutes().toString().padStart(2,'0');
+  const bubble = document.createElement('div');
+  bubble.className = 'msg-bubble sent';
+  bubble.innerHTML = '<div class="bubble-sender"><i class="bi bi-headset"></i> تیم پشتیبانی (ادمین)</div><div class="bubble-text">' + val + '</div><div class="bubble-time">' + time + '</div>';
+  chatBody.appendChild(bubble);
+  chatBody.scrollTop = chatBody.scrollHeight;
+  msgInput.value = '';
+}
+msgSend.addEventListener('click', sendMessage);
+msgInput.addEventListener('keydown', function(e){ if(e.key==='Enter') sendMessage(); });
+chatBody.scrollTop = chatBody.scrollHeight;
+
+// list filter — search
+document.getElementById('msgSearch').addEventListener('input', function(){
+  const q = this.value.toLowerCase();
+  document.querySelectorAll('.msg-item').forEach(function(item){
+    item.style.display = item.textContent.toLowerCase().includes(q) ? '' : 'none';
+  });
+});
+
+// tab switch — filter by ticket status
+document.querySelectorAll('.msg-tab').forEach(function(tab){
+  tab.addEventListener('click', function(){
+    document.querySelectorAll('.msg-tab').forEach(t=>t.classList.remove('active'));
+    this.classList.add('active');
+
+    const filter = this.getAttribute('data-tab');
+    document.querySelectorAll('.msg-item').forEach(function(item){
+      const status = item.getAttribute('data-status');
+      item.style.display = (filter === 'all' || status === filter) ? '' : 'none';
+    });
+
+    // reset search box when switching tabs
+    const searchInput = document.getElementById('msgSearch');
+    if (searchInput.value) searchInput.value = '';
+  });
+});
+
+// select ticket item -> mark active
+document.querySelectorAll('.msg-item').forEach(function(item){
+  item.addEventListener('click', function(){
+    document.querySelectorAll('.msg-item').forEach(i => i.classList.remove('active'));
+    this.classList.add('active');
+  });
+});
+
+// toggle ticket status (open/closed) from chat header
+const btnToggleStatus = document.getElementById('btnToggleStatus');
+const currentStatusBadge = document.getElementById('currentStatusBadge');
+if (btnToggleStatus && currentStatusBadge) {
+  btnToggleStatus.addEventListener('click', function(){
+    const isOpen = currentStatusBadge.textContent.trim() === 'باز';
+    if (isOpen) {
+      currentStatusBadge.textContent = 'بسته شده';
+      currentStatusBadge.className = 'tkt-badge tkt-badge-closed';
+    } else {
+      currentStatusBadge.textContent = 'باز';
+      currentStatusBadge.className = 'tkt-badge tkt-badge-open';
+    }
+  });
+}
+
+// cycle priority from chat header
+const btnChangePriority = document.getElementById('btnChangePriority');
+const currentPriorityBadge = document.getElementById('currentPriorityBadge');
+if (btnChangePriority && currentPriorityBadge) {
+  const priorityCycle = [
+    { label:'فوری',  cls:'tkt-prio tkt-prio-urgent' },
+    { label:'متوسط', cls:'tkt-prio tkt-prio-medium' },
+    { label:'کم',    cls:'tkt-prio tkt-prio-low'    }
+  ];
+  let priorityIndex = 0;
+  btnChangePriority.addEventListener('click', function(){
+    priorityIndex = (priorityIndex + 1) % priorityCycle.length;
+    const p = priorityCycle[priorityIndex];
+    currentPriorityBadge.className = p.cls;
+    currentPriorityBadge.innerHTML = '<i class="bi bi-flag-fill"></i> ' + p.label;
+  });
+}
+</script>
+`}) %>

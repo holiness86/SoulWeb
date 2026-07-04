@@ -57,20 +57,6 @@
   <option value="inactive">غیرفعال</option>
 </select>
 
-<select class="sol-select" style="width:auto;" id="categoryFilter">
-  <option value="all">همه دسته‌ها</option>
-
-  <% if (categories && categories.length) { %>
-    <% categories.forEach(category => { %>
-      <option value="<%= category._id.toString() %>">
-        <%= category.title %>
-      </option>
-    <% }) %>
-  <% } %>
-</select>
-
-
-
   </div>
 
   <!-- Clients Table -->
@@ -117,7 +103,6 @@
 
 <tr 
   data-status="<%= client.isActive ? 'active' : 'inactive' %>"
-  data-category="<%= client.category ? client.category._id.toString() : '' %>"
 >
               <td>
                 <div style="display:flex;align-items:center;gap:.75rem;">
@@ -192,7 +177,6 @@
   data-created-at="<%= client.createdAt ? client.createdAt.toISOString() : '' %>"
   data-projects-count="<%= client.projectsCount || 0 %>"
   data-rating="<%= client.rating || '★★★★★' %>"
-  data-category="<%= client.category ? client.category.title : '---' %>"
   data-project="<%= client.projectTitle || '---' %>"
 >
   <i class="bi bi-eye"></i>
@@ -202,7 +186,8 @@
 
 
                   <button
-                    class="btn-ghost-sm"
+                    class="btn-ghost-sm btn-edit-client"
+                    type="button"
                     style="padding:.28rem .6rem;"
                     data-id="<%= client._id %>"
                     data-name="<%= client.name || '' %>"
@@ -211,8 +196,7 @@
                     data-phone="<%= client.phone || '' %>"
                     data-address="<%= client.address || '' %>"
                     data-notes="<%= client.notes || '' %>"
-                    data-active="<%= client.isActive %>"
-                    data-category="<%= client.avatar || '' %>"
+                    data-active="<%= client.isActive ? 'true' : 'false' %>"
                   >
                     <i class="bi bi-pencil"></i>
                   </button>
@@ -328,19 +312,10 @@
         <label class="sol-label">شماره تماس</label>
         <input class="sol-input" type="tel" placeholder="۰۹۱۲۱۲۳۴۵۶۷" name="phone">
       </div>
-        <div class="form-row">
-          <label class="sol-label">نوع همکاری</label>
-
-          <select class="sol-select" style="width:100%" name="category">
-            <option value="">انتخاب کنید</option>
-            <% categories.forEach(cat => { %>
-              <option value="<%= cat._id %>">
-                <%= cat.title %>
-              </option>
-            <% }) %>
-          </select>
-
-        </div>
+      <div class="form-row">
+        <label class="sol-label">آدرس</label>
+        <input class="sol-input" type="text" placeholder="آدرس مشتری" name="address">
+      </div>
       <div class="form-row">
         <label class="sol-label">یادداشت</label>
         <textarea class="sol-input" rows="2" placeholder="یادداشت اختیاری…" style="resize:vertical;" name="notes"></textarea>
@@ -352,6 +327,49 @@
     </div>
   </div>
 </form>
+
+<!-- Modal: ویرایش اطلاعات مشتری -->
+<form method="post" action="/sw-admin/clients/EDIT_CLIENT_ID?_method=PUT" id="editClientForm">
+  <div class="modal-overlay" id="editClientModal">
+    <div class="modal-box">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1.5rem;">
+        <div class="modal-title" style="margin:0;">ویرایش اطلاعات مشتری</div>
+        <button type="button" data-modal-close style="background:transparent;border:none;font-size:1.2rem;color:var(--color-text-muted);cursor:pointer;"><i class="bi bi-x-lg"></i></button>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;">
+        <div class="form-row">
+          <label class="sol-label">نام</label>
+          <input class="sol-input" type="text" placeholder="نام مشتری" name="name" id="editClientName">
+        </div>
+        <div class="form-row">
+          <label class="sol-label">نام شرکت</label>
+          <input class="sol-input" type="text" placeholder="نام شرکت یا برند" name="company" id="editClientCompany">
+        </div>
+      </div>
+      <div class="form-row">
+        <label class="sol-label">ایمیل</label>
+        <input class="sol-input" type="email" placeholder="example@domain.com" name="email" id="editClientEmail">
+      </div>
+      <div class="form-row">
+        <label class="sol-label">شماره تماس</label>
+        <input class="sol-input" type="tel" placeholder="۰۹۱۲۱۲۳۴۵۶۷" name="phone" id="editClientPhone">
+      </div>
+      <div class="form-row">
+        <label class="sol-label">آدرس</label>
+        <input class="sol-input" type="text" placeholder="آدرس مشتری" name="address" id="editClientAddress">
+      </div>
+      <div class="form-row">
+        <label class="sol-label">یادداشت</label>
+        <textarea class="sol-input" rows="2" placeholder="یادداشت اختیاری…" style="resize:vertical;" name="notes" id="editClientNotes"></textarea>
+      </div>
+      <div style="display:flex;gap:.75rem;justify-content:flex-end;margin-top:1.5rem;">
+        <button type="button" class="btn-ghost-sm" data-modal-close>انصراف</button>
+        <button class="btn-sol-sm" type="submit"><i class="bi bi-check-lg"></i> ذخیره تغییرات</button>
+      </div>
+    </div>
+  </div>
+</form>
+
 <!-- Modal: جزئیات مشتری -->
 <div class="modal-overlay" id="clientDetail">
   <div class="modal-box" style="width:min(620px,92vw);">
@@ -438,11 +456,6 @@
     </div>
 
     <div style="display:flex;flex-direction:column;gap:.5rem;">
-
-      <div style="display:flex;align-items:center;justify-content:space-between;padding:.7rem .9rem;background:var(--color-bg);border-radius:var(--radius-md);gap:1rem;">
-        <span style="font-size:.83rem;font-weight:600;">نوع همکاری</span>
-        <span id="detailCategory" style="font-size:.8rem;color:var(--color-text-muted);">-</span>
-      </div>
 
       <div style="display:flex;align-items:center;justify-content:space-between;padding:.7rem .9rem;background:var(--color-bg);border-radius:var(--radius-md);gap:1rem;">
         <span style="font-size:.83rem;font-weight:600;">آدرس</span>
@@ -628,24 +641,20 @@ function getRatingNumber(rating) {
 
 const clientSearch = document.getElementById('clientSearch');
 const statusFilter = document.getElementById('statusFilter');
-const categoryFilter = document.getElementById('categoryFilter');
 const clientRows = document.querySelectorAll('#clientsTable tbody tr');
 
 function filterClientsTable() {
   const searchValue = normalizeText(clientSearch ? clientSearch.value : '');
   const statusValue = statusFilter ? statusFilter.value : 'all';
-  const categoryValue = categoryFilter ? categoryFilter.value : 'all';
 
   clientRows.forEach(function(row) {
     const rowText = normalizeText(row.textContent);
     const rowStatus = row.dataset.status || '';
-    const rowCategory = row.dataset.category || '';
 
     const matchesSearch = rowText.includes(searchValue);
     const matchesStatus = statusValue === 'all' || rowStatus === statusValue;
-    const matchesCategory = categoryValue === 'all' || rowCategory === categoryValue;
 
-    row.style.display = matchesSearch && matchesStatus && matchesCategory ? '' : 'none';
+    row.style.display = matchesSearch && matchesStatus ? '' : 'none';
   });
 }
 
@@ -655,10 +664,6 @@ if (clientSearch) {
 
 if (statusFilter) {
   statusFilter.addEventListener('change', filterClientsTable);
-}
-
-if (categoryFilter) {
-  categoryFilter.addEventListener('change', filterClientsTable);
 }
 
 /* =========================
@@ -675,7 +680,6 @@ viewClientButtons.forEach(function(button) {
     const phone = this.dataset.phone || '-';
     const address = this.dataset.address || '-';
     const notes = this.dataset.notes || '-';
-    const category = this.dataset.category || '-';
     const isActive = this.dataset.active === 'true';
     const createdAt = this.dataset.createdAt || '';
     const projectsCount = this.dataset.projectsCount || '0';
@@ -689,7 +693,6 @@ viewClientButtons.forEach(function(button) {
     const detailProjectsCount = document.getElementById('detailProjectsCount');
     const detailSatisfaction = document.getElementById('detailSatisfaction');
     const detailCooperationTime = document.getElementById('detailCooperationTime');
-    const detailCategory = document.getElementById('detailCategory');
     const detailAddress = document.getElementById('detailAddress');
     const detailNotes = document.getElementById('detailNotes');
     const editClientFromDetail = document.getElementById('editClientFromDetail');
@@ -725,10 +728,6 @@ viewClientButtons.forEach(function(button) {
       detailCooperationTime.textContent = calculateCooperationTime(createdAt);
     }
 
-    if (detailCategory) {
-      detailCategory.textContent = category;
-    }
-
     if (detailAddress) {
       detailAddress.textContent = address;
     }
@@ -739,8 +738,111 @@ viewClientButtons.forEach(function(button) {
 
     if (editClientFromDetail) {
       editClientFromDetail.dataset.clientId = clientId;
+      editClientFromDetail.dataset.name = name;
+      editClientFromDetail.dataset.company = company;
+      editClientFromDetail.dataset.email = email;
+      editClientFromDetail.dataset.phone = phone;
+      editClientFromDetail.dataset.address = address;
+      editClientFromDetail.dataset.notes = notes;
     }
   });
 });
+
+/* =========================
+   Edit Client Modal
+========================= */
+
+function fillEditClientModal(data) {
+  const editClientForm = document.getElementById('editClientForm');
+  const editClientName = document.getElementById('editClientName');
+  const editClientCompany = document.getElementById('editClientCompany');
+  const editClientEmail = document.getElementById('editClientEmail');
+  const editClientPhone = document.getElementById('editClientPhone');
+  const editClientAddress = document.getElementById('editClientAddress');
+  const editClientNotes = document.getElementById('editClientNotes');
+
+  if (editClientForm && data.id) {
+    editClientForm.setAttribute('action', '/sw-admin/clients/' + data.id + '?_method=PUT');
+  }
+
+  if (editClientName) editClientName.value = data.name === '-' ? '' : (data.name || '');
+  if (editClientCompany) editClientCompany.value = data.company === '-' ? '' : (data.company || '');
+  if (editClientEmail) editClientEmail.value = data.email === '-' ? '' : (data.email || '');
+  if (editClientPhone) editClientPhone.value = data.phone === '-' ? '' : (data.phone || '');
+  if (editClientAddress) editClientAddress.value = data.address === '-' ? '' : (data.address || '');
+  if (editClientNotes) editClientNotes.value = data.notes === '-' ? '' : (data.notes || '');
+}
+
+function openModalById(modalId) {
+  const modalEl = document.getElementById(modalId);
+  if (!modalEl) return;
+
+  if (typeof window.openModal === 'function') {
+    window.openModal(modalId);
+    return;
+  }
+
+  const trigger = document.createElement('button');
+  trigger.setAttribute('data-modal-open', modalId);
+  trigger.style.display = 'none';
+  document.body.appendChild(trigger);
+  trigger.click();
+  trigger.remove();
+}
+
+function closeModalById(modalId) {
+  const modalEl = document.getElementById(modalId);
+  if (!modalEl) return;
+
+  if (typeof window.closeModal === 'function') {
+    window.closeModal(modalId);
+    return;
+  }
+
+  const closer = modalEl.querySelector('[data-modal-close]');
+  if (closer) {
+    closer.click();
+  } else {
+    modalEl.classList.remove('active', 'show', 'open');
+  }
+}
+
+const editClientButtons = document.querySelectorAll('.btn-edit-client');
+
+editClientButtons.forEach(function(button) {
+  button.addEventListener('click', function() {
+    fillEditClientModal({
+      id: this.dataset.id || '',
+      name: this.dataset.name || '',
+      company: this.dataset.company || '',
+      email: this.dataset.email || '',
+      phone: this.dataset.phone || '',
+      address: this.dataset.address || '',
+      notes: this.dataset.notes || ''
+    });
+
+    openModalById('editClientModal');
+  });
+});
+
+const editClientFromDetailBtn = document.getElementById('editClientFromDetail');
+
+if (editClientFromDetailBtn) {
+  editClientFromDetailBtn.addEventListener('click', function() {
+    const data = {
+      id: this.dataset.clientId || '',
+      name: this.dataset.name || '',
+      company: this.dataset.company || '',
+      email: this.dataset.email || '',
+      phone: this.dataset.phone || '',
+      address: this.dataset.address || '',
+      notes: this.dataset.notes || ''
+    };
+
+    closeModalById('clientDetail');
+    fillEditClientModal(data);
+    openModalById('editClientModal');
+  });
+}
 <\/script>
 ` }) %>

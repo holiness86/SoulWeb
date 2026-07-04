@@ -49,6 +49,40 @@ function requireAdminAuth(req, res, next) {
   }
   next();
 }
+
+
+
+
+const toEnglishDigits = (str) => {
+  if (!str) return str
+  const persianDigits = '۰۱۲۳۴۵۶۷۸۹'
+  const arabicDigits  = '٠١٢٣٤٥٦٧٨٩'
+  return String(str)
+    .replace(/[۰-۹]/g, d => persianDigits.indexOf(d))
+    .replace(/[٠-٩]/g, d => arabicDigits.indexOf(d))
+}
+
+const normalizeDate = (value) => {
+  if (!value) return null
+  const cleaned = toEnglishDigits(value).trim()
+  const parsed = moment(cleaned, 'jYYYY/jMM/jDD')
+  if (!parsed.isValid()) return null
+  return parsed.locale('en').toDate()
+}
+
+const normalizeTechStack = (value) => {
+  if (!value) return []
+  if (Array.isArray(value)) {
+    return value.map(item => String(item).trim()).filter(Boolean)
+  }
+  return String(value).split(/[,،·|]/).map(item => item.trim()).filter(Boolean)
+}
+
+const normalizeProgress = (value) => {
+  const num = parseInt(toEnglishDigits(value), 10)
+  if (Number.isNaN(num)) return 0
+  return Math.max(0, Math.min(100, num))
+}
 // browser = await puppeteer.launch({
 //   executablePath: 'C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe',
 //   headless: true
@@ -251,18 +285,49 @@ res.render('admin/projects', {
 //   }
 // })
 
-app.post('/sw-admin/projects/:id/update' , requireAdminAuth , async (req, res) => {
+app.post('/sw-admin/projects/:id/update', requireAdminAuth, async (req, res) => {
   try {
-    const { title, status, progress, deadline } = req.body
-    await Project.findByIdAndUpdate(req.params.id, {
+    const {
       title,
+      client,
+      category,
       status,
-      progress: Number(progress),
-      deadline: deadline || null
+      progress,
+      startDate,
+      deadline,
+      techStack,
+      description
+    } = req.body
+
+    if (!title || !client || !category) {
+      return res.status(400).send('نام پروژه، مشتری و نوع پروژه الزامی هستند')
+    }
+
+    const parsedStartDate = normalizeDate(startDate)
+    const parsedDeadline  = normalizeDate(deadline)
+
+    if (startDate && !parsedStartDate) {
+      return res.status(400).send('تاریخ شروع نامعتبر است')
+    }
+    if (deadline && !parsedDeadline) {
+      return res.status(400).send('تاریخ ددلاین نامعتبر است')
+    }
+
+    await Project.findByIdAndUpdate(req.params.id, {
+      title: title.trim(),
+      client,
+      category,
+      status,
+      progress: normalizeProgress(progress),
+      startDate: parsedStartDate,
+      deadline: parsedDeadline,
+      techStack: normalizeTechStack(techStack),
+      description: description ? description.trim() : ''
     })
+
     res.redirect('/sw-admin/projects')
   } catch (err) {
-    console.error(err)
+    console.error('Project update error:', err)
     res.status(500).send('خطا در ویرایش پروژه')
   }
 })
@@ -1514,7 +1579,7 @@ app.post('/contact' , requireAdminAuth , async (req, res) => {
   }
 })
 
-app.post('/sw-admin/projects/add' , requireAdminAuth , async (req, res) => {
+app.post('/sw-admin/projects/add', requireAdminAuth, async (req, res) => {
   try {
     const {
       title,
@@ -1523,23 +1588,34 @@ app.post('/sw-admin/projects/add' , requireAdminAuth , async (req, res) => {
       startDate,
       deadline,
       techStack,
-      description
+      description,
+      progress          // ← اضافه شد
     } = req.body
 
     if (!title || !client || !category) {
       return res.status(400).send('نام پروژه، مشتری و نوع پروژه الزامی هستند')
     }
 
+    const toEnglishDigits = (str) => {
+      if (!str) return str
+      const persianDigits = '۰۱۲۳۴۵۶۷۸۹'
+      const arabicDigits  = '٠١٢٣٤٥٦٧٨٩'
+      return String(str)
+        .replace(/[۰-۹]/g, d => persianDigits.indexOf(d))
+        .replace(/[٠-٩]/g, d => arabicDigits.indexOf(d))
+    }
+
     const normalizeDate = (value) => {
       if (!value) return null
 
-      const date = new Date(value)
+      const cleaned = toEnglishDigits(value).trim()
+      const parsed = moment(cleaned, 'jYYYY/jMM/jDD')
 
-      if (Number.isNaN(date.getTime())) {
+      if (!parsed.isValid()) {
         return null
       }
 
-      return date
+      return parsed.locale('en').toDate()
     }
 
     const normalizeTechStack = (value) => {
@@ -1552,21 +1628,39 @@ app.post('/sw-admin/projects/add' , requireAdminAuth , async (req, res) => {
       }
 
       return String(value)
-        .split(/[,،،·|]/)
+        .split(/[,،·|]/)
         .map(item => item.trim())
         .filter(Boolean)
+    }
+
+    const normalizeProgress = (value) => {
+      const num = parseInt(toEnglishDigits(value), 10)
+
+      if (Number.isNaN(num)) return 0
+
+      return Math.max(0, Math.min(100, num))
+    }
+
+    const parsedStartDate = normalizeDate(startDate)
+    const parsedDeadline  = normalizeDate(deadline)
+
+    if (startDate && !parsedStartDate) {
+      return res.status(400).send('تاریخ شروع نامعتبر است')
+    }
+    if (deadline && !parsedDeadline) {
+      return res.status(400).send('تاریخ ددلاین نامعتبر است')
     }
 
     await Project.create({
       title: title.trim(),
       client,
       category,
-      startDate: normalizeDate(startDate),
-      deadline: normalizeDate(deadline),
+      startDate: parsedStartDate,
+      deadline: parsedDeadline,
       techStack: normalizeTechStack(techStack),
       description: description ? description.trim() : '',
       status: 'active',
-      progress: 0,
+      progress: normalizeProgress(progress),   // ← دیگه هاردکد نیست
       createdBy: '000000000000000000000001'
     })
 
@@ -1906,6 +2000,40 @@ app.post('/sw-admin/categories/add', requireAdminAuth, async (req, res) => {
       error: 'خطا در ساخت دسته‌بندی'
     })
 
+  }
+})
+
+
+
+
+
+
+
+
+
+
+app.post('/sw-admin/service-categories/add', requireAdminAuth, async (req, res) => {
+  try {
+    const { title } = req.body
+
+    if (!title || !title.trim()) {
+      return res.status(400).json({ ok: false, message: 'عنوان نوع پروژه الزامی است' })
+    }
+
+    const newCategory = await Category.create({
+      title: title.trim()
+    })
+
+    res.json({
+      ok: true,
+      category: {
+        _id: newCategory._id,
+        title: newCategory.title
+      }
+    })
+  } catch (err) {
+    console.error('Category create error:', err)
+    res.status(500).json({ ok: false, message: 'خطا در ثبت نوع پروژه' })
   }
 })
 // ─────────────────────────────────────────

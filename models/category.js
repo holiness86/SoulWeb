@@ -10,7 +10,7 @@ const categorySchema = new mongoose.Schema({
 
   slug: {
     type: String,
-    required: [true, 'اسلاگ الزامی است'],
+    required: [false, 'اسلاگ الزامی است'],
     lowercase: true,
     trim: true
   },

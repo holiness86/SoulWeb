@@ -1,8 +1,7 @@
 <%# views/sw-admin/projects.ejs %>
 <%- include('partials/_head', { title: 'مدیریت پروژه‌ها' }) %>
-
-<link rel="stylesheet" href="assets/css/jalalidatepicker.min.css">
-
+<link rel="stylesheet" href="https://unpkg.com/jalalidatepicker/dist/jalaliDatepicker.min.css">
+<script src="https://unpkg.com/jalalidatepicker/dist/jalaliDatepicker.min.js"></script>
 <div class="sidebar-overlay" id="sidebarOverlay"></div>
 <div class="admin-shell">
 
@@ -788,7 +787,6 @@
           <div style="display:flex;gap:.5rem;">
             <select class="sol-select" name="category" id="projectCategorySelect" style="width:100%" required>
               <option value="" selected disabled>انتخاب نوع پروژه…</option>
-
               <% safeServiceCategories.forEach(cat => { %>
                 <option value="<%= cat._id %>">
                   <%= cat.title || cat.name || 'دسته‌بندی بدون عنوان' %>
@@ -893,7 +891,7 @@
           style="resize:vertical;"
         ></textarea>
       </div>
-
+<input type="text" value="service" name="type" hidden>
       <div style="display:flex;gap:.75rem;justify-content:flex-end;margin-top:1.5rem;">
         <button type="button" class="btn-ghost-sm" data-modal-close>
           انصراف
@@ -968,7 +966,6 @@
 </div>
 
 <%- include('partials/_scripts', { extraScripts: `
-<script src="assets/js/jalalidatepicker.min.js"></script>
 <style>
 .pstat{background:var(--color-surface);border:1px solid var(--color-border);border-radius:var(--radius-lg);padding:1.1rem 1.25rem;display:flex;align-items:center;gap:.85rem;transition:all var(--dur-normal) var(--ease-spring)}
 .pstat:hover{transform:translateY(-2px);box-shadow:var(--shadow-sm);border-color:var(--main-200)}
@@ -1290,20 +1287,21 @@ document.addEventListener('DOMContentLoaded', function () {
   function setProjectFormMode(mode, data) {
     data = data || {};
 
-    if (mode === 'edit') {
-      projectModalTitle.textContent = 'ویرایش پروژه';
-      projectSubmitBtn.innerHTML = '<i class="bi bi-check-lg"></i> ذخیره تغییرات';
-      projectForm.action = '/sw-admin/projects/' + data.id + '/update';
-      projectIdInput.value = data.id || '';
+if (mode === 'edit') {
+  projectModalTitle.textContent = 'ویرایش پروژه';
+  projectSubmitBtn.innerHTML = '<i class="bi bi-check-lg"></i> ذخیره تغییرات';
+  projectForm.action = '/sw-admin/projects/' + data.id + '/update';
+  projectIdInput.value = data.id || '';
 
-      projectTitleInput.value = data.title || '';
-      projectDescription.value = data.description || '';
-      projectStartDate.value = data.startDate || '';
-      projectDeadline.value = data.deadline || '';
+  projectTitleInput.value = data.title || '';
+  projectDescription.value = data.description || '';
+  projectStartDate.value = data.startDate || '';
+  projectDeadline.value = data.deadline || '';
+  projectProgressInput.value = data.progress != null ? data.progress : 0;   // ← این خط اضافه شد
 
-      if (projectStatusSelect) {
-        projectStatusSelect.value = data.status || 'active';
-      }
+  if (projectStatusSelect) {
+    projectStatusSelect.value = data.status || 'active';
+  }
 
       if (projectClientSelect && data.client) {
         projectClientSelect.value = data.client;
@@ -1366,21 +1364,45 @@ document.addEventListener('DOMContentLoaded', function () {
     });
   }
 
-  function addNewCategory() {
-    if (!newCategoryInput || !projectCategorySelect) return;
+async function addNewCategory() {
+  if (!newCategoryInput || !projectCategorySelect) return;
 
-    const value = (newCategoryInput.value || '').trim();
-    if (!value) return;
+  const value = (newCategoryInput.value || '').trim();
+  if (!value) return;
+
+  confirmAddCategory.disabled = true;
+  confirmAddCategory.textContent = 'در حال ثبت…';
+
+  try {
+    const res = await fetch('/sw-admin/service-categories/add', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ title: value })
+    });
+
+    const data = await res.json();
+
+    if (!res.ok || !data.ok) {
+      alert(data.message || 'خطا در ثبت نوع پروژه');
+      return;
+    }
 
     const option = document.createElement('option');
-    option.value = value;
-    option.textContent = value;
+    option.value = data.category._id;
+    option.textContent = data.category.title;
     projectCategorySelect.appendChild(option);
-    projectCategorySelect.value = value;
+    projectCategorySelect.value = data.category._id;
 
     newCategoryInput.value = '';
     addCategoryBox.style.display = 'none';
+  } catch (err) {
+    console.error('خطا در ارتباط با سرور', err);
+    alert('خطا در ارتباط با سرور');
+  } finally {
+    confirmAddCategory.disabled = false;
+    confirmAddCategory.textContent = 'افزودن';
   }
+}
 
   if (confirmAddCategory) {
     confirmAddCategory.addEventListener('click', addNewCategory);
@@ -1485,6 +1507,19 @@ document.addEventListener('DOMContentLoaded', function () {
       if (projectModalProxy) projectModalProxy.click();
     });
   }
+    if (window.jalaliDatepicker) {
+    jalaliDatepicker.startWatch({
+      time: false,
+      persianDigits: true,
+      autoHide: true,
+      topSpace: 4,
+      zIndex: 99999
+    });
+    }
 });
+
+
+  jalaliDatepicker.startWatch();
+
 </script>
 ` }) %>

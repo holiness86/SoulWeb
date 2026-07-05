@@ -2014,21 +2014,23 @@ app.post('/sw-admin/categories/add', requireAdminAuth, async (req, res) => {
 
 app.post('/sw-admin/service-categories/add', requireAdminAuth, async (req, res) => {
   try {
-    const { title } = req.body
+    const { title, type } = req.body   // ← type هم اضافه شد
 
     if (!title || !title.trim()) {
-      return res.status(400).json({ ok: false, message: 'عنوان نوع پروژه الزامی است' })
+      return res.status(400).json({ ok: false, message: 'عنوان دسته‌بندی الزامی است' })
     }
 
     const newCategory = await Category.create({
-      title: title.trim()
+      title: title.trim(),
+      type: type || 'service'   // ← اگه فرستاده نشد، مقدار پیش‌فرض service
     })
 
     res.json({
       ok: true,
       category: {
         _id: newCategory._id,
-        title: newCategory.title
+        title: newCategory.title,
+        type: newCategory.type
       }
     })
   } catch (err) {

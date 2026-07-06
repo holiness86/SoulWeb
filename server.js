@@ -537,7 +537,127 @@ app.post('/sw-admin/tickets/:id/delete', requireAdminAuth, async (req, res) => {
 // ─────────────────────────────────────────
 //  ADMIN — INVOICES
 // ─────────────────────────────────────────
+app.post('/sw-admin/invoices/:id/delete', requireAdminAuth, async (req, res) => {
+  try {
+    const { id } = req.params
 
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      return res.status(400).send('شناسه فاکتور نامعتبر است')
+    }
+
+    const deletedInvoice = await Invoice.findByIdAndDelete(id)
+
+    if (!deletedInvoice) {
+      return res.status(404).send('فاکتور پیدا نشد')
+    }
+
+    res.redirect('/sw-admin/invoices')
+
+  } catch (err) {
+    console.error('Invoice delete error:', err)
+    res.status(500).send('خطا در حذف فاکتور')
+  }
+})
+
+
+
+app.post('/sw-admin/invoices/:id/publish', requireAdminAuth, async (req, res) => {
+  try {
+    const { id } = req.params
+
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      return res.status(400).send('شناسه فاکتور نامعتبر است')
+    }
+
+    const invoice = await Invoice.findById(id)
+
+    if (!invoice) {
+      return res.status(404).send('فاکتور پیدا نشد')
+    }
+
+    if (invoice.status !== 'draft') {
+      return res.status(400).send('این فاکتور در وضعیت پیش‌نویس نیست')
+    }
+
+    invoice.status = 'sent'
+    await invoice.save()
+
+    res.redirect('/sw-admin/invoices')
+
+  } catch (err) {
+    console.error('Invoice publish error:', err)
+    res.status(500).send('خطا در انتشار فاکتور')
+  }
+})
+
+
+
+
+app.get('/sw-admin/invoices/export/pdf' , requireAdminAuth , async (req, res) => {
+  let browser
+
+  try {
+    const invoices = await Invoice.find()
+      .populate('client', 'name company email phone')
+      .populate('project', 'title')
+      .sort({ createdAt: -1 })
+      .lean()
+
+    const invoiceStats = {
+      total: invoices.length,
+      draft: invoices.filter(inv => inv.status === 'draft').length,
+      sent: invoices.filter(inv => inv.status === 'sent').length,
+      paid: invoices.filter(inv => inv.status === 'paid').length,
+      overdue: invoices.filter(inv => inv.status === 'overdue').length,
+      cancelled: invoices.filter(inv => inv.status === 'cancelled').length
+    }
+
+    const html = await ejs.renderFile(
+      path.join(__dirname, 'views', 'admin', 'invoices-pdf.ejs'),
+      {
+        title: 'گزارش فاکتورها',
+        invoices,
+        invoiceStats
+      }
+    )
+
+browser = await launchBrowser()
+
+    const page = await browser.newPage()
+
+    await page.setContent(html, {
+      waitUntil: 'networkidle0'
+    })
+
+    const pdfBuffer = await page.pdf({
+      format: 'A4',
+      printBackground: true,
+      margin: {
+        top: '14mm',
+        right: '10mm',
+        bottom: '14mm',
+        left: '10mm'
+      }
+    })
+
+    await browser.close()
+    browser = null
+
+    const fileName = `invoices-${Date.now()}.pdf`
+
+    res.setHeader('Content-Type', 'application/pdf')
+    res.setHeader('Content-Disposition', `inline; filename="${fileName}"`)
+    res.send(pdfBuffer)
+
+  } catch (err) {
+    if (browser) {
+      await browser.close()
+    }
+
+    console.error('Invoices PDF export error:', err)
+    res.status(500).send('خطا در تولید خروجی PDF فاکتورها')
+  }
+})
 
 app.get('/sw-admin/invoices/:id/pdf' , requireAdminAuth , async (req, res) => {
   let browser
@@ -598,7 +718,30 @@ app.get('/sw-admin/invoices/:id/pdf' , requireAdminAuth , async (req, res) => {
 
       return map[status] || 'نامشخص'
     }
+const buildItemsRows = (items) => {
+  if (!Array.isArray(items) || !items.length) {
+    return `
+      <tr>
+        <td>خدمات انجام‌شده</td>
+        <td>۱</td>
+        <td>${formatMoney(invoice.total)} تومان</td>
+      </tr>
+    `
+  }
 
+  return items.map(item => {
+    const qty = Number(item.quantity) || 1
+    const lineTotal = Number(item.total) || (qty * (Number(item.unitPrice) || 0))
+
+    return `
+      <tr>
+        <td>${item.description || '—'}</td>
+        <td>${qty.toLocaleString('fa-IR')}</td>
+        <td>${formatMoney(lineTotal)} تومان</td>
+      </tr>
+    `
+  }).join('')
+}
     const html = `
       <!DOCTYPE html>
       <html lang="fa" dir="rtl">
@@ -803,15 +946,13 @@ app.get('/sw-admin/invoices/:id/pdf' , requireAdminAuth , async (req, res) => {
               <thead>
                 <tr>
                   <th>شرح</th>
+                  <th>تعداد</th>
                   <th>مبلغ</th>
                 </tr>
               </thead>
 
               <tbody>
-                <tr>
-                  <td>${invoice.description || getProjectTitle(invoice.project) || 'خدمات انجام‌شده'}</td>
-                  <td>${formatMoney(invoice.total)} تومان</td>
-                </tr>
+                ${buildItemsRows(invoice.items)}
               </tbody>
             </table>
           </div>
@@ -1040,15 +1181,27 @@ app.post('/sw-admin/invoices/add' , requireAdminAuth , async (req, res) => {
       return res.status(400).send('حداقل یک آیتم معتبر برای فاکتور لازم است')
     }
 
-    const normalizeDate = (value) => {
-      if (!value) return null
+const moment = require('jalali-moment')
 
-      const date = new Date(value)
+const toEnglishDigits = (str) => {
+  if (!str) return str
+  const persianDigits = '۰۱۲۳۴۵۶۷۸۹'
+  const arabicDigits  = '٠١٢٣٤٥٦٧٨٩'
+  return String(str)
+    .replace(/[۰-۹]/g, d => persianDigits.indexOf(d))
+    .replace(/[٠-٩]/g, d => arabicDigits.indexOf(d))
+}
 
-      if (Number.isNaN(date.getTime())) return null
+const normalizeDate = (value) => {
+  if (!value) return null
 
-      return date
-    }
+  const cleaned = toEnglishDigits(value).trim()
+  const parsed = moment(cleaned, 'jYYYY/jMM/jDD')
+
+  if (!parsed.isValid()) return null
+
+  return parsed.locale('en').toDate()
+}
 
     const generateInvoiceNumber = async () => {
       const count = await Invoice.countDocuments()
@@ -1065,18 +1218,28 @@ app.post('/sw-admin/invoices/add' , requireAdminAuth , async (req, res) => {
       exists = await Invoice.exists({ invoiceNumber })
     }
 
-    await Invoice.create({
-      invoiceNumber,
-      client,
-      project: project || null,
-      items,
-      issueDate: normalizeDate(issue_date) || new Date(),
-      dueDate: normalizeDate(due_date),
-      notes: note ? String(note).trim() : '',
-      status: ['draft', 'sent'].includes(status) ? status : 'sent',
-      currency: 'IRR',
-      createdBy: req.user?._id || undefined
-    })
+const parsedIssueDate = normalizeDate(issue_date)
+const parsedDueDate   = normalizeDate(due_date)
+
+if (issue_date && !parsedIssueDate) {
+  return res.status(400).send('تاریخ صدور نامعتبر است')
+}
+if (due_date && !parsedDueDate) {
+  return res.status(400).send('تاریخ سررسید نامعتبر است')
+}
+
+await Invoice.create({
+  invoiceNumber,
+  client,
+  project: project || null,
+  items,
+  issueDate: parsedIssueDate || new Date(),
+  dueDate: parsedDueDate,
+  notes: note ? String(note).trim() : '',
+  status: ['draft', 'sent'].includes(status) ? status : 'sent',
+  currency: 'IRR',
+  createdBy: req.user?._id || undefined
+})
 
     res.redirect('/sw-admin/invoices')
 
@@ -1087,57 +1250,57 @@ app.post('/sw-admin/invoices/add' , requireAdminAuth , async (req, res) => {
 })
 
 
-app.post('/sw-admin/invoices' , requireAdminAuth , async (req, res) => {
-  try {
-    // items از فرم به صورت JSON string میاد
-    const items = JSON.parse(req.body.items || '[]')
-    const lastInvoice = await Invoice.findOne().sort({ createdAt: -1 })
-    const lastNum = lastInvoice
-      ? parseInt(lastInvoice.invoiceNumber.replace('INV-', '')) + 1
-      : 1001
+// app.post('/sw-admin/invoices' , requireAdminAuth , async (req, res) => {
+//   try {
+//     // items از فرم به صورت JSON string میاد
+//     const items = JSON.parse(req.body.items || '[]')
+//     const lastInvoice = await Invoice.findOne().sort({ createdAt: -1 })
+//     const lastNum = lastInvoice
+//       ? parseInt(lastInvoice.invoiceNumber.replace('INV-', '')) + 1
+//       : 1001
 
-    await Invoice.create({
-      invoiceNumber: `INV-${lastNum}`,
-      client : req.body.client,
-      project: req.body.project || null,
-      items,
-      tax      : Number(req.body.tax)      || 0,
-      discount : Number(req.body.discount) || 0,
-      dueDate  : req.body.dueDate  || null,
-      notes    : req.body.notes    || '',
-      currency : req.body.currency || 'IRR',
-      createdBy: '000000000000000000000001'
-    })
+//     await Invoice.create({
+//       invoiceNumber: `INV-${lastNum}`,
+//       client : req.body.client,
+//       project: req.body.project || null,
+//       items,
+//       tax      : Number(req.body.tax)      || 0,
+//       discount : Number(req.body.discount) || 0,
+//       dueDate  : req.body.dueDate  || null,
+//       notes    : req.body.notes    || '',
+//       currency : req.body.currency || 'IRR',
+//       createdBy: '000000000000000000000001'
+//     })
 
-    res.redirect('/sw-admin/invoices')
-  } catch (err) {
-    console.error(err)
-    res.status(500).send('خطا در ثبت فاکتور')
-  }
-})
+//     res.redirect('/sw-admin/invoices')
+//   } catch (err) {
+//     console.error(err)
+//     res.status(500).send('خطا در ثبت فاکتور')
+//   }
+// })
 
-app.post('/sw-admin/invoices/:id/paid' , requireAdminAuth , async (req, res) => {
-  try {
-    await Invoice.findByIdAndUpdate(req.params.id, {
-      status: 'paid',
-      paidAt: new Date()
-    })
+// app.post('/sw-admin/invoices/:id/paid' , requireAdminAuth , async (req, res) => {
+//   try {
+//     await Invoice.findByIdAndUpdate(req.params.id, {
+//       status: 'paid',
+//       paidAt: new Date()
+//     })
 
-    const inv = await Invoice.findById(req.params.id)
-    await Activity.create({
-      type        : 'invoice_paid',
-      title       : `فاکتور #${inv.invoiceNumber} پرداخت شد`,
-      icon        : 'bi-receipt-cutoff',
-      colorVariant: 'success',
-      relatedModel: 'Invoice',
-      relatedId   : inv._id
-    })
+//     const inv = await Invoice.findById(req.params.id)
+//     await Activity.create({
+//       type        : 'invoice_paid',
+//       title       : `فاکتور #${inv.invoiceNumber} پرداخت شد`,
+//       icon        : 'bi-receipt-cutoff',
+//       colorVariant: 'success',
+//       relatedModel: 'Invoice',
+//       relatedId   : inv._id
+//     })
 
-    res.redirect('/sw-admin/invoices')
-  } catch (err) {
-    res.status(500).send('خطا')
-  }
-})
+//     res.redirect('/sw-admin/invoices')
+//   } catch (err) {
+//     res.status(500).send('خطا')
+//   }
+// })
 
 // ─────────────────────────────────────────────────────────────
 //  PORTFOLIO ROUTES
@@ -1754,74 +1917,6 @@ app.get('/sw-admin/projects/export' , requireAdminAuth , async (req, res) => {
   } catch (err) {
     console.error(err)
     res.status(500).send('خطا در خروجی Excel')
-  }
-})
-
-
-
-app.get('/sw-admin/invoices/export/pdf' , requireAdminAuth , async (req, res) => {
-  let browser
-
-  try {
-    const invoices = await Invoice.find()
-      .populate('client', 'name company email phone')
-      .populate('project', 'title')
-      .sort({ createdAt: -1 })
-      .lean()
-
-    const invoiceStats = {
-      total: invoices.length,
-      draft: invoices.filter(inv => inv.status === 'draft').length,
-      sent: invoices.filter(inv => inv.status === 'sent').length,
-      paid: invoices.filter(inv => inv.status === 'paid').length,
-      overdue: invoices.filter(inv => inv.status === 'overdue').length,
-      cancelled: invoices.filter(inv => inv.status === 'cancelled').length
-    }
-
-    const html = await ejs.renderFile(
-      path.join(__dirname, 'views', 'admin', 'invoices-pdf.ejs'),
-      {
-        title: 'گزارش فاکتورها',
-        invoices,
-        invoiceStats
-      }
-    )
-
-browser = await launchBrowser()
-
-    const page = await browser.newPage()
-
-    await page.setContent(html, {
-      waitUntil: 'networkidle0'
-    })
-
-    const pdfBuffer = await page.pdf({
-      format: 'A4',
-      printBackground: true,
-      margin: {
-        top: '14mm',
-        right: '10mm',
-        bottom: '14mm',
-        left: '10mm'
-      }
-    })
-
-    await browser.close()
-    browser = null
-
-    const fileName = `invoices-${Date.now()}.pdf`
-
-    res.setHeader('Content-Type', 'application/pdf')
-    res.setHeader('Content-Disposition', `inline; filename="${fileName}"`)
-    res.send(pdfBuffer)
-
-  } catch (err) {
-    if (browser) {
-      await browser.close()
-    }
-
-    console.error('Invoices PDF export error:', err)
-    res.status(500).send('خطا در تولید خروجی PDF فاکتورها')
   }
 })
 

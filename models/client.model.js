@@ -19,6 +19,7 @@ const clientSchema = new mongoose.Schema({
     lowercase: true,
     trim: true
   },
+  address : { trim: true, type: String },
   phone: { type: String, trim: true },
   avatar: { type: String },
   notes: { type: String },

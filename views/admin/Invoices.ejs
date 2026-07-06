@@ -1,6 +1,21 @@
 <%- include('partials/_head', { title: 'فاکتورها' }) %>
-<link rel="stylesheet" href="assets/css/jalalidatepicker.min.css">
+<style>
+  .rocket-icon {
+  display: inline-block;
+  animation: rocket-spin 2s linear infinite;
+}
 
+@keyframes rocket-spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+</style>
+<link rel="stylesheet" href="https://unpkg.com/jalalidatepicker/dist/jalaliDatepicker.min.css">
+<script src="https://unpkg.com/jalalidatepicker/dist/jalaliDatepicker.min.js"></script>
 <div class="sidebar-overlay" id="sidebarOverlay"></div>
 <div class="admin-shell">
 
@@ -80,6 +95,27 @@ function isOverdue(inv){
 
   return due<today
 }
+
+
+
+const buildInvoicePayload = (inv) => JSON.stringify({
+  id: inv._id || '',
+  invoiceNumber: inv.invoiceNumber || '—',
+  clientName: getClientName(inv.client),
+  clientCompany: (inv.client && inv.client.company) || '',
+  issueDate: formatDate(inv.issueDate || inv.createdAt),
+  dueDate: formatDate(inv.dueDate),
+  status: inv.status || '',
+  statusLabel: getInvoiceStatusLabel(isOverdue(inv) ? 'overdue' : inv.status),
+  notes: inv.notes || '',
+  items: (inv.items || []).map(item => ({
+    description: item.description || '',
+    quantity: Number(item.quantity) || 0,
+    unitPrice: Number(item.unitPrice) || 0,
+    lineTotal: (Number(item.quantity) || 0) * (Number(item.unitPrice) || 0)
+  })),
+  total: Number(inv.total) || 0
+});
 %>
 
 <div class="main-content" id="mainContent">
@@ -279,16 +315,34 @@ function isOverdue(inv){
         <td>
           <div style="display:flex;gap:.4rem;align-items:center;">
 
-            <button 
-              type="button"
-              class="btn-ghost-sm" 
-              style="padding:.28rem .6rem;" 
-              title="مشاهده" 
-              data-modal-open="invViewModal"
-              data-id="<%= inv._id %>"
-            >
-              <i class="bi bi-eye"></i>
-            </button>
+        <button 
+          type="button"
+          class="btn-ghost-sm" 
+          style="padding:.28rem .6rem;" 
+          title="مشاهده" 
+          data-modal-open="invViewModal"
+          data-id="<%= inv._id %>"
+          data-invoice="<%= buildInvoicePayload(inv) %>"
+        >
+          <i class="bi bi-eye"></i>
+        </button>
+<% if (inv.status === 'draft') { %>
+  <form 
+    action="/sw-admin/invoices/<%= inv._id %>/publish" 
+    method="POST" 
+    onsubmit="return confirm('آیا از انتشار این فاکتور مطمئن هستید؟ پس از انتشار به مشتری قابل ارسال خواهد بود.')"
+    style="display:inline;"
+  >
+    <button 
+      type="submit"
+      class="btn-ghost-sm rocket-btn" 
+      style="padding:.28rem .6rem;color:#2563eb;" 
+      title="انتشار فاکتور"
+    >
+      <i class="bi bi-rocket-takeoff-fill rocket-icon"></i>
+    </button>
+  </form>
+<% } %>
 
             <a 
               href="/sw-admin/invoices/<%= inv._id %>/pdf"
@@ -554,9 +608,10 @@ function isOverdue(inv){
 <div class="modal-overlay" id="invViewModal">
   <div class="modal-box" style="width:min(600px,92vw);">
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1.5rem;">
-      <div class="modal-title" style="margin:0;">فاکتور #۱۰۵۲</div>
+      <div class="modal-title" style="margin:0;" id="invViewTitle">فاکتور</div>
       <button data-modal-close style="background:transparent;border:none;font-size:1.2rem;color:var(--color-text-muted);cursor:pointer;"><i class="bi bi-x-lg"></i></button>
     </div>
+
     <div style="background:var(--color-bg);border-radius:var(--radius-lg);padding:1.5rem;margin-bottom:1.25rem;">
       <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:1.5rem;">
         <div>
@@ -566,10 +621,19 @@ function isOverdue(inv){
         </div>
         <div style="text-align:left;">
           <div style="font-size:.72rem;color:var(--color-text-light);">فاکتور شماره</div>
-          <div style="font-size:1.1rem;font-weight:800;color:var(--main-500);">#۱۰۵۲</div>
-          <div style="font-size:.72rem;color:var(--color-text-light);">تاریخ: ۱۴۰۴/۰۳/۱۵</div>
+          <div style="font-size:1.1rem;font-weight:800;color:var(--main-500);" id="invViewNumber">—</div>
+          <div style="font-size:.72rem;color:var(--color-text-light);">تاریخ: <span id="invViewIssueDate">—</span></div>
         </div>
       </div>
+
+      <div style="margin-bottom:1rem;font-size:.82rem;color:var(--color-text-muted);">
+        مشتری: <span id="invViewClient" style="font-weight:700;color:var(--color-text-primary);">—</span>
+        &nbsp;·&nbsp;
+        سررسید: <span id="invViewDueDate">—</span>
+        &nbsp;·&nbsp;
+        وضعیت: <span id="invViewStatus">—</span>
+      </div>
+
       <div style="background:var(--color-surface);border-radius:var(--radius-md);padding:1rem;margin-bottom:1rem;">
         <table style="width:100%;border-collapse:collapse;">
           <thead><tr style="border-bottom:1px solid var(--color-border);">
@@ -577,22 +641,27 @@ function isOverdue(inv){
             <th style="text-align:center;padding:.5rem;font-size:.73rem;color:var(--color-text-light);">تعداد</th>
             <th style="text-align:left;padding:.5rem;font-size:.73rem;color:var(--color-text-light);">مبلغ</th>
           </tr></thead>
-          <tbody>
-            <tr><td style="padding:.6rem .5rem;font-size:.83rem;">طراحی UI/UX اپلیکیشن مالی</td><td style="text-align:center;font-size:.83rem;">۱</td><td style="text-align:left;font-size:.83rem;font-weight:600;">۲,۵۰۰,۰۰۰</td></tr>
-            <tr><td style="padding:.6rem .5rem;font-size:.83rem;">توسعه فرانت‌اند React</td><td style="text-align:center;font-size:.83rem;">۱</td><td style="text-align:left;font-size:.83rem;font-weight:600;">۲,۰۰۰,۰۰۰</td></tr>
+          <tbody id="invViewItemsBody">
+            <!-- ردیف‌ها داینامیک اضافه می‌شن -->
           </tbody>
         </table>
+
         <div style="border-top:1px solid var(--color-border);padding-top:.75rem;margin-top:.5rem;display:flex;justify-content:flex-end;gap:2rem;">
           <span style="font-size:.83rem;color:var(--color-text-muted);">جمع کل:</span>
-          <span style="font-size:.95rem;font-weight:900;color:var(--main-500);">۴,۵۰۰,۰۰۰ تومان</span>
+          <span style="font-size:.95rem;font-weight:900;color:var(--main-500);" id="invViewTotal">۰ تومان</span>
         </div>
       </div>
+
+      <div id="invViewNotesBox" style="display:none;font-size:.82rem;color:var(--color-text-muted);background:var(--color-surface);border-radius:var(--radius-md);padding:.85rem 1rem;">
+        <span id="invViewNotes"></span>
+      </div>
     </div>
+
     <div style="display:flex;gap:.75rem;justify-content:flex-end;">
       <button class="btn-ghost-sm" data-modal-close>بستن</button>
-<a id="modalPdfBtn" class="btn-ghost-sm" target="_blank">
-  <i class="bi bi-download"></i> دانلود PDF
-</a>
+      <a id="modalPdfBtn" class="btn-ghost-sm" target="_blank">
+        <i class="bi bi-download"></i> دانلود PDF
+      </a>
       <button class="btn-sol-sm"><i class="bi bi-envelope"></i> ارسال به مشتری</button>
     </div>
   </div>
@@ -601,9 +670,17 @@ function isOverdue(inv){
 
 <script src="assets/js/jalalidatepicker.min.js"></script>
 <script>
-  if (window.jalaliDatepicker) {
-    jalaliDatepicker.startWatch();
-  }
+  document.addEventListener('DOMContentLoaded', function () {
+    if (window.jalaliDatepicker) {
+      jalaliDatepicker.startWatch({
+        time: false,
+        persianDigits: true,
+        autoHide: true,
+        topSpace: 4,
+        zIndex: 99999
+      });
+    }
+  });
 </script>
 
 <style>
@@ -872,16 +949,83 @@ document.addEventListener('DOMContentLoaded', function () {
 
 document.querySelectorAll('[data-modal-open="invViewModal"]').forEach(btn => {
   btn.addEventListener('click', () => {
-
-    const id = btn.dataset.id
     const pdfBtn = document.getElementById('modalPdfBtn')
+    const id = btn.dataset.id
 
     if (pdfBtn && id) {
       pdfBtn.href = `/sw-admin/invoices/${id}/pdf`
     }
 
+    let data = {}
+
+    try {
+      data = JSON.parse(btn.dataset.invoice || '{}')
+    } catch (err) {
+      console.error('خطا در خواندن اطلاعات فاکتور', err)
+      return
+    }
+
+    document.getElementById('invViewTitle').textContent = `فاکتور ${data.invoiceNumber || ''}`
+    document.getElementById('invViewNumber').textContent = data.invoiceNumber || '—'
+    document.getElementById('invViewIssueDate').textContent = data.issueDate || '—'
+    document.getElementById('invViewDueDate').textContent = data.dueDate || '—'
+    document.getElementById('invViewClient').textContent = data.clientCompany || data.clientName || 'بدون مشتری'
+    document.getElementById('invViewStatus').textContent = data.statusLabel || '—'
+
+    const itemsBody = document.getElementById('invViewItemsBody')
+    itemsBody.innerHTML = ''
+
+    ;(data.items || []).forEach(item => {
+      const tr = document.createElement('tr')
+      tr.innerHTML = `
+        <td style="padding:.6rem .5rem;font-size:.83rem;">${item.description}</td>
+        <td style="text-align:center;font-size:.83rem;">${item.quantity.toLocaleString('fa-IR')}</td>
+        <td style="text-align:left;font-size:.83rem;font-weight:600;">${item.lineTotal.toLocaleString('fa-IR')}</td>
+      `
+      itemsBody.appendChild(tr)
+    })
+
+    document.getElementById('invViewTotal').textContent = `${(data.total || 0).toLocaleString('fa-IR')} تومان`
+
+    const notesBox = document.getElementById('invViewNotesBox')
+    const notesSpan = document.getElementById('invViewNotes')
+
+    if (data.notes && data.notes.trim()) {
+      notesSpan.textContent = data.notes
+      notesBox.style.display = ''
+    } else {
+      notesBox.style.display = 'none'
+    }
   })
 })
 
+const invoiceForm = document.getElementById('invoiceForm');
 
+if (invoiceForm) {
+    invoiceForm.addEventListener('submit', function () {
+
+        const issueDate = document.querySelector('[name="issue_date"]');
+        const dueDate   = document.querySelector('[name="due_date"]');
+
+        function convertToGregorian(input) {
+            if (!input || !input.value) return;
+
+            const parts = input.value.split('/');
+
+            if (parts.length !== 3) return;
+
+            const jYear  = parseInt(parts[0], 10);
+            const jMonth = parseInt(parts[1], 10);
+            const jDay   = parseInt(parts[2], 10);
+
+            const g = jalaali.toGregorian(jYear, jMonth, jDay);
+
+            input.value =
+                `${g.gy}-${String(g.gm).padStart(2, '0')}-${String(g.gd).padStart(2, '0')}`;
+        }
+
+        convertToGregorian(issueDate);
+        convertToGregorian(dueDate);
+    });
+}
 </script>

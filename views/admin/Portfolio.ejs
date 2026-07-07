@@ -16,12 +16,6 @@
 <%
 const publishedCount = items.filter(item => item.isPublished).length
 const draftCount = items.filter(item => !item.isPublished).length
-
-const defaultTechOptions = [
-  'PHP', 'Laravel', 'وردپرس', 'React', 'Vue.js', 'Next.js',
-  'Node.js', 'Angular', 'TypeScript', 'Tailwind CSS', 'Bootstrap',
-  'MySQL', 'MongoDB', 'jQuery'
-];
 %>
 
 <main class="page-content">
@@ -34,13 +28,12 @@ const defaultTechOptions = [
   <%= draftCount.toLocaleString('fa-IR') %> پیش‌نویس
 </p>
     </div>
-<button 
-  type="button"
+<a
+  href="/sw-admin/portfolio/add"
   class="btn-sol-sm create-btn"
-  data-modal-open="portfolioModal"
 >
   <i class="bi bi-plus-lg"></i> نمونه کار جدید
-</button>
+</a>
   </div>
 
   <!-- Filter -->
@@ -114,20 +107,12 @@ const icons = [
   <% } %>
 
   <div class="port-thumb-overlay">
-    <button 
-      type="button"
+    <a 
+      href="/sw-admin/portfolio/<%= item._id %>/edit"
       class="btn-ghost-sm edit-btn"
-      data-modal-open="portfolioModal"
-      data-id="<%= item._id %>"
-      data-title="<%= item.title || '' %>"
-      data-description="<%= item.description || '' %>"
-      data-category="<%= item.category && item.category.slug ? item.category.slug : item.category %>"
-      data-client="<%= item.client ? item.client._id : '' %>"
-      data-tech="<%= item.techStack ? item.techStack.join(',') : '' %>"
-      data-url="<%= item.liveUrl || '' %>"
     >
       <i class="bi bi-pencil"></i> ویرایش
-    </button>
+    </a>
   </div>
 
   <% if(!item.isPublished){ %>
@@ -201,108 +186,6 @@ const icons = [
 </div>
 </div>
 
-<!-- Modal: نمونه کار جدید/ویرایش -->
-<form id="portfolioForm" action="/sw-admin/portfolio" method="POST" enctype="multipart/form-data">
-  <div class="modal-overlay" id="portfolioModal">
-    <div class="modal-box" style="width:min(560px,92vw);">
-      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1.5rem;">
-        <div class="modal-title" style="margin:0;">نمونه کار جدید</div>
-<button 
-  type="button"
-  data-modal-close 
-  style="background:transparent;border:none;font-size:1.2rem;color:var(--color-text-muted);cursor:pointer;"
->
-  <i class="bi bi-x-lg"></i>
-</button>
-      </div>
-      <!-- Image Upload -->
-      <div class="port-upload-area" id="uploadArea">
-        <i class="bi bi-cloud-upload-fill" style="font-size:2rem;color:var(--main-400);"></i>
-        <div style="font-size:.85rem;font-weight:600;margin-top:.5rem;">تصویر شاخص را اینجا بکشید</div>
-        <div style="font-size:.73rem;color:var(--color-text-light);">یا کلیک کنید برای انتخاب (PNG, JPG)</div>
-        <input type="file" accept="image/*" style="display:none;" id="imgUpload" name="coverImage">
-      </div>
-      <div class="form-row">
-        <label class="sol-label">عنوان پروژه</label>
-        <input class="sol-input" type="text" placeholder="مثال: وب‌سایت شرکتی آلفا" name="title" id="portTitle">
-      </div>
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;">
-        <div class="form-row">
-          <label class="sol-label">دسته‌بندی</label>
-          <div style="display:flex;gap:.5rem;">
-            <select class="sol-select" name="category" id="portCategory" style="width:100%">
-
-              <option value="">انتخاب دسته</option>
-
-              <% categories.forEach(cat => { %>
-                <option value="<%= cat.slug %>">
-                  <%= cat.title %>
-                </option>
-              <% }) %>
-
-            </select>
-
-            <button type="button" class="btn-ghost-sm" id="addCategoryBtn" title="افزودن دسته جدید" style="flex-shrink:0;padding:.5rem .7rem;">
-              <i class="bi bi-plus-lg"></i>
-            </button>
-          </div>
-
-          <div id="addCategoryBox" style="display:none;gap:.5rem;margin-top:.6rem;">
-            <input type="text" class="sol-input" id="newCategoryInput" placeholder="عنوان دسته جدید…" style="flex:1;">
-            <button type="button" class="btn-sol-sm" id="confirmAddCategory">افزودن</button>
-          </div>
-        </div>
-        <div class="form-row">
-          <label class="sol-label">مشتری</label>
-            <select class="sol-select" name="client" id="portClient">
-              <option value="">بدون مشتری</option>
-              <% clients.forEach(c => { %>
-                <option value="<%= c._id %>"><%= c.name %></option>
-              <% }) %>
-            </select>
-
-        </div>
-      </div>
-      <div class="form-row">
-        <label class="sol-label">تکنولوژی‌های استفاده‌شده</label>
-
-        <div class="tech-checklist" id="techChecklist">
-          <% defaultTechOptions.forEach(tech => { %>
-            <label class="tech-check-item">
-              <input type="checkbox" name="techStack[]" value="<%= tech %>">
-              <span><%= tech %></span>
-            </label>
-          <% }) %>
-        </div>
-
-        <div style="display:flex;gap:.5rem;margin-top:.65rem;">
-          <input type="text" class="sol-input" id="newTechInput" placeholder="افزودن تکنولوژی جدید…" style="flex:1;">
-          <button type="button" class="btn-ghost-sm" id="addTechBtn">
-            <i class="bi bi-plus-lg"></i> افزودن
-          </button>
-        </div>
-      </div>
-      <div class="form-row">
-        <label class="sol-label">لینک پروژه</label>
-        <input class="sol-input" type="url" placeholder="https://…" name="liveUrl" id="portUrl">
-      </div>
-      <div class="form-row">
-        <label class="sol-label">توضیحات</label>
-        <textarea class="sol-input" rows="3" placeholder="توضیح کوتاهی از پروژه…" style="resize:vertical;" name="description" id="portDesc"></textarea>
-      </div>
-<div style="display:flex;gap:.75rem;justify-content:flex-end;margin-top:1.5rem;">
-  <button class="btn-ghost-sm" type="button" data-modal-close>انصراف</button>
-  <button class="btn-ghost-sm" type="submit" name="publish" value="0">
-    <i class="bi bi-file-earmark"></i> پیش‌نویس
-  </button>
-  <button class="btn-sol-sm" type="submit" name="publish" value="1">
-    <i class="bi bi-send"></i> انتشار
-  </button>
-</div>
-
-    </div>
-  </div>
-</form>
 <%- include('partials/_scripts', { extraScripts: `
 <style>
 
@@ -351,19 +234,8 @@ const icons = [
 .port-meta{display:flex;gap:.85rem;flex-wrap:wrap;margin-bottom:.75rem;}
 .port-meta span{font-size:.73rem;color:var(--color-text-muted);display:flex;align-items:center;gap:.25rem;}
 .port-footer{display:flex;align-items:center;justify-content:space-between;gap:.5rem;}
-.port-upload-area{border:2px dashed var(--main-200);border-radius:var(--radius-lg);padding:2rem;text-align:center;cursor:pointer;transition:all var(--dur-fast);margin-bottom:1rem;background:var(--main-50);}
-.port-upload-area:hover{border-color:var(--main-400);background:rgba(100,71,244,.08);}
-[data-bs-theme="dark"] .port-upload-area{background:rgba(100,71,244,.08);}
-
-.tech-checklist{display:flex;flex-wrap:wrap;gap:.5rem .65rem;background:var(--color-bg);border:1px solid var(--color-border);border-radius:var(--radius-md);padding:.85rem 1rem}
-.tech-check-item{display:flex;align-items:center;gap:.4rem;font-size:.8rem;font-weight:600;color:var(--color-text-primary);cursor:pointer;-webkit-user-select:none;user-select:none}
-.tech-check-item input[type="checkbox"]{width:15px;height:15px;accent-color:var(--main-500);cursor:pointer}
 </style>
 <script>
-document.getElementById('uploadArea').addEventListener('click', function(){
-  document.getElementById('imgUpload').click();
-});
-
 (function(){
 
   const filterGroup = document.querySelector('[data-filter-group]')
@@ -395,204 +267,5 @@ document.getElementById('uploadArea').addEventListener('click', function(){
   })
 
 })();
-
-const portfolioForm = document.getElementById('portfolioForm')
-const modalTitle = document.querySelector('#portfolioModal .modal-title')
-
-const portTitle = document.getElementById('portTitle')
-const portDesc = document.getElementById('portDesc')
-const portCategory = document.getElementById('portCategory')
-const portClient = document.getElementById('portClient')
-const portUrl = document.getElementById('portUrl')
-const imgUpload = document.getElementById('imgUpload')
-const techChecklist = document.getElementById('techChecklist')
-
-function resetTechChecklist() {
-  if (!techChecklist) return
-
-  techChecklist.querySelectorAll('input[type="checkbox"]').forEach(function (cb) {
-    cb.checked = false
-  })
-}
-
-function ensureTechCheckbox(value, checked) {
-  if (!techChecklist || !value) return
-
-  let existing = Array.from(techChecklist.querySelectorAll('input[type="checkbox"]'))
-    .find(function (cb) { return cb.value === value })
-
-  if (!existing) {
-    const label = document.createElement('label')
-    label.className = 'tech-check-item'
-
-    const checkbox = document.createElement('input')
-    checkbox.type = 'checkbox'
-    checkbox.name = 'techStack[]'
-    checkbox.value = value
-
-    const span = document.createElement('span')
-    span.textContent = value
-
-    label.appendChild(checkbox)
-    label.appendChild(span)
-    techChecklist.appendChild(label)
-
-    existing = checkbox
-  }
-
-  existing.checked = !!checked
-}
-
-function ensureCategoryOption(value, title) {
-  if (!portCategory || !value) return
-
-  let option = Array.from(portCategory.options).find(function (o) {
-    return o.value === value
-  })
-
-  if (!option) {
-    option = document.createElement('option')
-    option.value = value
-    option.textContent = title || value
-    portCategory.appendChild(option)
-  }
-
-  portCategory.value = value
-}
-
-// حالت ساخت نمونه‌کار جدید
-document.querySelectorAll('.create-btn').forEach(btn => {
-  btn.addEventListener('click', function(){
-
-    portfolioForm.action = '/sw-admin/portfolio'
-
-    if(modalTitle) modalTitle.textContent = 'نمونه کار جدید'
-
-    portTitle.value = ''
-    portDesc.value = ''
-    portCategory.value = ''
-    portClient.value = ''
-    portUrl.value = ''
-
-    resetTechChecklist()
-
-    if(imgUpload) imgUpload.value = ''
-
-  })
-})
-
-// حالت ویرایش
-document.querySelectorAll('.edit-btn').forEach(btn => {
-
-  btn.addEventListener('click', function(){
-
-    const id = this.dataset.id
-
-portfolioForm.action = '/sw-admin/portfolio/' + id + '/update'
-
-    if(modalTitle) modalTitle.textContent = 'ویرایش نمونه کار'
-
-    portTitle.value = this.dataset.title || ''
-    portDesc.value = this.dataset.description || ''
-    portClient.value = this.dataset.client || ''
-    portUrl.value = this.dataset.url || ''
-
-    if (this.dataset.category) {
-      ensureCategoryOption(this.dataset.category, this.dataset.categoryTitle)
-    } else {
-      portCategory.value = ''
-    }
-
-    resetTechChecklist()
-
-    const techValue = this.dataset.tech || ''
-    const techArray = techValue ? techValue.split(',').map(t => t.trim()).filter(Boolean) : []
-
-    techArray.forEach(function (tech) {
-      ensureTechCheckbox(tech, true)
-    })
-
-    if(imgUpload) imgUpload.value = ''
-
-  })
-
-})
-
-// -----------------------------
-// افزودن «دسته‌بندی» جدید به آپشن‌ها
-// -----------------------------
-const addCategoryBtn     = document.getElementById('addCategoryBtn')
-const addCategoryBox     = document.getElementById('addCategoryBox')
-const newCategoryInput   = document.getElementById('newCategoryInput')
-const confirmAddCategory = document.getElementById('confirmAddCategory')
-
-if (addCategoryBtn && addCategoryBox) {
-  addCategoryBtn.addEventListener('click', function () {
-    const isHidden = !addCategoryBox.style.display || addCategoryBox.style.display === 'none'
-    addCategoryBox.style.display = isHidden ? 'flex' : 'none'
-
-    if (isHidden && newCategoryInput) {
-      newCategoryInput.focus()
-    }
-  })
-}
-
-function addNewCategory() {
-  if (!newCategoryInput || !portCategory) return
-
-  const value = (newCategoryInput.value || '').trim()
-  if (!value) return
-
-  const option = document.createElement('option')
-  option.value = value
-  option.textContent = value
-  portCategory.appendChild(option)
-  portCategory.value = value
-
-  newCategoryInput.value = ''
-  addCategoryBox.style.display = 'none'
-}
-
-if (confirmAddCategory) {
-  confirmAddCategory.addEventListener('click', addNewCategory)
-}
-
-if (newCategoryInput) {
-  newCategoryInput.addEventListener('keydown', function (e) {
-    if (e.key === 'Enter') {
-      e.preventDefault()
-      addNewCategory()
-    }
-  })
-}
-
-// -----------------------------
-// افزودن «تکنولوژی» جدید به چک‌باکس‌ها
-// -----------------------------
-const newTechInput = document.getElementById('newTechInput')
-const addTechBtn   = document.getElementById('addTechBtn')
-
-function addNewTech() {
-  if (!newTechInput) return
-
-  const value = (newTechInput.value || '').trim()
-  if (!value) return
-
-  ensureTechCheckbox(value, true)
-  newTechInput.value = ''
-}
-
-if (addTechBtn) {
-  addTechBtn.addEventListener('click', addNewTech)
-}
-
-if (newTechInput) {
-  newTechInput.addEventListener('keydown', function (e) {
-    if (e.key === 'Enter') {
-      e.preventDefault()
-      addNewTech()
-    }
-  })
-}
 </script>
 `}) %>

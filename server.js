@@ -1349,6 +1349,81 @@ app.get('/sw-admin/portfolio' , requireAdminAuth , async (req, res) => {
 })
 
 
+// GET — صفحه اختصاصی افزودن نمونه کار جدید
+app.get('/sw-admin/portfolio/add' , requireAdminAuth , async (req, res) => {
+  try {
+
+    const [clients, categories] = await Promise.all([
+
+      // لیست مشتری‌ها برای select
+      Client.find({ isActive: true })
+        .sort({ name: 1 })
+        .lean(),
+
+      // دسته‌های مخصوص پورتفولیو
+      Category.find({
+        type: 'portfolio',
+        isActive: true
+      })
+        .sort({ order: 1 })
+        .lean()
+    ])
+
+    res.render('admin/portfolio-add', {
+      clients,
+      categories,
+      flash: req.flash ? req.flash() : {}
+    })
+
+  } catch (err) {
+    console.error('Portfolio Add Page Error:', err)
+    res.status(500).send('خطا در بارگذاری صفحه افزودن نمونه کار')
+  }
+})
+
+
+// GET — صفحه اختصاصی ویرایش نمونه کار (پرشدن فیلدها از دیتابیس)
+app.get('/sw-admin/portfolio/:id/edit' , requireAdminAuth , async (req, res) => {
+  try {
+
+    const [item, clients, categories] = await Promise.all([
+
+      Portfolio.findById(req.params.id)
+        .populate('client', 'name company')
+        .populate('project', 'title')
+        .populate('category', 'title slug')
+        .lean(),
+
+      Client.find({ isActive: true })
+        .sort({ name: 1 })
+        .lean(),
+
+      Category.find({
+        type: 'portfolio',
+        isActive: true
+      })
+        .sort({ order: 1 })
+        .lean()
+    ])
+
+    if (!item) {
+      return res.status(404).send('نمونه کار مورد نظر پیدا نشد')
+    }
+
+    res.render('admin/portfolio-edit', {
+      item,
+      clients,
+      categories,
+      flash: req.flash ? req.flash() : {}
+    })
+
+  } catch (err) {
+    console.error('Portfolio Edit Page Error:', err)
+    res.status(500).send('خطا در بارگذاری صفحه ویرایش نمونه کار')
+  }
+})
+
+
 // POST — create new
 app.post('/sw-admin/portfolio' , requireAdminAuth , upload.single('coverImage'), async (req, res) => {
   try {
@@ -1359,12 +1434,18 @@ app.post('/sw-admin/portfolio' , requireAdminAuth , upload.single('coverImage'),
 
     const coverImage = req.file ? `/uploads/portfolio/${req.file.filename}` : ''
 
+    // techStack از چک‌باکس‌های name="techStack[]" به صورت آرایه ارسال می‌شود
+    // برای سازگاری، حالت رشته جدا‌شده با کاما نیز پشتیبانی می‌شود
+    const techStackArr = Array.isArray(techStack)
+      ? techStack.map(t => t.trim()).filter(Boolean)
+      : (techStack ? techStack.split(',').map(t => t.trim()).filter(Boolean) : [])
+
     await Portfolio.create({
       title       : (title || '').trim(),
       description : description || '',
       coverImage  : coverImage,
       category    : category || 'web',
-      techStack   : techStack ? techStack.split(',').map(t => t.trim()).filter(Boolean) : [],
+      techStack   : techStackArr,
       liveUrl     : liveUrl || '',
       client      : client || null,
       isFeatured  : isFeatured === 'on',
@@ -1407,11 +1488,17 @@ app.post('/sw-admin/portfolio/:id/update' , requireAdminAuth , upload.single('co
       ? '/uploads/portfolio/' + req.file.filename
       : portfolio.coverImage   // اگر عکس جدید نبود قبلی بماند
 
-    portfolio.title = title.trim()
+    // techStack از چک‌باکس‌های name="techStack[]" به صورت آرایه ارسال می‌شود
+    // برای سازگاری، حالت رشته جدا‌شده با کاما نیز پشتیبانی می‌شود
+    const techStackArr = Array.isArray(techStack)
+      ? techStack.map(t => t.trim()).filter(Boolean)
+      : (techStack ? techStack.split(',').map(t=>t.trim()).filter(Boolean) : [])
+
+    portfolio.title = (title || '').trim()
     portfolio.description = description || ''
     portfolio.coverImage = coverImage
     portfolio.category = category || 'web'
-    portfolio.techStack = techStack ? techStack.split(',').map(t=>t.trim()).filter(Boolean) : []
+    portfolio.techStack = techStackArr
     portfolio.liveUrl = liveUrl || ''
     portfolio.client = client || null
     portfolio.isFeatured = isFeatured === 'on'

@@ -1,10 +1,10 @@
-<%- include('partials/_head', { title: isEdit ? 'ویرایش نمونه کار' : 'نمونه کار جدید' }) %>
+<%- include('partials/_head', { title: isEdit ? 'ویرایش مقاله' : 'مقاله جدید' }) %>
 
 <div class="sidebar-overlay" id="sidebarOverlay"></div>
 <div class="admin-shell">
 
 <%- include('partials/_sidebar', {
-  activePage: 'portfolio',
+  activePage: 'blog',
   adminUser: { name: 'علی مدیری', role: 'مدیر کل سیستم', initials: 'ادم' }
 }) %>
 
@@ -12,45 +12,42 @@
 <%- include('partials/_header', {
   breadcrumbs: [
     { label: 'داشبورد', href: '/sw-admin' },
-    { label: 'محتوا' },
-    { label: 'پورتفولیو', href: '/sw-admin/portfolio' },
-    { label: isEdit ? 'ویرایش نمونه کار' : 'نمونه کار جدید' }
+    { label: 'وبلاگ', href: '/sw-admin/blog' },
+    { label: isEdit ? 'ویرایش مقاله' : 'مقاله جدید' }
   ],
-  searchPlaceholder: 'جستجو در پورتفولیو…'
+  searchPlaceholder: 'جستجو در مقالات…'
 }) %>
 
 <%
-const defaultTechOptions = [
-  'PHP', 'Laravel', 'وردپرس', 'React', 'Vue.js', 'Next.js',
-  'Node.js', 'Angular', 'TypeScript', 'Tailwind CSS', 'Bootstrap',
-  'MySQL', 'MongoDB', 'jQuery'
+const defaultTagOptions = [
+  'طراحی وب', 'سئو', 'وردپرس', 'فروشگاه اینترنتی', 'برندینگ',
+  'بازاریابی دیجیتال', 'تولید محتوا', 'React', 'Node.js', 'تکنولوژی', 'آموزش'
 ];
 
 const itemCategorySlug = item.category && item.category.slug ? item.category.slug : item.category;
-const itemClientId = item.client ? (item.client._id || item.client) : '';
-const itemTechStack = item.techStack || [];
-const formAction = isEdit ? ('/sw-admin/portfolio/' + item._id + '/update') : '/sw-admin/portfolio';
+const itemTags = item.tags || [];
+const formAction = isEdit ? ('/sw-admin/blog/' + item._id + '/update') : '/sw-admin/blog';
 %>
 
 <main class="page-content">
 
   <div class="page-header fade-up fade-up-1">
     <div>
-      <h1 class="page-title"><%= isEdit ? 'ویرایش نمونه کار' : 'نمونه کار جدید' %></h1>
+      <h1 class="page-title"><%= isEdit ? 'ویرایش مقاله' : 'مقاله جدید' %></h1>
       <p class="page-subtitle">
         <% if (isEdit) { %>
-          ویرایش اطلاعات پروژه «<%= item.title %>»
+          ویرایش مقاله «<%= item.title %>»
         <% } else { %>
-          افزودن یک پروژه جدید به گالری پورتفولیو
+          افزودن یک مقاله جدید به وبلاگ
         <% } %>
       </p>
     </div>
-    <a href="/sw-admin/portfolio" class="btn-ghost-sm">
-      <i class="bi bi-arrow-right"></i> بازگشت به پورتفولیو
+    <a href="/sw-admin/blog" class="btn-ghost-sm">
+      <i class="bi bi-arrow-right"></i> بازگشت به وبلاگ
     </a>
   </div>
 
-  <form id="portfolioForm" action="<%= formAction %>" method="POST" enctype="multipart/form-data">
+  <form id="blogForm" action="<%= formAction %>" method="POST" enctype="multipart/form-data">
 
     <div class="pf-layout fade-up fade-up-2">
 
@@ -62,17 +59,43 @@ const formAction = isEdit ? ('/sw-admin/portfolio/' + item._id + '/update') : '/
             type="text"
             class="pf-title-input"
             name="title"
-            id="portTitle"
-            placeholder="عنوان پروژه را وارد کنید…"
+            id="postTitle"
+            placeholder="عنوان جذاب مقاله را وارد کنید…"
             value="<%= item.title || '' %>"
             autocomplete="off"
           >
+
+          <div class="pf-slug-row">
+            <span class="pf-slug-prefix">/blog/</span>
+            <input
+              type="text"
+              class="pf-slug-input"
+              name="slug"
+              id="postSlug"
+              placeholder="نامک-مقاله"
+              value="<%= item.slug || '' %>"
+              autocomplete="off"
+              dir="ltr"
+            >
+          </div>
         </div>
 
         <div class="pf-editor-box">
-          <label class="sol-label">توضیحات کامل پروژه</label>
-          <div id="quillEditor" class="pf-quill"><%- item.description || '' %></div>
-          <textarea name="description" id="descriptionInput" style="display:none;"><%= item.description || '' %></textarea>
+          <div class="form-row" style="margin-bottom:1rem;">
+            <label class="sol-label">خلاصه مقاله</label>
+            <textarea
+              class="sol-input"
+              name="excerpt"
+              id="postExcerpt"
+              rows="2"
+              placeholder="چکیده کوتاهی برای نمایش در لیست مقالات و نتایج جستجو…"
+              style="resize:vertical;"
+            ><%= item.excerpt || '' %></textarea>
+          </div>
+
+          <label class="sol-label">متن کامل مقاله</label>
+          <div id="quillEditor" class="pf-quill"><%- item.content || '' %></div>
+          <textarea name="content" id="contentInput" style="display:none;"><%= item.content || '' %></textarea>
         </div>
 
       </div>
@@ -99,45 +122,22 @@ const formAction = isEdit ? ('/sw-admin/portfolio/' + item._id + '/update') : '/
                 <i class="bi bi-file-earmark"></i> ذخیره پیش‌نویس
               </button>
               <button class="btn-sol-sm w-100" type="submit" name="publish" value="1">
-                <i class="bi bi-send"></i> انتشار
+                <i class="bi bi-send"></i> انتشار مقاله
               </button>
             </div>
 
           </div>
         </div>
 
-        <!-- اطلاعات پروژه -->
+        <!-- اطلاعات مقاله -->
         <div class="pf-box">
-          <div class="pf-box-header"><i class="bi bi-info-circle"></i> اطلاعات پروژه</div>
-          <div class="pf-box-body">
-
-            <div class="form-row">
-              <label class="sol-label">مشتری</label>
-              <select class="sol-select" name="client" id="portClient">
-                <option value="">بدون مشتری</option>
-                <% clients.forEach(c => { %>
-                  <option value="<%= c._id %>" <%= String(c._id) === String(itemClientId) ? 'selected' : '' %>><%= c.name %></option>
-                <% }) %>
-              </select>
-            </div>
-
-            <div class="form-row" style="margin-bottom:0;">
-              <label class="sol-label">لینک زنده پروژه</label>
-              <input class="sol-input" type="url" placeholder="https://…" name="liveUrl" id="portUrl" value="<%= item.liveUrl || '' %>">
-            </div>
-
-          </div>
-        </div>
-
-        <!-- دسته‌بندی و تکنولوژی -->
-        <div class="pf-box">
-          <div class="pf-box-header"><i class="bi bi-tags"></i> دسته‌بندی و تکنولوژی‌ها</div>
+          <div class="pf-box-header"><i class="bi bi-info-circle"></i> اطلاعات مقاله</div>
           <div class="pf-box-body">
 
             <div class="form-row">
               <label class="sol-label">دسته‌بندی</label>
               <div style="display:flex;gap:.5rem;">
-                <select class="sol-select" name="category" id="portCategory" style="width:100%">
+                <select class="sol-select" name="category" id="postCategory" style="width:100%">
 
                   <option value="">انتخاب دسته</option>
 
@@ -164,33 +164,55 @@ const formAction = isEdit ? ('/sw-admin/portfolio/' + item._id + '/update') : '/
               </div>
             </div>
 
+            <div class="form-row">
+              <label class="sol-label">نویسنده</label>
+              <select class="sol-select" name="author" id="postAuthor" style="width:100%">
+                <option value="">انتخاب نویسنده</option>
+                <% (typeof authors !== 'undefined' ? authors : []).forEach(a => { %>
+                  <option value="<%= a %>" <%= a === item.author ? 'selected' : '' %>><%= a %></option>
+                <% }) %>
+                <% if (item.author && (typeof authors === 'undefined' || !authors.includes(item.author))) { %>
+                  <option value="<%= item.author %>" selected><%= item.author %></option>
+                <% } %>
+              </select>
+            </div>
+
             <div class="form-row" style="margin-bottom:0;">
-              <label class="sol-label">تکنولوژی‌های استفاده‌شده</label>
+              <label class="sol-label">زمان مطالعه</label>
+              <input class="sol-input" type="text" placeholder="مثلاً: ۵ دقیقه مطالعه" name="readTime" id="postReadTime" value="<%= item.readTime || '' %>">
+            </div>
 
-              <div class="tech-checklist" id="techChecklist">
-                <% defaultTechOptions.forEach(tech => { %>
-                  <label class="tech-check-item">
-                    <input type="checkbox" name="techStack[]" value="<%= tech %>" <%= itemTechStack.includes(tech) ? 'checked' : '' %>>
-                    <span class="tech-chip-label"><%= tech %></span>
-                    <span class="tech-chip-remove"><i class="bi bi-x-lg"></i></span>
-                  </label>
-                <% }) %>
+          </div>
+        </div>
 
-                <% itemTechStack.filter(t => !defaultTechOptions.includes(t)).forEach(tech => { %>
-                  <label class="tech-check-item">
-                    <input type="checkbox" name="techStack[]" value="<%= tech %>" checked>
-                    <span class="tech-chip-label"><%= tech %></span>
-                    <span class="tech-chip-remove"><i class="bi bi-x-lg"></i></span>
-                  </label>
-                <% }) %>
-              </div>
+        <!-- برچسب‌های مقاله -->
+        <div class="pf-box">
+          <div class="pf-box-header"><i class="bi bi-tags"></i> برچسب‌های مقاله</div>
+          <div class="pf-box-body">
 
-              <div style="display:flex;gap:.5rem;margin-top:.65rem;">
-                <input type="text" class="sol-input" id="newTechInput" placeholder="افزودن تکنولوژی جدید…" style="flex:1;">
-                <button type="button" class="btn-ghost-sm" id="addTechBtn">
-                  <i class="bi bi-plus-lg"></i> افزودن
-                </button>
-              </div>
+            <div class="tag-checklist" id="tagChecklist">
+              <% defaultTagOptions.forEach(tag => { %>
+                <label class="tag-check-item">
+                  <input type="checkbox" name="tags[]" value="<%= tag %>" <%= itemTags.includes(tag) ? 'checked' : '' %>>
+                  <span class="tag-chip-label"><%= tag %></span>
+                  <span class="tag-chip-remove"><i class="bi bi-x-lg"></i></span>
+                </label>
+              <% }) %>
+
+              <% itemTags.filter(t => !defaultTagOptions.includes(t)).forEach(tag => { %>
+                <label class="tag-check-item">
+                  <input type="checkbox" name="tags[]" value="<%= tag %>" checked>
+                  <span class="tag-chip-label"><%= tag %></span>
+                  <span class="tag-chip-remove"><i class="bi bi-x-lg"></i></span>
+                </label>
+              <% }) %>
+            </div>
+
+            <div style="display:flex;gap:.5rem;margin-top:.65rem;">
+              <input type="text" class="sol-input" id="newTagInput" placeholder="افزودن برچسب جدید…" style="flex:1;">
+              <button type="button" class="btn-ghost-sm" id="addTagBtn">
+                <i class="bi bi-plus-lg"></i> افزودن
+              </button>
             </div>
 
           </div>
@@ -224,76 +246,6 @@ const formAction = isEdit ? ('/sw-admin/portfolio/' + item._id + '/update') : '/
 
     </div>
 
-    <!-- ═══════ باکس سئو داخلی ═══════ -->
-    <div class="pf-seo-box fade-up fade-up-3">
-
-      <div class="pf-seo-header">
-        <i class="bi bi-graph-up-arrow"></i>
-        <span>سئو داخلی (پایه)</span>
-      </div>
-
-      <div class="pf-seo-body">
-        <div class="pf-seo-grid">
-
-          <div>
-            <div class="form-row">
-              <label class="sol-label">کلمه کلیدی تمرکزی (Focus Keyword)</label>
-              <input
-                class="sol-input"
-                type="text"
-                id="focusKeyword"
-                name="seoKeywords"
-                placeholder="مثلاً: طراحی وب‌سایت فروشگاهی"
-                value="<%= item.seoKeywords || '' %>"
-              >
-            </div>
-
-            <div class="form-row" style="margin-bottom:0;">
-              <label class="sol-label">توضیحات متا (Meta Description)</label>
-              <textarea
-                class="sol-input"
-                id="metaDescription"
-                name="metaDescription"
-                rows="3"
-                maxlength="160"
-                placeholder="خلاصه‌ای گیرا برای نمایش در نتایج گوگل…"
-                style="resize:vertical;"
-              ><%= item.metaDescription || '' %></textarea>
-              <div class="pf-char-counter">
-                <span id="metaCharCount">0</span> / ۱۶۰ کاراکتر
-              </div>
-            </div>
-          </div>
-
-          <div class="pf-seo-checklist" id="seoChecklist">
-
-            <div class="pf-seo-check" data-check="titleHasKeyword">
-              <i class="bi bi-circle"></i>
-              <span>کلمه کلیدی تمرکزی در «عنوان پروژه» استفاده شده است</span>
-            </div>
-
-            <div class="pf-seo-check" data-check="metaHasKeyword">
-              <i class="bi bi-circle"></i>
-              <span>کلمه کلیدی تمرکزی در «توضیحات متا» وجود دارد</span>
-            </div>
-
-            <div class="pf-seo-check" data-check="bodyHasKeyword">
-              <i class="bi bi-circle"></i>
-              <span>کلمه کلیدی تمرکزی در متن توضیحات اصلی استفاده شده است</span>
-            </div>
-
-            <div class="pf-seo-check" data-check="bodyLength">
-              <i class="bi bi-circle"></i>
-              <span>حداقل ۳۰۰ کلمه در توضیحات اصلی وجود دارد (<span id="wordCountLabel">۰</span> کلمه)</span>
-            </div>
-
-          </div>
-
-        </div>
-      </div>
-
-    </div>
-
   </form>
 
 </main>
@@ -303,7 +255,6 @@ const formAction = isEdit ? ('/sw-admin/portfolio/' + item._id + '/update') : '/
 <%- include('partials/_scripts', { extraScripts: `
 <link href="https://cdn.jsdelivr.net/npm/quill@1.3.7/dist/quill.snow.css" rel="stylesheet">
 <style>
-.card-sol-form{background:var(--color-surface);border:1px solid var(--color-border);border-radius:var(--radius-lg);padding:1.75rem;box-shadow:var(--shadow-sm);}
 
 /* ─── دو ستونی (سبک وردپرس) ─── */
 .pf-layout{display:grid;grid-template-columns:1fr 340px;gap:1.75rem;align-items:start;}
@@ -312,10 +263,15 @@ const formAction = isEdit ? ('/sw-admin/portfolio/' + item._id + '/update') : '/
 .pf-main{display:flex;flex-direction:column;gap:1.5rem;min-width:0;}
 .pf-sidebar{display:flex;flex-direction:column;gap:1.5rem;}
 
-.pf-title-box{background:var(--color-surface);border:1px solid var(--color-border);border-radius:22px;padding:.35rem 1.4rem;box-shadow:var(--shadow-sm);transition:box-shadow .3s var(--ease-smooth), border-color .3s var(--ease-smooth);}
+.pf-title-box{background:var(--color-surface);border:1px solid var(--color-border);border-radius:22px;padding:.5rem 1.4rem 1rem;box-shadow:var(--shadow-sm);transition:box-shadow .3s var(--ease-smooth), border-color .3s var(--ease-smooth);}
 .pf-title-box:focus-within{border-color:var(--main-300);box-shadow:0 0 0 4px rgba(100,71,244,.12), var(--shadow-md);}
-.pf-title-input{width:100%;border:none;outline:none;background:transparent;font-family:var(--font-primary);font-size:1.5rem;font-weight:800;color:var(--color-text-primary);padding:.75rem 0;}
+.pf-title-input{width:100%;border:none;outline:none;background:transparent;font-family:var(--font-primary);font-size:1.5rem;font-weight:800;color:var(--color-text-primary);padding:.75rem 0 .35rem;}
 .pf-title-input::placeholder{color:var(--color-text-light);font-weight:600;}
+
+.pf-slug-row{display:flex;align-items:center;gap:.35rem;padding-top:.5rem;border-top:1px solid var(--color-border);}
+.pf-slug-prefix{font-size:.8rem;color:var(--color-text-light);font-weight:600;flex-shrink:0;}
+.pf-slug-input{flex:1;border:none;outline:none;background:transparent;font-family:var(--font-mono);font-size:.82rem;color:var(--main-500);padding:.35rem 0;}
+.pf-slug-input::placeholder{color:var(--color-text-light);}
 
 /* ─── ادیتور Quill: امضای بصری صفحه ─── */
 .pf-editor-box{background:var(--color-surface);border:1.5px solid var(--color-border);border-radius:24px;padding:1.5rem;box-shadow:var(--shadow-sm);transition:box-shadow .4s var(--ease-smooth), border-color .4s var(--ease-smooth);}
@@ -327,22 +283,22 @@ const formAction = isEdit ? ('/sw-admin/portfolio/' + item._id + '/update') : '/
     0 0 48px rgba(0,144,232,.10),
     var(--shadow-lg);
 }
-.pf-quill{margin-top:.85rem;border-radius:18px;overflow:hidden;}
+.pf-quill{margin-top:.85rem;border-radius:16px;overflow:hidden;}
 
 .ql-toolbar.ql-snow{
   border-color:var(--color-border) !important;
-  border-radius:18px 18px 0 0;
+  border-radius:16px 16px 0 0;
   background:var(--color-bg-soft);
   font-family:var(--font-primary);
   padding:.7rem .85rem;
 }
 .ql-container.ql-snow{
   border-color:var(--color-border) !important;
-  border-radius:0 0 18px 18px;
+  border-radius:0 0 16px 16px;
   font-family:var(--font-primary);
   background:var(--color-bg);
 }
-.ql-editor{min-height:320px;font-size:.95rem;line-height:1.95;direction:rtl;text-align:right;padding:1.25rem 1.4rem;}
+.ql-editor{min-height:360px;font-size:.95rem;line-height:1.95;direction:rtl;text-align:right;padding:1.25rem 1.4rem;}
 .ql-editor h1,.ql-editor h2,.ql-editor h3,.ql-editor h4,.ql-editor h5,.ql-editor h6{font-family:var(--font-primary);font-weight:800;}
 .ql-editor.ql-blank::before{right:1.4rem;left:auto;font-style:normal;color:var(--color-text-light);font-family:var(--font-primary);}
 
@@ -350,7 +306,7 @@ const formAction = isEdit ? ('/sw-admin/portfolio/' + item._id + '/update') : '/
 .ql-snow .ql-picker{border-radius:10px;}
 .ql-snow .ql-picker-label{border-radius:10px;padding-left:.4rem;}
 .ql-snow .ql-picker-options{
-  border-radius:16px !important;
+  border-radius:14px !important;
   border-color:var(--color-border) !important;
   box-shadow:var(--shadow-lg);
   padding:.5rem !important;
@@ -367,7 +323,7 @@ const formAction = isEdit ? ('/sw-admin/portfolio/' + item._id + '/update') : '/
 .ql-snow.ql-toolbar button:hover .ql-fill,
 .ql-snow.ql-toolbar button.ql-active .ql-fill{fill:var(--main-500) !important;}
 .ql-snow .ql-tooltip{
-  border-radius:16px !important;
+  border-radius:14px !important;
   border-color:var(--color-border) !important;
   box-shadow:var(--shadow-lg) !important;
   background:var(--color-surface) !important;
@@ -381,7 +337,7 @@ const formAction = isEdit ? ('/sw-admin/portfolio/' + item._id + '/update') : '/
   content:'متن عادی';
 }
 .pf-editor-box .ql-picker.ql-header .ql-picker-label[data-value="1"]::before,
-.pf-editor-box .ql-picker.ql-header .ql-picker-item[data-value="1"]::before{content:'تیتر اصلی (H1)';}
+.pf-editor-box .ql-picker.ql-header .ql-picker-item[data-value="1"]::before{content:'تیتر ۱';}
 .pf-editor-box .ql-picker.ql-header .ql-picker-label[data-value="2"]::before,
 .pf-editor-box .ql-picker.ql-header .ql-picker-item[data-value="2"]::before{content:'تیتر ۲';}
 .pf-editor-box .ql-picker.ql-header .ql-picker-label[data-value="3"]::before,
@@ -403,10 +359,10 @@ const formAction = isEdit ? ('/sw-admin/portfolio/' + item._id + '/update') : '/
 .pf-publish-actions{display:flex;flex-direction:column;gap:.6rem;}
 .w-100{width:100%;justify-content:center;}
 
-#portfolioForm .btn-sol-sm,
-#portfolioForm .btn-ghost-sm{border-radius:14px;}
-#portfolioForm .sol-input,
-#portfolioForm .sol-select{border-radius:14px;}
+#blogForm .btn-sol-sm,
+#blogForm .btn-ghost-sm{border-radius:14px;}
+#blogForm .sol-input,
+#blogForm .sol-select{border-radius:14px;}
 
 /* ─── آپلود تصویر ─── */
 .port-upload-area{border:2px dashed var(--main-200);border-radius:20px;padding:1.5rem 1rem;text-align:center;cursor:pointer;transition:all var(--dur-fast);background:var(--main-50);position:relative;}
@@ -418,8 +374,8 @@ const formAction = isEdit ? ('/sw-admin/portfolio/' + item._id + '/update') : '/
 .upload-remove-btn{position:absolute;top:-.5rem;left:-.5rem;width:1.75rem;height:1.75rem;border-radius:50%;background:var(--color-surface);border:1.5px solid var(--color-border);color:var(--color-text-muted);display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:.85rem;box-shadow:var(--shadow-sm);}
 .upload-remove-btn:hover{background:#ef4444;border-color:#ef4444;color:#fff;}
 
-/* ─── چیپ‌های تکنولوژی (مدرن، منظم، ریسپانسیو) ─── */
-.tech-checklist{
+/* ─── چیپ‌های برچسب مقاله (مدرن، منظم، ریسپانسیو) ─── */
+.tag-checklist{
   display:flex;
   flex-wrap:wrap;
   gap:.6rem;
@@ -428,7 +384,7 @@ const formAction = isEdit ? ('/sw-admin/portfolio/' + item._id + '/update') : '/
   border-radius:20px;
   padding:1rem;
 }
-.tech-check-item{
+.tag-check-item{
   position:relative;
   display:inline-flex;
   align-items:center;
@@ -446,27 +402,27 @@ const formAction = isEdit ? ('/sw-admin/portfolio/' + item._id + '/update') : '/
   transition:all .25s var(--ease-spring);
   white-space:nowrap;
 }
-.tech-check-item input[type="checkbox"]{
+.tag-check-item input[type="checkbox"]{
   position:absolute;
   width:0;
   height:0;
   opacity:0;
   pointer-events:none;
 }
-.tech-check-item:hover{
+.tag-check-item:hover{
   border-color:var(--main-300);
   color:var(--main-600);
   transform:translateY(-2px);
   box-shadow:var(--shadow-sm);
 }
-.tech-check-item.selected{
+.tag-check-item.selected{
   background:var(--grad-main);
   border-color:transparent;
   color:#fff;
   box-shadow:var(--shadow-main);
 }
-.tech-check-item.selected:hover{color:#fff;}
-.tech-chip-remove{
+.tag-check-item.selected:hover{color:#fff;}
+.tag-chip-remove{
   display:flex;
   align-items:center;
   justify-content:center;
@@ -476,35 +432,17 @@ const formAction = isEdit ? ('/sw-admin/portfolio/' + item._id + '/update') : '/
   font-size:.68rem;
   transition:all .25s var(--ease-spring);
 }
-.tech-check-item.selected:hover .tech-chip-remove{
+.tag-check-item.selected:hover .tag-chip-remove{
   width:14px;
   opacity:1;
   margin-inline-start:.1rem;
 }
 
-/* ─── باکس سئو ─── */
-.pf-seo-box{margin-top:1.75rem;background:var(--color-surface);border:1px solid var(--color-border);border-radius:24px;overflow:hidden;box-shadow:var(--shadow-sm);}
-.pf-seo-header{display:flex;align-items:center;gap:.55rem;padding:1.1rem 1.5rem;font-weight:800;font-size:.95rem;border-bottom:1px solid var(--color-border);background:linear-gradient(135deg, rgba(100,71,244,.08), rgba(0,144,232,.05));}
-.pf-seo-header i{color:var(--main-500);font-size:1.15rem;}
-.pf-seo-body{padding:1.5rem;}
-.pf-seo-grid{display:grid;grid-template-columns:1fr 1fr;gap:1.75rem;}
-@media (max-width:767.98px){.pf-seo-grid{grid-template-columns:1fr;}}
-
-.pf-char-counter{font-size:.72rem;color:var(--color-text-light);margin-top:.4rem;text-align:left;}
-.pf-char-counter.over{color:#ef4444;font-weight:700;}
-
-.pf-seo-checklist{display:flex;flex-direction:column;gap:.75rem;}
-.pf-seo-check{display:flex;align-items:flex-start;gap:.6rem;font-size:.82rem;color:var(--color-text-muted);padding:.75rem .95rem;border-radius:16px;background:var(--color-bg);border:1px solid var(--color-border);transition:all .25s var(--ease-smooth);}
-.pf-seo-check i{font-size:1.1rem;flex-shrink:0;margin-top:.1rem;color:var(--color-text-light);}
-.pf-seo-check.pf-check-pass{background:rgba(34,197,94,.08);border-color:rgba(34,197,94,.3);color:#15803d;}
-.pf-seo-check.pf-check-pass i{color:#22c55e;}
-[data-bs-theme="dark"] .pf-seo-check.pf-check-pass{color:#4ade80;}
-
 @media (max-width:575.98px){
   .pf-box-body{padding:1rem;}
-  .ql-editor{padding:1rem;min-height:240px;}
-  .tech-checklist{padding:.75rem;gap:.5rem;}
-  .tech-check-item{padding:.45rem .8rem;font-size:.75rem;}
+  .ql-editor{padding:1rem;min-height:260px;}
+  .tag-checklist{padding:.75rem;gap:.5rem;}
+  .tag-check-item{padding:.45rem .8rem;font-size:.75rem;}
 }
 </style>
 
@@ -516,7 +454,7 @@ const formAction = isEdit ? ('/sw-admin/portfolio/' + item._id + '/update') : '/
 // ─────────────────────────────────────
 var quill = new Quill('#quillEditor', {
   theme: 'snow',
-  placeholder: 'توضیحات کامل پروژه را اینجا بنویسید…',
+  placeholder: 'متن کامل مقاله را اینجا بنویسید…',
   modules: {
     toolbar: [
       [{ header: [1, 2, 3, 4, 5, 6, false] }],
@@ -529,12 +467,40 @@ var quill = new Quill('#quillEditor', {
   }
 })
 
-var descriptionInput = document.getElementById('descriptionInput')
-var portfolioForm     = document.getElementById('portfolioForm')
+var contentInput = document.getElementById('contentInput')
+var blogForm      = document.getElementById('blogForm')
 
-if (portfolioForm && descriptionInput) {
-  portfolioForm.addEventListener('submit', function () {
-    descriptionInput.value = quill.root.innerHTML
+if (blogForm && contentInput) {
+  blogForm.addEventListener('submit', function () {
+    contentInput.value = quill.root.innerHTML
+  })
+}
+
+// ─────────────────────────────────────
+// اسلاگ خودکار از روی عنوان (تا وقتی کاربر خودش دستی ویرایشش نکرده)
+// ─────────────────────────────────────
+var postTitleInput = document.getElementById('postTitle')
+var postSlugInput  = document.getElementById('postSlug')
+var slugManuallyEdited = !!(postSlugInput && postSlugInput.value.trim())
+
+function slugify(text) {
+  return (text || '')
+    .trim()
+    .replace(/[\\s_]+/g, '-')
+    .replace(/[^\\p{L}\\p{N}-]+/gu, '')
+    .replace(/-+/g, '-')
+    .replace(/^-+|-+$/g, '')
+}
+
+if (postTitleInput && postSlugInput) {
+  postTitleInput.addEventListener('input', function () {
+    if (!slugManuallyEdited) {
+      postSlugInput.value = slugify(postTitleInput.value)
+    }
+  })
+
+  postSlugInput.addEventListener('input', function () {
+    slugManuallyEdited = postSlugInput.value.trim().length > 0
   })
 }
 
@@ -620,62 +586,9 @@ uploadArea.addEventListener('drop', function (e) {
 })
 
 // ─────────────────────────────────────
-// دسته‌بندی و تکنولوژی‌ها
+// دسته‌بندی (افزودن آنی مشابه پورتفولیو)
 // ─────────────────────────────────────
-var portCategory  = document.getElementById('portCategory')
-var techChecklist = document.getElementById('techChecklist')
-
-// هماهنگ‌سازی ظاهر چیپ‌ها با وضعیت واقعی چک‌باکس (انتخاب‌شده/نشده)
-function syncTechChipState() {
-  if (!techChecklist) return
-
-  techChecklist.querySelectorAll('.tech-check-item').forEach(function (label) {
-    var checkbox = label.querySelector('input[type="checkbox"]')
-    label.classList.toggle('selected', !!(checkbox && checkbox.checked))
-  })
-}
-
-if (techChecklist) {
-  techChecklist.addEventListener('change', syncTechChipState)
-  syncTechChipState()
-}
-
-function ensureTechCheckbox(value, checked) {
-  if (!techChecklist || !value) return
-
-  var existing = Array.from(techChecklist.querySelectorAll('input[type="checkbox"]'))
-    .find(function (cb) { return cb.value === value })
-
-  if (!existing) {
-    var label = document.createElement('label')
-    label.className = 'tech-check-item'
-
-    var checkbox = document.createElement('input')
-    checkbox.type = 'checkbox'
-    checkbox.name = 'techStack[]'
-    checkbox.value = value
-
-    var labelSpan = document.createElement('span')
-    labelSpan.className = 'tech-chip-label'
-    labelSpan.textContent = value
-
-    var removeSpan = document.createElement('span')
-    removeSpan.className = 'tech-chip-remove'
-    removeSpan.innerHTML = '<i class="bi bi-x-lg"></i>'
-
-    label.appendChild(checkbox)
-    label.appendChild(labelSpan)
-    label.appendChild(removeSpan)
-    techChecklist.appendChild(label)
-
-    existing = checkbox
-  }
-
-  existing.checked = !!checked
-  syncTechChipState()
-}
-
-// افزودن «دسته‌بندی» جدید به آپشن‌ها
+var postCategory       = document.getElementById('postCategory')
 var addCategoryBtn     = document.getElementById('addCategoryBtn')
 var addCategoryBox     = document.getElementById('addCategoryBox')
 var newCategoryInput   = document.getElementById('newCategoryInput')
@@ -693,7 +606,7 @@ if (addCategoryBtn && addCategoryBox) {
 }
 
 function addNewCategory() {
-  if (!newCategoryInput || !portCategory) return
+  if (!newCategoryInput || !postCategory) return
 
   var value = (newCategoryInput.value || '').trim()
   if (!value) return
@@ -701,8 +614,8 @@ function addNewCategory() {
   var option = document.createElement('option')
   option.value = value
   option.textContent = value
-  portCategory.appendChild(option)
-  portCategory.value = value
+  postCategory.appendChild(option)
+  postCategory.value = value
 
   newCategoryInput.value = ''
   addCategoryBox.style.display = 'none'
@@ -721,94 +634,86 @@ if (newCategoryInput) {
   })
 }
 
-// افزودن «تکنولوژی» جدید به چک‌باکس‌ها
-var newTechInput = document.getElementById('newTechInput')
-var addTechBtn   = document.getElementById('addTechBtn')
+// ─────────────────────────────────────
+// برچسب‌های مقاله (چیپ‌های تعاملی + افزودن آنی)
+// ─────────────────────────────────────
+var tagChecklist = document.getElementById('tagChecklist')
 
-function addNewTech() {
-  if (!newTechInput) return
+// هماهنگ‌سازی ظاهر چیپ‌ها با وضعیت واقعی چک‌باکس (انتخاب‌شده/نشده)
+function syncTagChipState() {
+  if (!tagChecklist) return
 
-  var value = (newTechInput.value || '').trim()
+  tagChecklist.querySelectorAll('.tag-check-item').forEach(function (label) {
+    var checkbox = label.querySelector('input[type="checkbox"]')
+    label.classList.toggle('selected', !!(checkbox && checkbox.checked))
+  })
+}
+
+if (tagChecklist) {
+  tagChecklist.addEventListener('change', syncTagChipState)
+  syncTagChipState()
+}
+
+function ensureTagCheckbox(value, checked) {
+  if (!tagChecklist || !value) return
+
+  var existing = Array.from(tagChecklist.querySelectorAll('input[type="checkbox"]'))
+    .find(function (cb) { return cb.value === value })
+
+  if (!existing) {
+    var label = document.createElement('label')
+    label.className = 'tag-check-item'
+
+    var checkbox = document.createElement('input')
+    checkbox.type = 'checkbox'
+    checkbox.name = 'tags[]'
+    checkbox.value = value
+
+    var labelSpan = document.createElement('span')
+    labelSpan.className = 'tag-chip-label'
+    labelSpan.textContent = value
+
+    var removeSpan = document.createElement('span')
+    removeSpan.className = 'tag-chip-remove'
+    removeSpan.innerHTML = '<i class="bi bi-x-lg"></i>'
+
+    label.appendChild(checkbox)
+    label.appendChild(labelSpan)
+    label.appendChild(removeSpan)
+    tagChecklist.appendChild(label)
+
+    existing = checkbox
+  }
+
+  existing.checked = !!checked
+  syncTagChipState()
+}
+
+var newTagInput = document.getElementById('newTagInput')
+var addTagBtn   = document.getElementById('addTagBtn')
+
+function addNewTag() {
+  if (!newTagInput) return
+
+  var value = (newTagInput.value || '').trim()
   if (!value) return
 
-  ensureTechCheckbox(value, true)
-  newTechInput.value = ''
+  ensureTagCheckbox(value, true)
+  newTagInput.value = ''
 }
 
-if (addTechBtn) {
-  addTechBtn.addEventListener('click', addNewTech)
+if (addTagBtn) {
+  addTagBtn.addEventListener('click', addNewTag)
 }
 
-if (newTechInput) {
-  newTechInput.addEventListener('keydown', function (e) {
+if (newTagInput) {
+  newTagInput.addEventListener('keydown', function (e) {
     if (e.key === 'Enter') {
       e.preventDefault()
-      addNewTech()
+      addNewTag()
     }
   })
 }
-
-// ─────────────────────────────────────
-// تحلیل زنده سئو (SEO Live Checklist)
-// ─────────────────────────────────────
-var focusKeywordInput = document.getElementById('focusKeyword')
-var metaDescInput     = document.getElementById('metaDescription')
-var metaCharCount     = document.getElementById('metaCharCount')
-var portTitleInput    = document.getElementById('portTitle')
-var wordCountLabel    = document.getElementById('wordCountLabel')
-
-function toFaNumber(num) {
-  try {
-    return Number(num).toLocaleString('fa-IR')
-  } catch (e) {
-    return String(num)
-  }
-}
-
-function updateSeoChecklist() {
-  var keyword   = (focusKeywordInput.value || '').trim().toLowerCase()
-  var titleText = (portTitleInput.value || '').toLowerCase()
-  var metaText  = (metaDescInput.value || '').toLowerCase()
-  var bodyText  = quill.getText().toLowerCase()
-  var wordCount = quill.getText().trim().split(/\\s+/).filter(Boolean).length
-
-  var checks = {
-    titleHasKeyword: !!keyword && titleText.indexOf(keyword) !== -1,
-    metaHasKeyword : !!keyword && metaText.indexOf(keyword) !== -1,
-    bodyHasKeyword : !!keyword && bodyText.indexOf(keyword) !== -1,
-    bodyLength     : wordCount >= 300
-  }
-
-  Object.keys(checks).forEach(function (key) {
-    var el = document.querySelector('.pf-seo-check[data-check="' + key + '"]')
-    if (!el) return
-
-    var icon = el.querySelector('i')
-
-    if (checks[key]) {
-      el.classList.add('pf-check-pass')
-      if (icon) icon.className = 'bi bi-check-circle-fill'
-    } else {
-      el.classList.remove('pf-check-pass')
-      if (icon) icon.className = 'bi bi-circle'
-    }
-  })
-
-  if (wordCountLabel) wordCountLabel.textContent = toFaNumber(wordCount)
-
-  if (metaCharCount) {
-    var len = metaDescInput.value.length
-    metaCharCount.textContent = toFaNumber(len)
-    metaCharCount.parentElement.classList.toggle('over', len > 160)
-  }
-}
-
-if (focusKeywordInput) focusKeywordInput.addEventListener('input', updateSeoChecklist)
-if (metaDescInput)     metaDescInput.addEventListener('input', updateSeoChecklist)
-if (portTitleInput)    portTitleInput.addEventListener('input', updateSeoChecklist)
-quill.on('text-change', updateSeoChecklist)
-
-updateSeoChecklist()
 
 </script>
 `}) %>

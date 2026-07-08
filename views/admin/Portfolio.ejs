@@ -146,6 +146,8 @@ const icons = [
 
     <div class="port-footer">
 
+      <div class="port-footer-main">
+
       <% if(item.isPublished){ %>
 
       <div style="display:flex;align-items:center;gap:.3rem;font-size:.73rem;color:var(--color-text-muted);">
@@ -170,6 +172,19 @@ const icons = [
 </form>
 
       <% } %>
+
+      </div>
+
+      <form
+        action="/sw-admin/portfolio/<%= item._id %>/delete"
+        method="POST"
+        class="port-delete-form"
+        data-confirm-title="<%= item.title || 'این نمونه کار' %>"
+      >
+        <button type="submit" class="port-delete-btn" title="حذف نمونه کار">
+          <i class="bi bi-trash"></i>
+        </button>
+      </form>
 
     </div>
 
@@ -233,7 +248,32 @@ const icons = [
 .port-title{font-size:.88rem;font-weight:700;margin-bottom:.5rem;line-height:1.4;}
 .port-meta{display:flex;gap:.85rem;flex-wrap:wrap;margin-bottom:.75rem;}
 .port-meta span{font-size:.73rem;color:var(--color-text-muted);display:flex;align-items:center;gap:.25rem;}
-.port-footer{display:flex;align-items:center;justify-content:space-between;gap:.5rem;}
+
+.port-footer{display:flex;align-items:center;justify-content:space-between;gap:.6rem;}
+.port-footer-main{display:flex;align-items:center;gap:.5rem;flex-wrap:wrap;flex:1;min-width:0;}
+
+.port-delete-form{flex-shrink:0;}
+.port-delete-btn{
+  width:2.1rem;
+  height:2.1rem;
+  border-radius:14px;
+  border:1.5px solid var(--color-border);
+  background:var(--color-surface);
+  color:var(--color-text-muted);
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  font-size:.85rem;
+  cursor:pointer;
+  transition:all var(--dur-fast) var(--ease-smooth);
+}
+.port-delete-btn:hover{
+  background:#ef4444;
+  border-color:#ef4444;
+  color:#fff;
+  transform:translateY(-2px);
+  box-shadow:0 6px 16px rgba(239,68,68,.35);
+}
 </style>
 <script>
 (function(){
@@ -264,6 +304,23 @@ const icons = [
       }
     })
 
+  })
+
+})();
+
+// تأیید حذف نمونه کار پیش از ارسال فرم
+(function () {
+
+  document.addEventListener('submit', function (e) {
+    const form = e.target.closest('.port-delete-form')
+    if (!form) return
+
+    const title = form.dataset.confirmTitle || 'این نمونه کار'
+    const confirmed = window.confirm('آیا از حذف «' + title + '» مطمئن هستید؟ این عملیات غیرقابل بازگشت است.')
+
+    if (!confirmed) {
+      e.preventDefault()
+    }
   })
 
 })();

@@ -29,7 +29,7 @@ const draftCount = items.filter(item => !item.isPublished).length
 </p>
     </div>
 <a
-  href="/sw-admin/portfolio/add"
+  href="/sw-admin/portfolio/form"
   class="btn-sol-sm create-btn"
 >
   <i class="bi bi-plus-lg"></i> نمونه کار جدید
@@ -108,7 +108,7 @@ const icons = [
 
   <div class="port-thumb-overlay">
     <a 
-      href="/sw-admin/portfolio/<%= item._id %>/edit"
+      href="/sw-admin/portfolio/form?id=<%= item._id %>"
       class="btn-ghost-sm edit-btn"
     >
       <i class="bi bi-pencil"></i> ویرایش

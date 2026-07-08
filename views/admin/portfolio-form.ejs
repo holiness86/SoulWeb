@@ -1,0 +1,648 @@
+<%- include('partials/_head', { title: isEdit ? 'ویرایش نمونه کار' : 'نمونه کار جدید' }) %>
+
+<div class="sidebar-overlay" id="sidebarOverlay"></div>
+<div class="admin-shell">
+
+<%- include('partials/_sidebar', {
+  activePage: 'portfolio',
+  adminUser: { name: 'علی مدیری', role: 'مدیر کل سیستم', initials: 'ادم' }
+}) %>
+
+<div class="main-content" id="mainContent">
+<%- include('partials/_header', {
+  breadcrumbs: [
+    { label: 'داشبورد', href: '/sw-admin' },
+    { label: 'محتوا' },
+    { label: 'پورتفولیو', href: '/sw-admin/portfolio' },
+    { label: isEdit ? 'ویرایش نمونه کار' : 'نمونه کار جدید' }
+  ],
+  searchPlaceholder: 'جستجو در پورتفولیو…'
+}) %>
+
+<%
+const defaultTechOptions = [
+  'PHP', 'Laravel', 'وردپرس', 'React', 'Vue.js', 'Next.js',
+  'Node.js', 'Angular', 'TypeScript', 'Tailwind CSS', 'Bootstrap',
+  'MySQL', 'MongoDB', 'jQuery'
+];
+
+const itemCategorySlug = item.category && item.category.slug ? item.category.slug : item.category;
+const itemClientId = item.client ? (item.client._id || item.client) : '';
+const itemTechStack = item.techStack || [];
+const formAction = isEdit ? ('/sw-admin/portfolio/' + item._id + '/update') : '/sw-admin/portfolio';
+%>
+
+<main class="page-content">
+
+  <div class="page-header fade-up fade-up-1">
+    <div>
+      <h1 class="page-title"><%= isEdit ? 'ویرایش نمونه کار' : 'نمونه کار جدید' %></h1>
+      <p class="page-subtitle">
+        <% if (isEdit) { %>
+          ویرایش اطلاعات پروژه «<%= item.title %>»
+        <% } else { %>
+          افزودن یک پروژه جدید به گالری پورتفولیو
+        <% } %>
+      </p>
+    </div>
+    <a href="/sw-admin/portfolio" class="btn-ghost-sm">
+      <i class="bi bi-arrow-right"></i> بازگشت به پورتفولیو
+    </a>
+  </div>
+
+  <form id="portfolioForm" action="<%= formAction %>" method="POST" enctype="multipart/form-data">
+
+    <div class="pf-layout fade-up fade-up-2">
+
+      <!-- ═══════ ستون اصلی ═══════ -->
+      <div class="pf-main">
+
+        <div class="pf-title-box">
+          <input
+            type="text"
+            class="pf-title-input"
+            name="title"
+            id="portTitle"
+            placeholder="عنوان پروژه را وارد کنید…"
+            value="<%= item.title || '' %>"
+            autocomplete="off"
+          >
+        </div>
+
+        <div class="pf-editor-box">
+          <label class="sol-label">توضیحات کامل پروژه</label>
+          <div id="quillEditor" class="pf-quill"><%- item.description || '' %></div>
+          <textarea name="description" id="descriptionInput" style="display:none;"><%= item.description || '' %></textarea>
+        </div>
+
+      </div>
+
+      <!-- ═══════ سایدبار ═══════ -->
+      <div class="pf-sidebar">
+
+        <!-- انتشار / وضعیت -->
+        <div class="pf-box">
+          <div class="pf-box-header"><i class="bi bi-broadcast"></i> انتشار</div>
+          <div class="pf-box-body">
+
+            <div class="pf-status-row">
+              <span>وضعیت فعلی:</span>
+              <% if (item.isPublished) { %>
+                <span class="badge-status badge-done">منتشرشده</span>
+              <% } else { %>
+                <span class="badge-status badge-new">پیش‌نویس</span>
+              <% } %>
+            </div>
+
+            <div class="pf-publish-actions">
+              <button class="btn-ghost-sm w-100" type="submit" name="publish" value="0">
+                <i class="bi bi-file-earmark"></i> ذخیره پیش‌نویس
+              </button>
+              <button class="btn-sol-sm w-100" type="submit" name="publish" value="1">
+                <i class="bi bi-send"></i> انتشار
+              </button>
+            </div>
+
+          </div>
+        </div>
+
+        <!-- اطلاعات پروژه -->
+        <div class="pf-box">
+          <div class="pf-box-header"><i class="bi bi-info-circle"></i> اطلاعات پروژه</div>
+          <div class="pf-box-body">
+
+            <div class="form-row">
+              <label class="sol-label">مشتری</label>
+              <select class="sol-select" name="client" id="portClient">
+                <option value="">بدون مشتری</option>
+                <% clients.forEach(c => { %>
+                  <option value="<%= c._id %>" <%= String(c._id) === String(itemClientId) ? 'selected' : '' %>><%= c.name %></option>
+                <% }) %>
+              </select>
+            </div>
+
+            <div class="form-row" style="margin-bottom:0;">
+              <label class="sol-label">لینک زنده پروژه</label>
+              <input class="sol-input" type="url" placeholder="https://…" name="liveUrl" id="portUrl" value="<%= item.liveUrl || '' %>">
+            </div>
+
+          </div>
+        </div>
+
+        <!-- دسته‌بندی و تکنولوژی -->
+        <div class="pf-box">
+          <div class="pf-box-header"><i class="bi bi-tags"></i> دسته‌بندی و تکنولوژی‌ها</div>
+          <div class="pf-box-body">
+
+            <div class="form-row">
+              <label class="sol-label">دسته‌بندی</label>
+              <div style="display:flex;gap:.5rem;">
+                <select class="sol-select" name="category" id="portCategory" style="width:100%">
+
+                  <option value="">انتخاب دسته</option>
+
+                  <% categories.forEach(cat => { %>
+                    <option value="<%= cat.slug %>" <%= cat.slug === itemCategorySlug ? 'selected' : '' %>>
+                      <%= cat.title %>
+                    </option>
+                  <% }) %>
+
+                  <% if (itemCategorySlug && !categories.find(c => c.slug === itemCategorySlug)) { %>
+                    <option value="<%= itemCategorySlug %>" selected><%= itemCategorySlug %></option>
+                  <% } %>
+
+                </select>
+
+                <button type="button" class="btn-ghost-sm" id="addCategoryBtn" title="افزودن دسته جدید" style="flex-shrink:0;padding:.5rem .7rem;">
+                  <i class="bi bi-plus-lg"></i>
+                </button>
+              </div>
+
+              <div id="addCategoryBox" style="display:none;gap:.5rem;margin-top:.6rem;">
+                <input type="text" class="sol-input" id="newCategoryInput" placeholder="عنوان دسته جدید…" style="flex:1;">
+                <button type="button" class="btn-sol-sm" id="confirmAddCategory">افزودن</button>
+              </div>
+            </div>
+
+            <div class="form-row" style="margin-bottom:0;">
+              <label class="sol-label">تکنولوژی‌های استفاده‌شده</label>
+
+              <div class="tech-checklist" id="techChecklist">
+                <% defaultTechOptions.forEach(tech => { %>
+                  <label class="tech-check-item">
+                    <input type="checkbox" name="techStack[]" value="<%= tech %>" <%= itemTechStack.includes(tech) ? 'checked' : '' %>>
+                    <span><%= tech %></span>
+                  </label>
+                <% }) %>
+
+                <% itemTechStack.filter(t => !defaultTechOptions.includes(t)).forEach(tech => { %>
+                  <label class="tech-check-item">
+                    <input type="checkbox" name="techStack[]" value="<%= tech %>" checked>
+                    <span><%= tech %></span>
+                  </label>
+                <% }) %>
+              </div>
+
+              <div style="display:flex;gap:.5rem;margin-top:.65rem;">
+                <input type="text" class="sol-input" id="newTechInput" placeholder="افزودن تکنولوژی جدید…" style="flex:1;">
+                <button type="button" class="btn-ghost-sm" id="addTechBtn">
+                  <i class="bi bi-plus-lg"></i> افزودن
+                </button>
+              </div>
+            </div>
+
+          </div>
+        </div>
+
+        <!-- تصویر شاخص -->
+        <div class="pf-box">
+          <div class="pf-box-header"><i class="bi bi-image"></i> تصویر شاخص</div>
+          <div class="pf-box-body">
+
+            <div class="port-upload-area <%= item.coverImage ? 'has-preview' : '' %>" id="uploadArea">
+              <div id="uploadAreaContent">
+                <% if (item.coverImage) { %>
+                  <div class="upload-preview-wrap">
+                    <img src="<%= item.coverImage %>" alt="<%= item.title %>" class="upload-preview-img">
+                  </div>
+                  <div style="font-size:.7rem;color:var(--color-text-light);margin-top:.5rem;">برای تغییر، کلیک یا فایل را رها کنید</div>
+                <% } else { %>
+                  <i class="bi bi-cloud-upload-fill" style="font-size:1.75rem;color:var(--main-400);"></i>
+                  <div style="font-size:.8rem;font-weight:600;margin-top:.4rem;">تصویر را بکشید یا کلیک کنید</div>
+                  <div style="font-size:.68rem;color:var(--color-text-light);">PNG, JPG</div>
+                <% } %>
+              </div>
+              <input type="file" accept="image/*" style="display:none;" id="imgUpload" name="coverImage">
+            </div>
+
+          </div>
+        </div>
+
+      </div>
+
+    </div>
+
+    <!-- ═══════ باکس سئو داخلی ═══════ -->
+    <div class="pf-seo-box fade-up fade-up-3">
+
+      <div class="pf-seo-header">
+        <i class="bi bi-graph-up-arrow"></i>
+        <span>سئو داخلی (پایه)</span>
+      </div>
+
+      <div class="pf-seo-body">
+        <div class="pf-seo-grid">
+
+          <div>
+            <div class="form-row">
+              <label class="sol-label">کلمه کلیدی تمرکزی (Focus Keyword)</label>
+              <input
+                class="sol-input"
+                type="text"
+                id="focusKeyword"
+                name="seoKeywords"
+                placeholder="مثلاً: طراحی وب‌سایت فروشگاهی"
+                value="<%= item.seoKeywords || '' %>"
+              >
+            </div>
+
+            <div class="form-row" style="margin-bottom:0;">
+              <label class="sol-label">توضیحات متا (Meta Description)</label>
+              <textarea
+                class="sol-input"
+                id="metaDescription"
+                name="metaDescription"
+                rows="3"
+                maxlength="160"
+                placeholder="خلاصه‌ای گیرا برای نمایش در نتایج گوگل…"
+                style="resize:vertical;"
+              ><%= item.metaDescription || '' %></textarea>
+              <div class="pf-char-counter">
+                <span id="metaCharCount">0</span> / ۱۶۰ کاراکتر
+              </div>
+            </div>
+          </div>
+
+          <div class="pf-seo-checklist" id="seoChecklist">
+
+            <div class="pf-seo-check" data-check="titleHasKeyword">
+              <i class="bi bi-circle"></i>
+              <span>کلمه کلیدی تمرکزی در «عنوان پروژه» استفاده شده است</span>
+            </div>
+
+            <div class="pf-seo-check" data-check="metaHasKeyword">
+              <i class="bi bi-circle"></i>
+              <span>کلمه کلیدی تمرکزی در «توضیحات متا» وجود دارد</span>
+            </div>
+
+            <div class="pf-seo-check" data-check="bodyHasKeyword">
+              <i class="bi bi-circle"></i>
+              <span>کلمه کلیدی تمرکزی در متن توضیحات اصلی استفاده شده است</span>
+            </div>
+
+            <div class="pf-seo-check" data-check="bodyLength">
+              <i class="bi bi-circle"></i>
+              <span>حداقل ۳۰۰ کلمه در توضیحات اصلی وجود دارد (<span id="wordCountLabel">۰</span> کلمه)</span>
+            </div>
+
+          </div>
+
+        </div>
+      </div>
+
+    </div>
+
+  </form>
+
+</main>
+</div>
+</div>
+
+<%- include('partials/_scripts', { extraScripts: `
+<link href="https://cdn.jsdelivr.net/npm/quill@1.3.7/dist/quill.snow.css" rel="stylesheet">
+<style>
+.card-sol-form{background:var(--color-surface);border:1px solid var(--color-border);border-radius:var(--radius-lg);padding:1.75rem;box-shadow:var(--shadow-sm);}
+
+/* ─── دو ستونی (سبک وردپرس) ─── */
+.pf-layout{display:grid;grid-template-columns:1fr 340px;gap:1.5rem;align-items:start;}
+@media (max-width:991.98px){.pf-layout{grid-template-columns:1fr;}}
+
+.pf-main{display:flex;flex-direction:column;gap:1.25rem;min-width:0;}
+.pf-sidebar{display:flex;flex-direction:column;gap:1.25rem;}
+
+.pf-title-box{background:var(--color-surface);border:1px solid var(--color-border);border-radius:var(--radius-lg);padding:.35rem 1.25rem;box-shadow:var(--shadow-sm);}
+.pf-title-input{width:100%;border:none;outline:none;background:transparent;font-family:var(--font-primary);font-size:1.4rem;font-weight:800;color:var(--color-text-primary);padding:.6rem 0;}
+.pf-title-input::placeholder{color:var(--color-text-light);font-weight:600;}
+
+.pf-editor-box{background:var(--color-surface);border:1px solid var(--color-border);border-radius:var(--radius-lg);padding:1.25rem;box-shadow:var(--shadow-sm);}
+.pf-quill{margin-top:.6rem;background:var(--color-bg);border-radius:var(--radius-md);overflow:hidden;}
+
+.ql-toolbar.ql-snow{border-color:var(--color-border) !important;border-radius:var(--radius-md) var(--radius-md) 0 0;background:var(--color-bg-soft);font-family:var(--font-primary);}
+.ql-container.ql-snow{border-color:var(--color-border) !important;border-radius:0 0 var(--radius-md) var(--radius-md);font-family:var(--font-primary);}
+.ql-editor{min-height:280px;font-size:.95rem;line-height:1.9;direction:rtl;text-align:right;}
+.ql-editor.ql-blank::before{right:1rem;left:auto;font-style:normal;color:var(--color-text-light);font-family:var(--font-primary);}
+
+.pf-box{background:var(--color-surface);border:1px solid var(--color-border);border-radius:var(--radius-lg);overflow:hidden;box-shadow:var(--shadow-sm);}
+.pf-box-header{display:flex;align-items:center;gap:.5rem;padding:.85rem 1.1rem;font-weight:700;font-size:.85rem;border-bottom:1px solid var(--color-border);background:var(--color-bg-soft);color:var(--color-text-primary);}
+.pf-box-header i{color:var(--main-500);}
+.pf-box-body{padding:1.1rem;}
+
+.pf-status-row{display:flex;align-items:center;justify-content:space-between;font-size:.8rem;color:var(--color-text-muted);margin-bottom:.85rem;}
+.pf-publish-actions{display:flex;flex-direction:column;gap:.5rem;}
+.w-100{width:100%;justify-content:center;}
+
+/* ─── آپلود تصویر ─── */
+.port-upload-area{border:2px dashed var(--main-200);border-radius:var(--radius-lg);padding:1.5rem 1rem;text-align:center;cursor:pointer;transition:all var(--dur-fast);background:var(--main-50);position:relative;}
+.port-upload-area:hover{border-color:var(--main-400);background:rgba(100,71,244,.08);}
+.port-upload-area.has-preview{padding:.75rem;}
+[data-bs-theme="dark"] .port-upload-area{background:rgba(100,71,244,.08);}
+.upload-preview-img{max-width:100%;max-height:180px;border-radius:var(--radius-md);object-fit:cover;display:block;margin:0 auto;}
+.upload-preview-wrap{position:relative;display:inline-block;}
+.upload-remove-btn{position:absolute;top:-.5rem;left:-.5rem;width:1.75rem;height:1.75rem;border-radius:50%;background:var(--color-surface);border:1.5px solid var(--color-border);color:var(--color-text-muted);display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:.85rem;box-shadow:var(--shadow-sm);}
+.upload-remove-btn:hover{background:#ef4444;border-color:#ef4444;color:#fff;}
+
+/* ─── دسته‌بندی و تکنولوژی ─── */
+.tech-checklist{display:flex;flex-wrap:wrap;gap:.5rem .65rem;background:var(--color-bg);border:1px solid var(--color-border);border-radius:var(--radius-md);padding:.85rem 1rem}
+.tech-check-item{display:flex;align-items:center;gap:.4rem;font-size:.8rem;font-weight:600;color:var(--color-text-primary);cursor:pointer;-webkit-user-select:none;user-select:none}
+.tech-check-item input[type="checkbox"]{width:15px;height:15px;accent-color:var(--main-500);cursor:pointer}
+
+/* ─── باکس سئو ─── */
+.pf-seo-box{margin-top:1.5rem;background:var(--color-surface);border:1px solid var(--color-border);border-radius:var(--radius-lg);overflow:hidden;box-shadow:var(--shadow-sm);}
+.pf-seo-header{display:flex;align-items:center;gap:.5rem;padding:1rem 1.25rem;font-weight:800;font-size:.95rem;border-bottom:1px solid var(--color-border);background:linear-gradient(135deg, rgba(100,71,244,.08), rgba(0,144,232,.05));}
+.pf-seo-header i{color:var(--main-500);font-size:1.15rem;}
+.pf-seo-body{padding:1.25rem;}
+.pf-seo-grid{display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;}
+@media (max-width:767.98px){.pf-seo-grid{grid-template-columns:1fr;}}
+
+.pf-char-counter{font-size:.72rem;color:var(--color-text-light);margin-top:.35rem;text-align:left;}
+.pf-char-counter.over{color:#ef4444;font-weight:700;}
+
+.pf-seo-checklist{display:flex;flex-direction:column;gap:.7rem;}
+.pf-seo-check{display:flex;align-items:flex-start;gap:.6rem;font-size:.82rem;color:var(--color-text-muted);padding:.65rem .85rem;border-radius:var(--radius-md);background:var(--color-bg);border:1px solid var(--color-border);transition:all .2s var(--ease-smooth);}
+.pf-seo-check i{font-size:1.1rem;flex-shrink:0;margin-top:.1rem;color:var(--color-text-light);}
+.pf-seo-check.pf-check-pass{background:rgba(34,197,94,.08);border-color:rgba(34,197,94,.3);color:#15803d;}
+.pf-seo-check.pf-check-pass i{color:#22c55e;}
+[data-bs-theme="dark"] .pf-seo-check.pf-check-pass{color:#4ade80;}
+</style>
+
+<script src="https://cdn.jsdelivr.net/npm/quill@1.3.7/dist/quill.js"></script>
+<script>
+
+// ─────────────────────────────────────
+// راه‌اندازی ویرایشگر متن Quill
+// ─────────────────────────────────────
+var quill = new Quill('#quillEditor', {
+  theme: 'snow',
+  placeholder: 'توضیحات کامل پروژه را اینجا بنویسید…',
+  modules: {
+    toolbar: [
+      [{ header: [2, 3, false] }],
+      ['bold', 'italic', 'underline', 'strike'],
+      [{ list: 'ordered' }, { list: 'bullet' }],
+      ['link', 'image'],
+      ['clean']
+    ]
+  }
+})
+
+var descriptionInput = document.getElementById('descriptionInput')
+var portfolioForm     = document.getElementById('portfolioForm')
+
+if (portfolioForm && descriptionInput) {
+  portfolioForm.addEventListener('submit', function () {
+    descriptionInput.value = quill.root.innerHTML
+  })
+}
+
+// ─────────────────────────────────────
+// آپلود تصویر شاخص + پیش‌نمایش زنده + درگ‌اند‌دراپ
+// ─────────────────────────────────────
+var uploadArea        = document.getElementById('uploadArea')
+var uploadAreaContent = document.getElementById('uploadAreaContent')
+var imgUpload         = document.getElementById('imgUpload')
+
+var originalUploadAreaHTML = uploadAreaContent.innerHTML
+var originalHasPreview     = uploadArea.classList.contains('has-preview')
+
+function resetUploadArea() {
+  imgUpload.value = ''
+  uploadAreaContent.innerHTML = originalUploadAreaHTML
+  uploadArea.classList.toggle('has-preview', originalHasPreview)
+}
+
+function renderImagePreview(src) {
+  uploadArea.classList.add('has-preview')
+  uploadAreaContent.innerHTML = \`
+    <div class="upload-preview-wrap">
+      <img src="\${src}" alt="پیش‌نمایش تصویر" class="upload-preview-img">
+      <button type="button" class="upload-remove-btn" id="removePreviewBtn" title="بازگشت به حالت قبل">
+        <i class="bi bi-x-lg"></i>
+      </button>
+    </div>
+    <div style="font-size:.68rem;color:var(--color-text-light);margin-top:.5rem;">تصویر جدید انتخاب شد</div>
+  \`
+
+  var removeBtn = document.getElementById('removePreviewBtn')
+  if (removeBtn) {
+    removeBtn.addEventListener('click', function (e) {
+      e.stopPropagation()
+      resetUploadArea()
+    })
+  }
+}
+
+function handleSelectedFile(file) {
+  if (!file || !file.type || file.type.indexOf('image/') !== 0) return
+
+  var reader = new FileReader()
+  reader.onload = function (e) {
+    renderImagePreview(e.target.result)
+  }
+  reader.readAsDataURL(file)
+}
+
+uploadArea.addEventListener('click', function (e) {
+  if (e.target.closest('#removePreviewBtn')) return
+  imgUpload.click()
+})
+
+imgUpload.addEventListener('change', function () {
+  if (this.files && this.files[0]) {
+    handleSelectedFile(this.files[0])
+  }
+})
+
+uploadArea.addEventListener('dragover', function (e) {
+  e.preventDefault()
+  uploadArea.classList.add('dragover')
+})
+
+uploadArea.addEventListener('dragleave', function () {
+  uploadArea.classList.remove('dragover')
+})
+
+uploadArea.addEventListener('drop', function (e) {
+  e.preventDefault()
+  uploadArea.classList.remove('dragover')
+
+  var file = e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files[0]
+  if (!file) return
+
+  var dataTransfer = new DataTransfer()
+  dataTransfer.items.add(file)
+  imgUpload.files = dataTransfer.files
+
+  handleSelectedFile(file)
+})
+
+// ─────────────────────────────────────
+// دسته‌بندی و تکنولوژی‌ها
+// ─────────────────────────────────────
+var portCategory  = document.getElementById('portCategory')
+var techChecklist = document.getElementById('techChecklist')
+
+function ensureTechCheckbox(value, checked) {
+  if (!techChecklist || !value) return
+
+  var existing = Array.from(techChecklist.querySelectorAll('input[type="checkbox"]'))
+    .find(function (cb) { return cb.value === value })
+
+  if (!existing) {
+    var label = document.createElement('label')
+    label.className = 'tech-check-item'
+
+    var checkbox = document.createElement('input')
+    checkbox.type = 'checkbox'
+    checkbox.name = 'techStack[]'
+    checkbox.value = value
+
+    var span = document.createElement('span')
+    span.textContent = value
+
+    label.appendChild(checkbox)
+    label.appendChild(span)
+    techChecklist.appendChild(label)
+
+    existing = checkbox
+  }
+
+  existing.checked = !!checked
+}
+
+// افزودن «دسته‌بندی» جدید به آپشن‌ها
+var addCategoryBtn     = document.getElementById('addCategoryBtn')
+var addCategoryBox     = document.getElementById('addCategoryBox')
+var newCategoryInput   = document.getElementById('newCategoryInput')
+var confirmAddCategory = document.getElementById('confirmAddCategory')
+
+if (addCategoryBtn && addCategoryBox) {
+  addCategoryBtn.addEventListener('click', function () {
+    var isHidden = !addCategoryBox.style.display || addCategoryBox.style.display === 'none'
+    addCategoryBox.style.display = isHidden ? 'flex' : 'none'
+
+    if (isHidden && newCategoryInput) {
+      newCategoryInput.focus()
+    }
+  })
+}
+
+function addNewCategory() {
+  if (!newCategoryInput || !portCategory) return
+
+  var value = (newCategoryInput.value || '').trim()
+  if (!value) return
+
+  var option = document.createElement('option')
+  option.value = value
+  option.textContent = value
+  portCategory.appendChild(option)
+  portCategory.value = value
+
+  newCategoryInput.value = ''
+  addCategoryBox.style.display = 'none'
+}
+
+if (confirmAddCategory) {
+  confirmAddCategory.addEventListener('click', addNewCategory)
+}
+
+if (newCategoryInput) {
+  newCategoryInput.addEventListener('keydown', function (e) {
+    if (e.key === 'Enter') {
+      e.preventDefault()
+      addNewCategory()
+    }
+  })
+}
+
+// افزودن «تکنولوژی» جدید به چک‌باکس‌ها
+var newTechInput = document.getElementById('newTechInput')
+var addTechBtn   = document.getElementById('addTechBtn')
+
+function addNewTech() {
+  if (!newTechInput) return
+
+  var value = (newTechInput.value || '').trim()
+  if (!value) return
+
+  ensureTechCheckbox(value, true)
+  newTechInput.value = ''
+}
+
+if (addTechBtn) {
+  addTechBtn.addEventListener('click', addNewTech)
+}
+
+if (newTechInput) {
+  newTechInput.addEventListener('keydown', function (e) {
+    if (e.key === 'Enter') {
+      e.preventDefault()
+      addNewTech()
+    }
+  })
+}
+
+// ─────────────────────────────────────
+// تحلیل زنده سئو (SEO Live Checklist)
+// ─────────────────────────────────────
+var focusKeywordInput = document.getElementById('focusKeyword')
+var metaDescInput     = document.getElementById('metaDescription')
+var metaCharCount     = document.getElementById('metaCharCount')
+var portTitleInput    = document.getElementById('portTitle')
+var wordCountLabel    = document.getElementById('wordCountLabel')
+
+function toFaNumber(num) {
+  try {
+    return Number(num).toLocaleString('fa-IR')
+  } catch (e) {
+    return String(num)
+  }
+}
+
+function updateSeoChecklist() {
+  var keyword   = (focusKeywordInput.value || '').trim().toLowerCase()
+  var titleText = (portTitleInput.value || '').toLowerCase()
+  var metaText  = (metaDescInput.value || '').toLowerCase()
+  var bodyText  = quill.getText().toLowerCase()
+  var wordCount = quill.getText().trim().split(/\\s+/).filter(Boolean).length
+
+  var checks = {
+    titleHasKeyword: !!keyword && titleText.indexOf(keyword) !== -1,
+    metaHasKeyword : !!keyword && metaText.indexOf(keyword) !== -1,
+    bodyHasKeyword : !!keyword && bodyText.indexOf(keyword) !== -1,
+    bodyLength     : wordCount >= 300
+  }
+
+  Object.keys(checks).forEach(function (key) {
+    var el = document.querySelector('.pf-seo-check[data-check="' + key + '"]')
+    if (!el) return
+
+    var icon = el.querySelector('i')
+
+    if (checks[key]) {
+      el.classList.add('pf-check-pass')
+      if (icon) icon.className = 'bi bi-check-circle-fill'
+    } else {
+      el.classList.remove('pf-check-pass')
+      if (icon) icon.className = 'bi bi-circle'
+    }
+  })
+
+  if (wordCountLabel) wordCountLabel.textContent = toFaNumber(wordCount)
+
+  if (metaCharCount) {
+    var len = metaDescInput.value.length
+    metaCharCount.textContent = toFaNumber(len)
+    metaCharCount.parentElement.classList.toggle('over', len > 160)
+  }
+}
+
+if (focusKeywordInput) focusKeywordInput.addEventListener('input', updateSeoChecklist)
+if (metaDescInput)     metaDescInput.addEventListener('input', updateSeoChecklist)
+if (portTitleInput)    portTitleInput.addEventListener('input', updateSeoChecklist)
+quill.on('text-change', updateSeoChecklist)
+
+updateSeoChecklist()
+
+</script>
+`}) %>

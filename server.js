@@ -1349,11 +1349,18 @@ app.get('/sw-admin/portfolio' , requireAdminAuth , async (req, res) => {
 })
 
 
-// GET — صفحه اختصاصی افزودن نمونه کار جدید
-app.get('/sw-admin/portfolio/add' , requireAdminAuth , async (req, res) => {
+// GET — فرم واحد افزودن/ویرایش نمونه کار
+// اگر ?id=... ارسال شود یعنی حالت ویرایش، در غیر این‌صورت حالت افزودن جدید
+app.get('/sw-admin/portfolio/form' , requireAdminAuth , async (req, res) => {
   try {
 
-    const [clients, categories] = await Promise.all([
+    const { id } = req.query
+
+    if (id && !mongoose.Types.ObjectId.isValid(id)) {
+      return res.status(400).send('شناسه نمونه کار معتبر نیست')
+    }
+
+    const [clients, categories, foundItem] = await Promise.all([
 
       // لیست مشتری‌ها برای select
       Client.find({ isActive: true })
@@ -1366,60 +1373,51 @@ app.get('/sw-admin/portfolio/add' , requireAdminAuth , async (req, res) => {
         isActive: true
       })
         .sort({ order: 1 })
-        .lean()
-    ])
-
-    res.render('admin/portfolio-add', {
-      clients,
-      categories,
-      flash: req.flash ? req.flash() : {}
-    })
-
-  } catch (err) {
-    console.error('Portfolio Add Page Error:', err)
-    res.status(500).send('خطا در بارگذاری صفحه افزودن نمونه کار')
-  }
-})
-
-
-// GET — صفحه اختصاصی ویرایش نمونه کار (پرشدن فیلدها از دیتابیس)
-app.get('/sw-admin/portfolio/:id/edit' , requireAdminAuth , async (req, res) => {
-  try {
-
-    const [item, clients, categories] = await Promise.all([
-
-      Portfolio.findById(req.params.id)
-        .populate('client', 'name company')
-        .populate('project', 'title')
-        .populate('category', 'title slug')
         .lean(),
 
-      Client.find({ isActive: true })
-        .sort({ name: 1 })
-        .lean(),
-
-      Category.find({
-        type: 'portfolio',
-        isActive: true
-      })
-        .sort({ order: 1 })
-        .lean()
+      // اگر id ارسال شده بود، نمونه کار مربوطه را بخوان؛ وگرنه null
+      id
+        ? Portfolio.findById(id)
+            .populate('client', 'name company')
+            .populate('project', 'title')
+            .populate('category', 'title slug')
+            .lean()
+        : Promise.resolve(null)
     ])
 
-    if (!item) {
+    // اگر id ارسال شده بود ولی آیتمی پیدا نشد → خطای ۴۰۴
+    if (id && !foundItem) {
       return res.status(404).send('نمونه کار مورد نظر پیدا نشد')
     }
 
-    res.render('admin/portfolio-edit', {
-      item,
+    // شیء پیش‌فرض/خالی برای حالت «افزودن جدید» تا EJS با مقدار undefined خطا ندهد
+    const emptyItem = {
+      _id            : null,
+      title          : '',
+      description    : '',
+      coverImage     : '',
+      category       : '',
+      techStack      : [],
+      liveUrl        : '',
+      client         : null,
+      isFeatured     : false,
+      isPublished    : false,
+      views          : 0,
+      seoKeywords    : '',
+      metaDescription: ''
+    }
+
+    res.render('admin/portfolio-form', {
+      item     : foundItem || emptyItem,
+      isEdit   : !!foundItem,
       clients,
       categories,
-      flash: req.flash ? req.flash() : {}
+      flash    : req.flash ? req.flash() : {}
     })
 
   } catch (err) {
-    console.error('Portfolio Edit Page Error:', err)
-    res.status(500).send('خطا در بارگذاری صفحه ویرایش نمونه کار')
+    console.error('Portfolio Form Page Error:', err)
+    res.status(500).send('خطا در بارگذاری فرم نمونه کار')
   }
 })
 
@@ -1429,7 +1427,8 @@ app.post('/sw-admin/portfolio' , requireAdminAuth , upload.single('coverImage'),
   try {
     const {
       title, description, category,
-      techStack, liveUrl, client, isFeatured, publish
+      techStack, liveUrl, client, isFeatured, publish,
+      seoKeywords, metaDescription
     } = req.body
 
     const coverImage = req.file ? `/uploads/portfolio/${req.file.filename}` : ''
@@ -1441,16 +1440,18 @@ app.post('/sw-admin/portfolio' , requireAdminAuth , upload.single('coverImage'),
       : (techStack ? techStack.split(',').map(t => t.trim()).filter(Boolean) : [])
 
     await Portfolio.create({
-      title       : (title || '').trim(),
-      description : description || '',
-      coverImage  : coverImage,
-      category    : category || 'web',
-      techStack   : techStackArr,
-      liveUrl     : liveUrl || '',
-      client      : client || null,
-      isFeatured  : isFeatured === 'on',
-      isPublished : publish === '1',
-      order       : await Portfolio.countDocuments()
+      title          : (title || '').trim(),
+      description    : description || '',
+      coverImage     : coverImage,
+      category       : category || 'web',
+      techStack      : techStackArr,
+      liveUrl        : liveUrl || '',
+      client         : client || null,
+      isFeatured     : isFeatured === 'on',
+      isPublished    : publish === '1',
+      seoKeywords    : (seoKeywords || '').trim(),
+      metaDescription: (metaDescription || '').trim(),
+      order          : await Portfolio.countDocuments()
     })
 
     await Activity.create({
@@ -1481,7 +1482,8 @@ app.post('/sw-admin/portfolio/:id/update' , requireAdminAuth , upload.single('co
 
     const {
       title, description, category,
-      techStack, liveUrl, client, isFeatured, publish
+      techStack, liveUrl, client, isFeatured, publish,
+      seoKeywords, metaDescription
     } = req.body
 
     const coverImage = req.file
@@ -1503,6 +1505,8 @@ app.post('/sw-admin/portfolio/:id/update' , requireAdminAuth , upload.single('co
     portfolio.client = client || null
     portfolio.isFeatured = isFeatured === 'on'
     portfolio.isPublished = publish === '1'
+    portfolio.seoKeywords = (seoKeywords || '').trim()
+    portfolio.metaDescription = (metaDescription || '').trim()
 
     await portfolio.save()
 

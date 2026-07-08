@@ -14,15 +14,17 @@
     { page: 'dashboard', href: '/sw-admin',          icon: 'bi-grid-1x2-fill',  label: 'داشبورد' },
     { page: 'projects',  href: '/sw-admin/projects', icon: 'bi-kanban-fill',    label: 'پروژه‌ها', badge: '۱۲' },
     { page: 'clients',   href: '/sw-admin/clients',  icon: 'bi-people-fill',    label: 'مشتریان' },
-    { page: 'Tickets', href: '/sw-admin/tickets', icon: 'bi-ticket-detailed-fill', label: 'تیکت‌ها', badge: '۵' },
+    { page: 'Tickets',   href: '/sw-admin/tickets',  icon: 'bi-ticket-detailed-fill', label: 'تیکت‌ها', badge: '۵' },
     { page: 'invoices',  href: '/sw-admin/invoices', icon: 'bi-receipt',        label: 'فاکتورها' },
   ];
+  
   const navContent = [
     { page: 'portfolio', href: '/sw-admin/portfolio', icon: 'bi-collection-fill', label: 'پورتفولیو' },
     { page: 'packages',  href: '/sw-admin/packages',  icon: 'bi-box-seam-fill',   label: 'پکیج‌ها' },
     { page: 'reviews',   href: '/sw-admin/reviews',   icon: 'bi-star-fill',       label: 'نظرات' },
     { page: 'blog',      href: '/sw-admin/blog',      icon: 'bi-journal-text',    label: 'وبلاگ' },
   ];
+  
   const navSystem = [
     { page: 'reports',  href: '/sw-admin/reports',  icon: 'bi-bar-chart-line-fill', label: 'گزارش‌ها' },
     { page: 'settings', href: '/sw-admin/settings', icon: 'bi-gear-fill',           label: 'تنظیمات' },
@@ -31,13 +33,11 @@
 
 <aside class="sidebar" id="sidebar">
 
-  <!-- Brand -->
   <a class="sidebar-brand" href="/sw-admin">
     <div class="sidebar-logo">سل</div>
     <span class="sidebar-brand-text">سُل وب — پنل</span>
   </a>
 
-  <!-- Nav -->
   <nav class="sidebar-nav">
 
     <span class="nav-label">اصلی</span>
@@ -68,7 +68,6 @@
 
   </nav>
 
-  <!-- User Footer -->
   <div class="sidebar-footer">
     <div class="user-dropdown" id="userDropdown">
 
@@ -109,7 +108,7 @@
 
 <style>
   /* ═══════════════════════════════════════════
-     User Footer Dropdown — سایدبار سُل وب
+     User Footer Drop-up — سایدبار سُل وب
   ═══════════════════════════════════════════ */
   .user-dropdown {
     position: relative;
@@ -146,10 +145,11 @@
     transform: rotate(90deg);
   }
 
-  /* ── Menu ── */
+  /* ── Menu (Drop-up Permanent) ── */
   .user-dropdown-menu {
     position: absolute;
     bottom: calc(100% + .6rem);
+    top: auto; /* اطمینان از باز نشدن به سمت پایین */
     right: 0;
     left: 0;
     min-width: 230px;
@@ -165,7 +165,7 @@
     visibility: hidden;
     pointer-events: none;
     transform: translateY(8px) scale(.97);
-    transform-origin: bottom center;
+    transform-origin: bottom center; /* نقطه شروع انیمیشن ثابت در پایین */
     transition: opacity .2s cubic-bezier(.34,1.56,.64,1),
                 transform .2s cubic-bezier(.34,1.56,.64,1),
                 visibility .2s;
@@ -182,7 +182,7 @@
   .user-dropdown-menu::after {
     content: '';
     position: absolute;
-    bottom: -6px;
+    bottom: -6px; /* کاملا قفل شده در پایین منو */
     right: 1.4rem;
     width: 12px;
     height: 12px;
@@ -252,37 +252,28 @@
   .user-dropdown-logout-form { width: 100%; }
 
   .user-dropdown-item-danger { color: rgba(255, 120, 120, .85); }
+  
   .user-dropdown-item-danger .user-dropdown-item-icon {
     color: #ff7878;
     background: rgba(255, 90, 90, .1);
   }
+  
   .user-dropdown-item-danger:hover {
     background: rgba(220, 53, 69, .16);
     color: #ff9c9c;
   }
+  
   .user-dropdown-item-danger:hover .user-dropdown-item-icon {
     background: rgba(220, 53, 69, .35);
     color: #fff;
-  }
-
-  /* روی صفحات کم‌ارتفاع یا سایدبار جمع‌شده، منو کمی به سمت راست/بالا جابه‌جا شود */
-  @media (max-height: 700px) {
-    .user-dropdown-menu { bottom: auto; top: calc(100% + .6rem); transform-origin: top center; }
-    .user-dropdown-menu::after {
-      bottom: auto; top: -6px;
-      border-left: none; border-bottom: none;
-      border-top: 1px solid rgba(255, 255, 255, .08);
-      border-right: 1px solid rgba(255, 255, 255, .08);
-      border-radius: 3px 0 0 0;
-    }
   }
 </style>
 
 <script>
   (function () {
     const dropdown  = document.getElementById('userDropdown');
-    const trigger    = document.getElementById('userDropdownTrigger');
-    const menu       = document.getElementById('userDropdownMenu');
+    const trigger   = document.getElementById('userDropdownTrigger');
+    const menu      = document.getElementById('userDropdownMenu');
     if (!dropdown || !trigger || !menu) return;
 
     function openMenu() {

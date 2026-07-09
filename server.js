@@ -2226,9 +2226,139 @@ app.post('/sw-admin/service-categories/add', requireAdminAuth, async (req, res) 
 })
 
 
-app.get('/sw-admin/blog-form' , async (req , res) => {
-  res.render('./admin/blog-form')
-})
+// app.get('/sw-admin/blog-form' , async (req , res) => {
+//   res.render('./admin/blog-form')
+// })
+
+
+
+
+// تست ////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+// تست ////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+// تست ////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+// تست ////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+// تست ////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+// تست ////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+// تست ////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+// تست ////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+// تست ////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+// تست ////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+// تست ////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+// تست ////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+// تست ////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+// تست ////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+app.get('/sw-admin/blog-form', requireAdminAuth, async (req, res) => {
+  try {
+    const authors = await BlogPost.distinct('author');
+    const categoriesRaw = await BlogPost.distinct('category');
+    const categories = categoriesRaw
+      .filter(Boolean)
+      .map(c => ({ slug: c, title: c })); // چون تو schema category فقط یه رشته‌ست
+
+    res.render('admin/blog-form', {
+      isEdit: false,
+      item: {},   // آبجکت خالی تا item.title و بقیه خطا ندن
+      authors,
+      categories
+    });
+  } catch (err) {
+    console.error(err);
+    res.status(500).send('خطا در بارگذاری فرم مقاله');
+  }
+});
+
+// ─────────────────────────────────────
+// GET  فرم ویرایش مقاله
+// ─────────────────────────────────────
+app.get('/sw-admin/blog-form/:id', requireAdminAuth, async (req, res) => {
+  try {
+    const post = await BlogPost.findById(req.params.id).lean();
+    if (!post) return res.status(404).send('مقاله یافت نشد');
+
+    const authors = await BlogPost.distinct('author');
+    const categoriesRaw = await BlogPost.distinct('category');
+    const categories = categoriesRaw
+      .filter(Boolean)
+      .map(c => ({ slug: c, title: c }));
+
+    res.render('admin/blog-form', {
+      isEdit: true,
+      item: post,
+      authors,
+      categories
+    });
+  } catch (err) {
+    console.error(err);
+    res.status(500).send('خطا در بارگذاری فرم ویرایش مقاله');
+  }
+});
+
+// ─────────────────────────────────────
+// POST  ایجاد مقاله جدید
+// ─────────────────────────────────────
+app.post('/sw-admin/blog', requireAdminAuth, upload.single('coverImage'), async (req, res) => {
+  try {
+    const { title, slug, excerpt, content, category, author, readTime, publish } = req.body;
+
+    // چک‌باکس‌های تگ: اگه فقط یکی انتخاب بشه string میاد نه آرایه
+    let tags = req.body['tags[]'] || req.body.tags || [];
+    if (!Array.isArray(tags)) tags = [tags];
+
+    const newPost = new BlogPost({
+      title,
+      slug,
+      excerpt,
+      body: content,              // توجه: content تو فرم → body تو schema
+      category,
+      author,
+      tags,
+      readingTime: readTime ? parseInt(readTime, 10) : undefined,
+      status: publish === '1' ? 'published' : 'draft',
+      coverImage: req.file ? '/uploads/' + req.file.filename : undefined
+    });
+
+    await newPost.save();
+    res.redirect('/sw-admin/blog');
+  } catch (err) {
+    console.error(err);
+    res.status(500).send('خطا در ذخیره مقاله');
+  }
+});
+
+// ─────────────────────────────────────
+// POST  ویرایش مقاله
+// ─────────────────────────────────────
+app.post('/sw-admin/blog/:id/update', requireAdminAuth, upload.single('coverImage'), async (req, res) => {
+  try {
+    const { title, slug, excerpt, content, category, author, readTime, publish } = req.body;
+
+    let tags = req.body['tags[]'] || req.body.tags || [];
+    if (!Array.isArray(tags)) tags = [tags];
+
+    const post = await BlogPost.findById(req.params.id);
+    if (!post) return res.status(404).send('مقاله یافت نشد');
+
+    post.title = title;
+    post.slug = slug;
+    post.excerpt = excerpt;
+    post.body = content;
+    post.category = category;
+    post.author = author;
+    post.tags = tags;
+    post.readingTime = readTime ? parseInt(readTime, 10) : undefined;
+    post.status = publish === '1' ? 'published' : 'draft';
+
+    if (req.file) {
+      post.coverImage = '/uploads/' + req.file.filename;
+    }
+
+    await post.save(); // pre('save') hook برای publishedAt همینجا فعال می‌مونه
+    res.redirect('/sw-admin/blog');
+  } catch (err) {
+    console.error(err);
+    res.status(500).send('خطا در به‌روزرسانی مقاله');
+  }
+});
 // ─────────────────────────────────────────
 //  404
 // ─────────────────────────────────────────

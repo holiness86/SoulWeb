@@ -2224,6 +2224,11 @@ app.post('/sw-admin/service-categories/add', requireAdminAuth, async (req, res) 
     res.status(500).json({ ok: false, message: 'خطا در ثبت نوع پروژه' })
   }
 })
+
+
+app.get('/sw-admin/blog-form' , async (req , res) => {
+  res.render('./admin/blog-form')
+})
 // ─────────────────────────────────────────
 //  404
 // ─────────────────────────────────────────

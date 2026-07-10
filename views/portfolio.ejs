@@ -1,0 +1,251 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl" data-bs-theme="light">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>نمونه کارها — سُل وب</title>
+
+  <script>
+    (function () {
+      try {
+        var t = localStorage.getItem('sol-theme') || 'light';
+        document.documentElement.setAttribute('data-bs-theme', t);
+      } catch (e) {}
+    })();
+  </script>
+
+  <link rel="stylesheet" href="/assets/css/bootstrap.rtl.min.css">
+  <link rel="stylesheet" href="/assets/css/style.css">
+  <link rel="stylesheet" href="/assets/css/icons-1.13.1/font/bootstrap-icons.min.css">
+</head>
+<body>
+
+<svg width="0" height="0" style="position:absolute;overflow:hidden;" aria-hidden="true" focusable="false">
+  <defs>
+    <filter id="goo-filter">
+      <feGaussianBlur in="SourceGraphic" stdDeviation="9" result="blur" />
+      <feColorMatrix in="blur" mode="matrix" values="1 0 0 0 0  0 1 0 0 0  0 0 1 0 0  0 0 0 19 -9" result="goo" />
+      <feComposite in="SourceGraphic" in2="goo" operator="atop" />
+    </filter>
+  </defs>
+</svg>
+
+<div id="scrollProgress" aria-hidden="true"></div>
+
+<div id="preloader" aria-hidden="true">
+  <div class="preloader-logo">سُل وب</div>
+  <div class="preloader-orb"></div>
+</div>
+
+<div class="cursor-wrap" aria-hidden="true">
+  <div class="cursor-dot"></div>
+  <div class="cursor-ring"></div>
+</div>
+
+<header class="site-header" id="siteHeader">
+  <div class="container header-flex">
+
+    <div class="glass-segment seg-brand">
+      <a class="navbar-brand" href="/">سُل وب</a>
+    </div>
+
+    <nav class="glass-segment seg-nav d-none d-lg-flex" aria-label="منوی اصلی">
+      <ul class="nav-pills-liquid">
+        <li><a href="/" data-cursor-hover>صفحه اصلی</a></li>
+        <li><a href="/services" data-cursor-hover>خدمات</a></li>
+        <li><a href="/portfolio" class="active" data-cursor-hover>نمونه کارها</a></li>
+        <li><a href="/packages" data-cursor-hover>پکیج‌ها</a></li>
+        <li><a href="/about" data-cursor-hover>درباره ما</a></li>
+        <li><a href="/contact" data-cursor-hover>تماس با ما</a></li>
+      </ul>
+    </nav>
+
+    <div class="glass-segment seg-actions">
+      <button class="btn-theme-toggle" id="themeToggle" aria-label="تغییر تم">
+        <i class="bi bi-moon-stars-fill"></i>
+      </button>
+      <a href="/contact" class="btn btn-main btn-sm d-none d-lg-inline-flex align-items-center gap-1">
+        مشاوره رایگان
+        <i class="bi bi-arrow-left"></i>
+      </a>
+      <button class="navbar-toggler d-lg-none" type="button"
+              data-bs-toggle="collapse" data-bs-target="#mobileNavPanel"
+              aria-controls="mobileNavPanel" aria-expanded="false" aria-label="باز کردن منو">
+        <i class="bi bi-list" style="font-size:1.3rem;"></i>
+      </button>
+    </div>
+
+  </div>
+
+  <div class="collapse mobile-nav-panel glass-segment" id="mobileNavPanel">
+    <ul class="mobile-nav-links">
+      <li><a href="/">صفحه اصلی</a></li>
+      <li><a href="/services">خدمات</a></li>
+      <li><a href="/portfolio" class="active">نمونه کارها</a></li>
+      <li><a href="/packages">پکیج‌ها</a></li>
+      <li><a href="/about">درباره ما</a></li>
+      <li><a href="/contact">تماس با ما</a></li>
+      <li><a href="/contact" class="btn btn-main w-100 justify-content-center mt-2">مشاوره رایگان <i class="bi bi-arrow-left"></i></a></li>
+    </ul>
+  </div>
+</header>
+
+<section class="hero-section" style="min-height: 55vh; padding-bottom: var(--section-py);">
+  <div class="floating-parallax hero-blob hero-blob-1" data-speed="0.1" aria-hidden="true"></div>
+  <div class="floating-parallax hero-blob hero-blob-2" data-speed="0.15" aria-hidden="true"></div>
+  <div class="hero-dots" aria-hidden="true"></div>
+
+  <div class="container text-center">
+    <div class="row py-5">
+      <div class="col-lg-8 hero-content mx-auto">
+        <div class="hero-badge mx-auto">
+          <span class="badge-dot"></span>
+          شاهکارهای دیجیتال ما
+        </div>
+        <h1 class="hero-title">
+          پروژه‌های متمایز <span class="hero-title-accent">سُل وب</span>
+        </h1>
+        <p class="hero-subtitle mx-auto">
+          تلفیقی از هنر پیکسلی کامپوننت‌های شیشه‌ای و قدرت معماری سیستم‌های اختصاصی بک‌اند.
+        </p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="portfolio-section py-5 position-relative">
+  <div class="container py-5">
+    
+    <div class="d-flex justify-content-center mb-5 reveal">
+      <div class="glass-segment p-2 d-inline-flex gap-2 nav-pills-liquid" style="border-radius: var(--radius-lg);">
+        <button class="btn btn-sm active px-4 filter-btn" data-filter="all" data-cursor-hover>همه</button>
+        <button class="btn btn-sm px-4 filter-btn" data-filter="node" data-cursor-hover>Node.js / MVC</button>
+        <button class="btn btn-sm px-4 filter-btn" data-filter="uiux" data-cursor-hover>رابط کاربری مایع</button>
+        <button class="btn btn-sm px-4 filter-btn" data-filter="shop" data-cursor-hover>فروشگاهی</button>
+      </div>
+    </div>
+
+    <div class="row g-4 portfolio-grid">
+      
+      <div class="col-md-6 col-lg-4 portfolio-item" data-category="node">
+        <div class="card-sol card-tilt tilt-1 h-100 p-0 overflow-hidden position-relative" data-cursor-hover>
+          <div class="portfolio-img-wrapper" style="height: 240px; background: linear-gradient(135deg, var(--main-400), var(--main-700)); opacity: 0.85; display:flex; align-items:center; justify-content:center; color:#fff;">
+            <i class="bi bi-terminal-box" style="font-size: 4rem;"></i>
+          </div>
+          <div class="p-4">
+            <span class="badge bg-main-100 text-main-700 mb-2 px-3 py-1.5 rounded-pill fs-7">Node.js / MVC</span>
+            <h5 class="fw-bold text-dark mt-1">پلتفرم مدیریت پروژه‌های تسکینو</h5>
+            <p class="text-muted fs-6 mt-2">سامانه بک‌اند پیشرفته ماژولار با معماری تمیز مبتنی بر MVC جهت هندل همزمان وظایف تیمی و لاگ دیتابیس.</p>
+            <div class="d-flex justify-content-between align-items-center mt-4 pt-2 border-top border-secondary border-opacity-10">
+              <span class="fs-7 text-muted"><i class="bi bi-calendar3 me-1"></i> سال ۱۴۰۵</span>
+              <a href="#" class="text-main fw-bold text-decoration-none fs-6">مشاهده جزییات <i class="bi bi-arrow-left"></i></a>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="col-md-6 col-lg-4 portfolio-item" data-category="uiux">
+        <div class="card-sol card-tilt tilt-2 h-100 p-0 overflow-hidden position-relative" data-cursor-hover>
+          <div class="portfolio-img-wrapper" style="height: 240px; background: linear-gradient(135deg, #a394fb, #6447f4); opacity: 0.85; display:flex; align-items:center; justify-content:center; color:#fff;">
+            <i class="bi bi-layers-half" style="font-size: 4rem;"></i>
+          </div>
+          <div class="p-4">
+            <span class="badge bg-main-100 text-main-700 mb-2 px-3 py-1.5 rounded-pill fs-7">رابط کاربری مایع</span>
+            <h5 class="fw-bold text-dark mt-1">وب‌سایت آوانگارد استودیو نِکست</h5>
+            <p class="text-muted fs-6 mt-2">طراحی فرانت‌اند پیشرو با افکت‌های گلس‌مورفیسم پیشرفته، انیمیشن فیلتر گویی (Gooey) متحرک بر اساس موقعیت ماوس.</p>
+            <div class="d-flex justify-content-between align-items-center mt-4 pt-2 border-top border-secondary border-opacity-10">
+              <span class="fs-7 text-muted"><i class="bi bi-calendar3 me-1"></i> سال ۱۴۰۵</span>
+              <a href="#" class="text-main fw-bold text-decoration-none fs-6">مشاهده جزییات <i class="bi bi-arrow-left"></i></a>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="col-md-6 col-lg-4 portfolio-item" data-category="shop">
+        <div class="card-sol card-tilt tilt-3 h-100 p-0 overflow-hidden position-relative" data-cursor-hover>
+          <div class="portfolio-img-wrapper" style="height: 240px; background: linear-gradient(135deg, #2f1d95, #5236d6); opacity: 0.85; display:flex; align-items:center; justify-content:center; color:#fff;">
+            <i class="bi bi-bag-heart-fill" style="font-size: 4rem;"></i>
+          </div>
+          <div class="p-4">
+            <span class="badge bg-main-100 text-main-700 mb-2 px-3 py-1.5 rounded-pill fs-7">فروشگاهی</span>
+            <h5 class="fw-bold text-dark mt-1">مارکت بزرگ اینترنتی هوم‌لند</h5>
+            <p class="text-muted fs-6 mt-2">طراحی یکپارچه سبد خرید تک‌صفحه‌ای هوشمند با لود همزمان باجه بانکی و پردازش دیتابیس سنگین محصولات بدون ریفرش صفحه.</p>
+            <div class="d-flex justify-content-between align-items-center mt-4 pt-2 border-top border-secondary border-opacity-10">
+              <span class="fs-7 text-muted"><i class="bi bi-calendar3 me-1"></i> سال ۱۴۰۴</span>
+              <a href="#" class="text-main fw-bold text-decoration-none fs-6">مشاهده جزییات <i class="bi bi-arrow-left"></i></a>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+<footer class="footer-sol">
+  <div class="footer-inner">
+    <div class="container">
+      <div class="row g-5">
+        <div class="col-lg-4">
+          <a href="/" class="footer-brand text-decoration-none">سُل وب</a>
+          <p>تیم سُل وب روح وب‌سایت‌ها را می‌آفریند. ما پلتفرم‌هایی توسعه می‌دهیم که نه‌تنها هویت بصری منحصربه‌فردی دارند، بلکه بیزینس شما را متحول می‌کنند.</p>
+        </div>
+        <div class="col-6 col-lg-2">
+          <h6>خدمات</h6>
+          <ul class="footer-links">
+            <li><a href="/services"><i class="bi bi-chevron-left"></i>توسعه وب اختصاصی</a></li>
+            <li><a href="/services"><i class="bi bi-chevron-left"></i>رابط کاربری مایع</a></li>
+          </ul>
+        </div>
+        <div class="col-6 col-lg-2">
+          <h6>دسترسی سریع</h6>
+          <ul class="footer-links">
+            <li><a href="/"><i class="bi bi-chevron-left"></i>صفحه اصلی</a></li>
+            <li><a href="/portfolio"><i class="bi bi-chevron-left"></i>نمونه کارها</a></li>
+            <li><a href="/packages"><i class="bi bi-chevron-left"></i>پکیج‌ها</a></li>
+          </ul>
+        </div>
+        <div class="col-lg-4">
+          <h6>تماس با ما</h6>
+          <ul class="footer-links mb-4">
+            <li><a href="mailto:hello@solweb.ir"><i class="bi bi-envelope"></i>hello@solweb.ir</a></li>
+          </ul>
+          <div class="footer-trust">
+            <div class="trust-badge"><i class="bi bi-patch-check-fill"></i> <span>اینماد</span></div>
+            <div class="trust-badge"><i class="bi bi-lock-fill"></i> <span>پرداخت امن</span></div>
+          </div>
+        </div>
+      </div>
+      <hr class="footer-divider" />
+      <div class="d-flex justify-content-between align-items-center">
+        <p style="font-size:.825rem;margin:0;color:rgba(255,255,255,.4);">© ۱۴۰۵ آژانس سُل وب. تمامی حقوق محفوظ است.</p>
+      </div>
+    </div>
+  </div>
+</footer>
+
+<button id="backToTop" aria-label="رفتن به بالای صفحه"><i class="bi bi-chevron-up"></i></button>
+
+<script src="/assets/js/jquery-3.7.1.min.js"></script>
+<script src="/assets/js/bootstrap.bundle.min.js"></script>
+<script src="/assets/js/script.js"></script>
+
+<script>
+  $(function() {
+    $('.filter-btn').on('click', function() {
+      $('.filter-btn').removeClass('active');
+      $(this).addClass('active');
+      
+      const filterValue = $(this).attr('data-filter');
+      
+      if(filterValue === 'all') {
+        $('.portfolio-item').fadeIn(300);
+      } else {
+        $('.portfolio-item').hide();
+        $('.portfolio-item[data-category="' + filterValue + '"]').fadeIn(300);
+      }
+    });
+  });
+</script>
+</body>
+</html>

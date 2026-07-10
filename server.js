@@ -2359,9 +2359,34 @@ app.post('/sw-admin/blog/:id/update', requireAdminAuth, upload.single('coverImag
     res.status(500).send('خطا در به‌روزرسانی مقاله');
   }
 });
+
+
+//لود کردن صفحات استاتیک سایت
+
+
+app.get('/services', (req, res) => {
+    res.render('services'); 
+});
+
+app.get('/portfolio', (req, res) => {
+    res.render('portfolio'); 
+});
+
+app.get('/packages', (req, res) => {
+    res.render('packages');
+});
+
+app.get('/about', (req, res) => {
+    res.render('about');
+});
+
+app.get('/contact', (req, res) => {
+    res.render('contact');
+});
 // ─────────────────────────────────────────
 //  404
 // ─────────────────────────────────────────
 app.use((req, res) => {
   res.status(404).render('404')
 })
+

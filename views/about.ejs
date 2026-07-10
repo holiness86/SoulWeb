@@ -1,0 +1,283 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl" data-bs-theme="light">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>درباره ما — سُل وب</title>
+
+  <!-- جلوگیری از پرش رنگی تم هنگام لود (Anti-FOUC) -->
+  <script>
+    (function () {
+      try {
+        var t = localStorage.getItem('sol-theme') || 'light';
+        document.documentElement.setAttribute('data-bs-theme', t);
+      } catch (e) {}
+    })();
+  </script>
+
+  <link rel="stylesheet" href="/assets/css/bootstrap.rtl.min.css">
+  <link rel="stylesheet" href="/assets/css/style.css">
+  <link rel="stylesheet" href="/assets/css/icons-1.13.1/font/bootstrap-icons.min.css">
+</head>
+<body>
+
+<!-- ═══════════ SVG Defs مشترک ═══════════ -->
+<svg width="0" height="0" style="position:absolute;overflow:hidden;" aria-hidden="true" focusable="false">
+  <defs>
+    <filter id="goo-filter">
+      <feGaussianBlur in="SourceGraphic" stdDeviation="9" result="blur" />
+      <feColorMatrix in="blur" mode="matrix" values="1 0 0 0 0  0 1 0 0 0  0 0 1 0 0  0 0 0 19 -9" result="goo" />
+      <feComposite in="SourceGraphic" in2="goo" operator="atop" />
+    </filter>
+  </defs>
+</svg>
+
+<!-- ═══════════ Scroll Progress ═══════════ -->
+<div id="scrollProgress" aria-hidden="true"></div>
+
+<!-- ═══════════ Preloader ═══════════ -->
+<div id="preloader" aria-hidden="true">
+  <div class="preloader-logo">سُل وب</div>
+  <div class="preloader-orb"></div>
+</div>
+
+<!-- ═══════════ کرسر اختصاصی مایع ═══════════ -->
+<div class="cursor-wrap" aria-hidden="true">
+  <div class="cursor-dot"></div>
+  <div class="cursor-ring"></div>
+</div>
+
+<!-- ═══════════════════════════════════════
+     HEADER — Segmented Liquid Glass Navbar
+═══════════════════════════════════════ -->
+<header class="site-header" id="siteHeader">
+  <div class="container header-flex">
+
+    <div class="glass-segment seg-brand">
+      <a class="navbar-brand" href="/">سُل وب</a>
+    </div>
+
+    <nav class="glass-segment seg-nav d-none d-lg-flex" aria-label="منوی اصلی">
+      <ul class="nav-pills-liquid">
+        <li><a href="/" data-cursor-hover>صفحه اصلی</a></li>
+        <li><a href="/services" data-cursor-hover>خدمات</a></li>
+        <li><a href="/portfolio" data-cursor-hover>نمونه کارها</a></li>
+        <li><a href="/packages" data-cursor-hover>پکیج‌ها</a></li>
+        <li><a href="/about" class="active" data-cursor-hover>درباره ما</a></li>
+        <li><a href="/contact" data-cursor-hover>تماس با ما</a></li>
+      </ul>
+    </nav>
+
+    <div class="glass-segment seg-actions">
+      <button class="btn-theme-toggle" id="themeToggle" aria-label="تغییر تم">
+        <i class="bi bi-moon-stars-fill"></i>
+      </button>
+      <a href="/contact" class="btn btn-main btn-sm d-none d-lg-inline-flex align-items-center gap-1">
+        مشاوره رایگان
+        <i class="bi bi-arrow-left"></i>
+      </a>
+      <button class="navbar-toggler d-lg-none" type="button"
+              data-bs-toggle="collapse" data-bs-target="#mobileNavPanel"
+              aria-controls="mobileNavPanel" aria-expanded="false" aria-label="باز کردن منو">
+        <i class="bi bi-list" style="font-size:1.3rem;"></i>
+      </button>
+    </div>
+
+  </div>
+
+  <!-- پنل موبایل -->
+  <div class="collapse mobile-nav-panel glass-segment" id="mobileNavPanel">
+    <ul class="mobile-nav-links">
+      <li><a href="/">صفحه اصلی</a></li>
+      <li><a href="/services">خدمات</a></li>
+      <li><a href="/portfolio">نمونه کارها</a></li>
+      <li><a href="/packages">پکیج‌ها</a></li>
+      <li><a href="/about" class="active">درباره ما</a></li>
+      <li><a href="/contact">تماس با ما</a></li>
+      <li><a href="/contact" class="btn btn-main w-100 justify-content-center mt-2">مشاوره رایگان <i class="bi bi-arrow-left"></i></a></li>
+    </ul>
+  </div>
+</header>
+
+<!-- ═══════════════════════════════════════
+     INNER HERO SECTION
+═══════════════════════════════════════ -->
+<section class="hero-section" style="min-height: 55vh; padding-bottom: var(--section-py);">
+  <div class="floating-parallax hero-blob hero-blob-1" data-speed="0.1" aria-hidden="true"></div>
+  <div class="floating-parallax hero-blob hero-blob-2" data-speed="0.14" aria-hidden="true"></div>
+  <div class="hero-dots" aria-hidden="true"></div>
+
+  <div class="container text-center">
+    <div class="row py-5">
+      <div class="col-lg-8 hero-content mx-auto">
+        <div class="hero-badge mx-auto">
+          <span class="badge-dot"></span>
+          داستان خلق یک ایده
+        </div>
+        <h1 class="hero-title">
+          درباره آژانس دیجیتال <span class="hero-title-accent">سُل وب</span>
+        </h1>
+        <p class="hero-subtitle mx-auto">
+          ما روح و اصالت را به کدهای مرده تزریق می‌کنیم تا پلتفرمی پویا، سریع و فراتر از استانداردهای روز برای بیزینس شما بسازیم.
+        </p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════
+     ABOUT CONTENT & CORE VALUES
+═══════════════════════════════════════ -->
+<section class="about-section py-5 position-relative">
+  <div class="container py-4">
+    <div class="row g-5 align-items-center">
+      <div class="col-lg-6 reveal">
+        <span class="section-tag mb-3">
+          <i class="bi bi-shield-check"></i>
+          ماموریت سُل وب
+        </span>
+        <h2 class="fw-bold text-dark mb-4" style="line-height: 1.5;">دمیدن روحی تازه در کالبد وب‌سایت‌ها</h2>
+        <p class="text-muted fs-6" style="line-height: 1.9; text-align: justify;">
+          سُل وب به عنوان یک آژانس پریمیوم در حوزه طراحی و توسعه وب، با هدف پایان دادن به قالب‌های تکراری و آماده پا به میدان گذاشته است. تمرکز اصلی ما بر پیاده‌سازی زیرساخت‌های مهندسی‌شده با ساختار منظم <span class="text-main fw-bold">Node.js و معماری MVC</span> است. ما باور داریم که هر برند بزرگی نیاز به یک اثر هنری دیجیتال منحصربه‌فرد دارد که با سرعت خارق‌العاده و امنیت نفوذناپذیر، مخاطبانش را شیفته خود کند.
+        </p>
+      </div>
+      <div class="col-lg-6 reveal reveal-delay-1">
+        <div class="card-sol card-tilt tilt-1 p-4">
+          <div class="row g-4">
+            <div class="col-6">
+              <div class="p-3 border-start border-main border-3">
+                <h3 class="fw-bold text-main mb-1">۱۰۰٪</h3>
+                <p class="text-muted fs-7 mb-0">کدنویسی اختصاصی</p>
+              </div>
+            </div>
+            <div class="col-6">
+              <div class="p-3 border-start border-main border-3">
+                <h3 class="fw-bold text-main mb-1">A+</h3>
+                <p class="text-muted fs-7 mb-0">گرید پرفورمنس و سرعت</p>
+              </div>
+            </div>
+            <div class="col-6">
+              <div class="p-3 border-start border-main border-3">
+                <h3 class="fw-bold text-main mb-1">UI/UX</h3>
+                <p class="text-muted fs-7 mb-0">طراحی شیشه‌ای مایع</p>
+              </div>
+            </div>
+            <div class="col-6">
+              <div class="p-3 border-start border-main border-3">
+                <h3 class="fw-bold text-main mb-1">۲۴/۷</h3>
+                <p class="text-muted fs-7 mb-0">پشتیبانی و مانیتورینگ</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════
+     TEAM MEMBERS SECTION
+═══════════════════════════════════════ -->
+<section class="team-section py-5 bg-soft">
+  <div class="container py-5">
+    <div class="text-center mb-5 reveal">
+      <span class="section-tag">
+        <i class="bi bi-people-fill"></i>
+        تیم ما
+      </span>
+      <h2 class="section-title">معماران اصلی سُل وب</h2>
+      <p class="section-subtitle mx-auto">تخصص، تعهد و نوآوری در کنار هم برای خلق بهترین‌ها</p>
+    </div>
+
+    <div class="row g-4 justify-content-center">
+      
+      <!-- عضو اول: علی شبانی -->
+      <div class="col-md-5 col-lg-4 reveal reveal-delay-1">
+        <div class="card-sol card-tilt tilt-2 h-100 text-center" data-cursor-hover>
+          <div class="mx-auto rounded-circle mb-4 d-flex align-items-center justify-content-center" style="width: 120px; height: 120px; background: linear-gradient(135deg, var(--main-400), var(--main-600)); color: #fff;">
+            <i class="bi bi-person-fill-gear" style="font-size: 3.5rem;"></i>
+          </div>
+          <h4 class="fw-bold text-dark">علی شبانی</h4>
+          <p class="text-main fw-semibold fs-7 mb-3">هم‌بنیان‌گذار و توسعه‌دهنده فول‌استک وب</p>
+          <p class="text-muted fs-7" style="line-height: 1.7;">متخصص در معماری بک‌اند Node.js، ساختارهای پیچیده پایگاه داده و مهندسی فرانت‌اند داینامیک.</p>
+          <div class="d-flex justify-content-center gap-2 mt-4 pt-2">
+            <a href="#" class="social-link btn-sm" aria-label="لینکدین"><i class="bi bi-linkedin"></i></a>
+            <a href="#" class="social-link btn-sm" aria-label="گیت‌هاب"><i class="bi bi-github"></i></a>
+          </div>
+        </div>
+      </div>
+
+      <!-- عضو دوم: عرشیا رضادوست -->
+      <div class="col-md-5 col-lg-4 reveal reveal-delay-2">
+        <div class="card-sol card-tilt tilt-3 h-100 text-center" data-cursor-hover>
+          <div class="mx-auto rounded-circle mb-4 d-flex align-items-center justify-content-center" style="width: 120px; height: 120px; background: linear-gradient(135deg, var(--main-400), #5339db); color: #fff;">
+            <i class="bi bi-person-fill-check" style="font-size: 3.5rem;"></i>
+          </div>
+          <h4 class="fw-bold text-dark">عرشیا رضادوست</h4>
+          <p class="text-main fw-semibold fs-7 mb-3">هم‌بنیان‌گذار و مدیر توسعه تجاری</p>
+          <p class="text-muted fs-7" style="line-height: 1.7;">مدیریت استراتژی مارکتینگ پروژه‌ها، آنالیز نیازمندی‌های مشتریان و تضمین کیفیت خروجی آژانس دیجیتال.</p>
+          <div class="d-flex justify-content-center gap-2 mt-4 pt-2">
+            <a href="#" class="social-link btn-sm" aria-label="لینکدین"><i class="bi bi-linkedin"></i></a>
+            <a href="#" class="social-link btn-sm" aria-label="اینستاگرام"><i class="bi bi-instagram"></i></a>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════
+     FOOTER
+═══════════════════════════════════════ -->
+<footer class="footer-sol">
+  <div class="footer-inner">
+    <div class="container">
+      <div class="row g-5">
+        <div class="col-lg-4">
+          <a href="/" class="footer-brand text-decoration-none">سُل وب</a>
+          <p>تیم سُل وب روح وب‌سایت‌ها را می‌آفریند. ما پلتفرم‌هایی توسعه می‌دهیم که نه‌تنها هویت بصری منحصربه‌فردی دارند، بلکه بیزینس شما را متحول می‌کنند.</p>
+        </div>
+        <div class="col-6 col-lg-2">
+          <h6>خدمات</h6>
+          <ul class="footer-links">
+            <li><a href="/services"><i class="bi bi-chevron-left"></i>توسعه وب اختصاصی</a></li>
+            <li><a href="/services"><i class="bi bi-chevron-left"></i>رابط کاربری مایع</a></li>
+          </ul>
+        </div>
+        <div class="col-6 col-lg-2">
+          <h6>دسترسی سریع</h6>
+          <ul class="footer-links">
+            <li><a href="/"><i class="bi bi-chevron-left"></i>صفحه اصلی</a></li>
+            <li><a href="/portfolio"><i class="bi bi-chevron-left"></i>نمونه کارها</a></li>
+            <li><a href="/packages"><i class="bi bi-chevron-left"></i>پکیج‌ها</a></li>
+          </ul>
+        </div>
+        <div class="col-lg-4">
+          <h6>تماس با ما</h6>
+          <ul class="footer-links mb-4">
+            <li><a href="mailto:hello@solweb.ir"><i class="bi bi-envelope"></i>hello@solweb.ir</a></li>
+          </ul>
+          <div class="footer-trust">
+            <div class="trust-badge"><i class="bi bi-patch-check-fill"></i> <span>اینماد</span></div>
+            <div class="trust-badge"><i class="bi bi-lock-fill"></i> <span>پرداخت امن</span></div>
+          </div>
+        </div>
+      </div>
+      <hr class="footer-divider" />
+      <div class="d-flex justify-content-between align-items-center">
+        <p style="font-size:.825rem;margin:0;color:rgba(255,255,255,.4);">© ۱۴۰۵ آژانس سُل وب. تمامی حقوق محفوظ است.</p>
+      </div>
+    </div>
+  </div>
+</footer>
+
+<!-- ═══════════ Back To Top ═══════════ -->
+<button id="backToTop" aria-label="رفتن به بالای صفحه"><i class="bi bi-chevron-up"></i></button>
+
+<!-- ═══════════ Scripts ═══════════ -->
+<script src="/assets/js/jquery-3.7.1.min.js"></script>
+<script src="/assets/js/bootstrap.bundle.min.js"></script>
+<script src="/assets/js/script.js"></script>
+</body>
+</html>

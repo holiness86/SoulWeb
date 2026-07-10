@@ -1,0 +1,312 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl" data-bs-theme="light">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>خدمات تخصصی — سُل وب</title>
+
+  <script>
+    (function () {
+      try {
+        var t = localStorage.getItem('sol-theme') || 'light';
+        document.documentElement.setAttribute('data-bs-theme', t);
+      } catch (e) {}
+    })();
+  </script>
+
+  <link rel="stylesheet" href="/assets/css/bootstrap.rtl.min.css">
+  <link rel="stylesheet" href="/assets/css/style.css">
+  <link rel="stylesheet" href="/assets/css/icons-1.13.1/font/bootstrap-icons.min.css">
+</head>
+<body>
+
+<svg width="0" height="0" style="position:absolute;overflow:hidden;" aria-hidden="true" focusable="false">
+  <defs>
+    <filter id="goo-filter">
+      <feGaussianBlur in="SourceGraphic" stdDeviation="9" result="blur" />
+      <feColorMatrix in="blur" mode="matrix" values="1 0 0 0 0  0 1 0 0 0  0 0 1 0 0  0 0 0 19 -9" result="goo" />
+      <feComposite in="SourceGraphic" in2="goo" operator="atop" />
+    </filter>
+  </defs>
+</svg>
+
+<div id="scrollProgress" aria-hidden="true"></div>
+
+<div id="preloader" aria-hidden="true">
+  <div class="preloader-logo">سُل وب</div>
+  <div class="preloader-orb"></div>
+</div>
+
+<div class="cursor-wrap" aria-hidden="true">
+  <div class="cursor-dot"></div>
+  <div class="cursor-ring"></div>
+</div>
+
+<header class="site-header" id="siteHeader">
+  <div class="container header-flex">
+
+    <div class="glass-segment seg-brand">
+      <a class="navbar-brand" href="/">سُل وب</a>
+    </div>
+
+    <nav class="glass-segment seg-nav d-none d-lg-flex" aria-label="منوی اصلی">
+      <ul class="nav-pills-liquid">
+        <li><a href="/" data-cursor-hover>صفحه اصلی</a></li>
+        <li><a href="/services" class="active" data-cursor-hover>خدمات</a></li>
+        <li><a href="/portfolio" data-cursor-hover>نمونه کارها</a></li>
+        <li><a href="/packages" data-cursor-hover>پکیج‌ها</a></li>
+        <li><a href="/about" data-cursor-hover>درباره ما</a></li>
+        <li><a href="/contact" data-cursor-hover>تماس با ما</a></li>
+      </ul>
+    </nav>
+
+    <div class="glass-segment seg-actions">
+      <button class="btn-theme-toggle" id="themeToggle" aria-label="تغییر تم">
+        <i class="bi bi-moon-stars-fill"></i>
+      </button>
+      <a href="/contact" class="btn btn-main btn-sm d-none d-lg-inline-flex align-items-center gap-1">
+        مشاوره رایگان
+        <i class="bi bi-arrow-left"></i>
+      </a>
+      <button class="navbar-toggler d-lg-none" type="button"
+              data-bs-toggle="collapse" data-bs-target="#mobileNavPanel"
+              aria-controls="mobileNavPanel" aria-expanded="false" aria-label="باز کردن منو">
+        <i class="bi bi-list" style="font-size:1.3rem;"></i>
+      </button>
+    </div>
+
+  </div>
+
+  <div class="collapse mobile-nav-panel glass-segment" id="mobileNavPanel">
+    <ul class="mobile-nav-links">
+      <li><a href="/">صفحه اصلی</a></li>
+      <li><a href="/services" class="active">خدمات</a></li>
+      <li><a href="/portfolio">نمونه کارها</a></li>
+      <li><a href="/packages">پکیج‌ها</a></li>
+      <li><a href="/about">درباره ما</a></li>
+      <li><a href="/contact">تماس با ما</a></li>
+      <li><a href="/contact" class="btn btn-main w-100 justify-content-center mt-2">مشاوره رایگان <i class="bi bi-arrow-left"></i></a></li>
+    </ul>
+  </div>
+</header>
+
+<section class="hero-section" style="min-height: 55vh; padding-bottom: var(--section-py);">
+  <div class="floating-parallax hero-blob hero-blob-1" data-speed="0.12" aria-hidden="true"></div>
+  <div class="floating-parallax hero-blob hero-blob-2" data-speed="0.18" aria-hidden="true"></div>
+  <div class="hero-dots" aria-hidden="true"></div>
+
+  <div class="container text-center text-lg-start">
+    <div class="row align-items-center py-5">
+      <div class="col-lg-8 hero-content mx-auto text-center">
+        <div class="hero-badge mx-auto">
+          <span class="badge-dot"></span>
+          خلاقیت و تخصص در اجرای ایده‌ها
+        </div>
+        <h1 class="hero-title text-center">
+          راهکارهای تخصصی <span class="hero-title-accent">تیم سُل وب</span>
+        </h1>
+        <p class="hero-subtitle mx-auto text-center">
+          از طراحی هویت بصری مدرن تا توسعه و اجرای زیرساخت‌های پیچیده فرانت‌‌اند و بک‌اند کسب‌وکار شما.
+        </p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="services-section py-5 position-relative">
+  <div class="floating-parallax float-soft float-a" data-speed="0.08" aria-hidden="true"></div>
+  <div class="floating-parallax float-soft float-b" data-speed="0.14" aria-hidden="true"></div>
+
+  <div class="container py-5">
+    <div class="text-center mb-5 reveal">
+      <span class="section-tag">
+        <i class="bi bi-cpu-fill"></i>
+        محور فعالیت‌های ما
+      </span>
+      <h2 class="section-title">شرح کامل خدمات</h2>
+      <p class="section-subtitle mx-auto">
+        بالاترین کیفیت طراحی و توسعه با بکارگیری معماری‌های پیشرفته لایو وب و دیتابیس‌های مقیاس‌پذیر
+      </p>
+    </div>
+
+    <div class="row g-4">
+      <div class="col-lg-4 reveal reveal-delay-1">
+        <div class="card-sol card-tilt tilt-1 h-100" data-cursor-hover>
+          <div class="service-icon"><i class="bi bi-code-slash"></i></div>
+          <h4 class="fw-bold mb-3">توسعه وب اختصاصی (Node.js)</h4>
+          <p class="text-muted fs-6" style="line-height: 1.8;">
+            کدنویسی صفر تا صد پروژه‌های وب با پلتفرم قدرتمند Node.js و ساختار مدرن MVC. کاملاً ماژولار، بسیار سریع و توسعه‌پذیر برای اپلیکیشن‌های تحت وب پیچیده و سیستم‌های استارتاپی.
+          </p>
+          <hr class="my-4 opacity-25">
+          <ul class="list-unstyled d-flex flex-column gap-2 text-muted" style="font-size: 0.9rem;">
+            <li><i class="bi bi-check-circle-fill text-main me-2"></i> معماری منعطف MVC و پایگاه داده‌های بهینه</li>
+            <li><i class="bi bi-check-circle-fill text-main me-2"></i> پردازش همزمان بالا و سرعت لود فوق‌العاده</li>
+            <li><i class="bi bi-check-circle-fill text-main me-2"></i> امنیت اختصاصی و حفاظت کامل از داده‌ها</li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="col-lg-4 reveal reveal-delay-2">
+        <div class="card-sol card-tilt tilt-2 h-100" data-cursor-hover>
+          <div class="service-icon"><i class="bi bi-window-sidebar"></i></div>
+          <h4 class="fw-bold mb-3">رابط کاربری Liquid Glass & UI/UX</h4>
+          <p class="text-muted fs-6" style="line-height: 1.8;">
+            طراحی خلاقانه فرانت‌اند با استایل‌های آوانگارد شیشه‌ای مایع (Liquid Glass) و کامپوننت‌های نئومورفیسم. خلق تجربه‌ای بی‌نظیر، تعاملی و بسیار جذاب برای جلب اعتماد و ماندگاری مخاطبان.
+          </p>
+          <hr class="my-4 opacity-25">
+          <ul class="list-unstyled d-flex flex-column gap-2 text-muted" style="font-size: 0.9rem;">
+            <li><i class="bi bi-check-circle-fill text-main me-2"></i> انیمیشن‌های نرم مایع متناسب با حرکات ماوس</li>
+            <li><i class="bi bi-check-circle-fill text-main me-2"></i> رعایت ۱۰۰٪ استانداردهای دسترسی‌پذیری</li>
+            <li><i class="bi bi-check-circle-fill text-main me-2"></i> کاملاً واکنش‌گرا و بهینه‌سازی دقیق CSS/JS</li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="col-lg-4 reveal reveal-delay-3">
+        <div class="card-sol card-tilt tilt-3 h-100" data-cursor-hover>
+          <div class="service-icon"><i class="bi bi-cart4"></i></div>
+          <h4 class="fw-bold mb-3">سامانه‌های فروشگاهی پیشرفته</h4>
+          <p class="text-muted fs-6" style="line-height: 1.8;">
+            راه‌اندازی بسترهای جامع تجارت الکترونیک با قابلیت هندل کردن ترافیک‌های ورودی بالا، فرآیند سفارش‌دهی تک‌صفحه‌ای هوشمند، پنل‌های کاربری داینامیک و اتصالات مستقیم به درگاه‌های بانکی و سیستم‌های پیامکی.
+          </p>
+          <hr class="my-4 opacity-25">
+          <ul class="list-unstyled d-flex flex-column gap-2 text-muted" style="font-size: 0.9rem;">
+            <li><i class="bi bi-check-circle-fill text-main me-2"></i> سیستم وفاداری مشتریان و کدهای تخفیف داینامیک</li>
+            <li><i class="bi bi-check-circle-fill text-main me-2"></i> پنل مانیتورینگ آمار فروش روزانه و خروجی گزارشات</li>
+            <li><i class="bi bi-check-circle-fill text-main me-2"></i> سبد خرید روان و بدون افت سرعت هنگام اوج لود</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="faq-section py-5 bg-soft">
+  <div class="container py-4">
+    <div class="text-center mb-5 reveal">
+      <span class="section-tag">
+        <i class="bi bi-question-circle-fill"></i>
+        پاسخ به سوالات شما
+      </span>
+      <h2 class="section-title">سوالات متداول</h2>
+    </div>
+
+    <div class="row justify-content-center">
+      <div class="col-lg-8 reveal">
+        <div class="accordion accordion-flush d-flex flex-column gap-3" id="faqAccordion">
+          
+          <div class="card-sol p-3">
+            <h5 class="mb-0">
+              <button class="btn w-100 text-start justify-content-between p-2 shadow-none border-0 text-decoration-none fw-bold text-dark" type="button" data-bs-toggle="collapse" data-bs-target="#faq1">
+                توسعه بر پایه Node.js و ساختار MVC چه مزیتی دارد؟
+                <i class="bi bi-plus-lg text-main"></i>
+              </button>
+            </h5>
+            <div id="faq1" class="collapse show" data-bs-parent="#faqAccordion">
+              <div class="p-2 text-muted mt-2" style="font-size: 0.95rem; line-height: 1.8;">
+                معماری MVC باعث تفکیک تمیز لایه‌های داده (Model)، فرانت‌اند (View) و منطق برنامه (Controller) می‌شود. این ویژگی در کنار سرعت خیره‌کننده Node.js، امکان توسعه، نگهداری آسان و مقیاس‌پذیری فوق‌العاده بالایی را بدون افت پرفورمنس در آینده برای سایت شما فراهم می‌کند.
+              </div>
+            </div>
+          </div>
+
+          <div class="card-sol p-3">
+            <h5 class="mb-0">
+              <button class="btn w-100 text-start justify-content-between p-2 shadow-none border-0 text-decoration-none fw-bold text-dark" type="button" data-bs-toggle="collapse" data-bs-target="#faq2">
+                آیا پس از تحویل پروژه آموزش‌های لازم ارائه می‌شود؟
+                <i class="bi bi-plus-lg text-main"></i>
+              </button>
+            </h5>
+            <div id="faq2" class="collapse" data-bs-parent="#faqAccordion">
+              <div class="p-2 text-muted mt-2" style="font-size: 0.95rem; line-height: 1.8;">
+                بله، تمام پروژه‌های توسعه وب اختصاصی سُل وب همراه با مستندات کامل فنی و ویدیوی آموزشی جامع کار با پنل ادمین اختصاصی تحویل داده خواهند شد. همچنین دوره‌های پشتیبانی فنی متناسب با پکیج انتخابی شما بلافاصله آغاز می‌گردد.
+              </div>
+            </div>
+          </div>
+
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<footer class="footer-sol">
+  <div class="footer-inner">
+    <div class="container">
+      <div class="row g-5">
+
+        <div class="col-lg-4">
+          <a href="/" class="footer-brand text-decoration-none">سُل وب</a>
+          <p>تیم سُل وب روح وب‌سایت‌ها را می‌آفریند. ما پلتفرم‌هایی توسعه می‌دهیم که نه‌تنها هویت بصری منحصربه‌فردی دارند، بلکه بیزینس شما را متحول می‌کنند.</p>
+          <div class="social-links mt-3">
+            <a href="#" class="social-link" aria-label="اینستاگرام"><i class="bi bi-instagram"></i></a>
+            <a href="#" class="social-link" aria-label="تلگرام"><i class="bi bi-telegram"></i></a>
+            <a href="#" class="social-link" aria-label="لینکدین"><i class="bi bi-linkedin"></i></a>
+          </div>
+        </div>
+
+        <div class="col-6 col-lg-2">
+          <h6>خدمات</h6>
+          <ul class="footer-links">
+            <li><a href="/services"><i class="bi bi-chevron-left"></i>توسعه وب اختصاصی</a></li>
+            <li><a href="/services"><i class="bi bi-chevron-left"></i>رابط کاربری مایع</a></li>
+            <li><a href="/services"><i class="bi bi-chevron-left"></i>فروشگاه پیشرفته</a></li>
+          </ul>
+        </div>
+
+        <div class="col-6 col-lg-2">
+          <h6>دسترسی سریع</h6>
+          <ul class="footer-links">
+            <li><a href="/"><i class="bi bi-chevron-left"></i>صفحه اصلی</a></li>
+            <li><a href="/portfolio"><i class="bi bi-chevron-left"></i>نمونه کارها</a></li>
+            <li><a href="/packages"><i class="bi bi-chevron-left"></i>پکیج‌ها</a></li>
+            <li><a href="/about"><i class="bi bi-chevron-left"></i>درباره ما</a></li>
+            <li><a href="/contact"><i class="bi bi-chevron-left"></i>تماس با ما</a></li>
+          </ul>
+        </div>
+
+        <div class="col-lg-4">
+          <h6>تماس با ما</h6>
+          <ul class="footer-links mb-4">
+            <li><a href="mailto:hello@solweb.ir"><i class="bi bi-envelope"></i>hello@solweb.ir</a></li>
+            <li><a href="#"><i class="bi bi-geo-alt"></i>آژانس دیجیتال سُل وب</a></li>
+          </ul>
+
+          <div class="footer-trust">
+            <div class="trust-badge" title="نماد اعتماد الکترونیکی">
+              <i class="bi bi-patch-check-fill"></i>
+              <span>اینماد</span>
+            </div>
+            <div class="trust-badge" title="درگاه پرداخت امن">
+              <i class="bi bi-lock-fill"></i>
+              <span>پرداخت امن</span>
+            </div>
+            <div class="trust-badge" title="SSL امن">
+              <i class="bi bi-shield-lock-fill"></i>
+              <span>SSL</span>
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+      <hr class="footer-divider" />
+
+      <div class="d-flex flex-column flex-md-row justify-content-between align-items-center gap-3">
+        <p style="font-size:.825rem;margin:0;color:rgba(255,255,255,.4);">
+          © ۱۴۰۵ آژانس سُل وب. تمامی حقوق محفوظ است.
+        </p>
+      </div>
+
+    </div>
+  </div>
+</footer>
+
+<button id="backToTop" aria-label="رفتن به بالای صفحه">
+  <i class="bi bi-chevron-up"></i>
+</button>
+
+<script src="/assets/js/jquery-3.7.1.min.js"></script>
+<script src="/assets/js/bootstrap.bundle.min.js"></script>
+<script src="/assets/js/script.js"></script>
+</body>
+</html>

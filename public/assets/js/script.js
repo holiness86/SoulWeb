@@ -1,11 +1,23 @@
 /**
- * تیم سُل وب — script.js v2
+ * تیم سُل وب — script.js v3 "Liquid Glass"
  * بر پایه jQuery 3.7.1 + Bootstrap 5.3 RTL
  * ═══════════════════════════════════════════
  */
 
 $(function () {
   'use strict';
+
+  const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const finePointer  = window.matchMedia('(hover: hover) and (pointer: fine)').matches;
+  const isDesktop    = window.innerWidth >= 992;
+
+  /* ═══════════════════════════════════════════
+     Utility: Debounce
+  ═══════════════════════════════════════════ */
+  function debounce(fn, delay) {
+    let timer;
+    return function () { clearTimeout(timer); timer = setTimeout(() => fn.apply(this, arguments), delay); };
+  }
 
   /* ═══════════════════════════════════════════
      0. Preloader
@@ -21,37 +33,68 @@ $(function () {
   }
 
   /* ═══════════════════════════════════════════
-     1. Navbar: Scroll State + Floating Effect
+     1. Header: Scroll State (تکه‌های شیشه‌ای هم‌زمان)
   ═══════════════════════════════════════════ */
-  const $navbar          = $('.navbar-sol');
-  const SCROLL_THRESHOLD = 60;
+  const $siteHeader      = $('#siteHeader');
+  const SCROLL_THRESHOLD = 40;
 
-  function handleNavbarScroll() {
-    $navbar.toggleClass('scrolled', $(window).scrollTop() > SCROLL_THRESHOLD);
+  function handleHeaderScroll() {
+    $siteHeader.toggleClass('scrolled', $(window).scrollTop() > SCROLL_THRESHOLD);
   }
-  $(window).on('scroll.navbar', handleNavbarScroll);
-  handleNavbarScroll();
+  $(window).on('scroll.header', handleHeaderScroll);
+  handleHeaderScroll();
 
   /* ═══════════════════════════════════════════
-     2. Theme Toggle (Dark / Light)
+     2. Theme Toggle — Fluid Bubble Transition
   ═══════════════════════════════════════════ */
-  const $html        = $('html');
-  const $themeToggle = $('#themeToggle');
-  const STORAGE_KEY  = 'sol-theme';
+  const $html         = $('html');
+  const $themeToggle   = $('#themeToggle');
+  const STORAGE_KEY     = 'sol-theme';
 
-  const savedTheme = localStorage.getItem(STORAGE_KEY) || 'light';
-  applyTheme(savedTheme);
-
-  $themeToggle.on('click', function () {
-    const next = $html.attr('data-bs-theme') === 'dark' ? 'light' : 'dark';
-    applyTheme(next);
-    localStorage.setItem(STORAGE_KEY, next);
-  });
-
-  function applyTheme(theme) {
-    $html.attr('data-bs-theme', theme);
+  function syncThemeIcon(theme) {
     $themeToggle.find('i').attr('class', 'bi ' + (theme === 'dark' ? 'bi-sun-fill' : 'bi-moon-stars-fill'));
   }
+  syncThemeIcon($html.attr('data-bs-theme') || 'light');
+
+  function commitTheme(theme) {
+    $html.attr('data-bs-theme', theme);
+    syncThemeIcon(theme);
+    try { localStorage.setItem(STORAGE_KEY, theme); } catch (e) {}
+  }
+
+  $themeToggle.on('click', function () {
+    const nextTheme = $html.attr('data-bs-theme') === 'dark' ? 'light' : 'dark';
+
+    if (reduceMotion) { commitTheme(nextTheme); return; }
+    if ($('.theme-bubble-wrap').length) return; // جلوگیری از تداخل انیمیشن‌ها
+
+    const rect = this.getBoundingClientRect();
+    const x = rect.left + rect.width / 2;
+    const y = rect.top + rect.height / 2;
+    const bubbleColor = nextTheme === 'dark' ? '#10102a' : '#f7f7fb';
+
+    const maxDist = Math.hypot(
+      Math.max(x, window.innerWidth - x),
+      Math.max(y, window.innerHeight - y)
+    );
+    const scaleMain = (maxDist * 2.3) / 40;
+
+    const $wrap = $('<div class="theme-bubble-wrap" id="themeBubbleWrap"></div>').css({
+      '--x': x + 'px', '--y': y + 'px', '--scale-main': scaleMain
+    });
+    ['main', 'drop d1', 'drop d2', 'drop d3'].forEach(function (cls) {
+      $wrap.append($('<span class="theme-bubble ' + cls + '"></span>').css('--bubble-color', bubbleColor));
+    });
+    $('body').append($wrap);
+
+    requestAnimationFrame(function () {
+      requestAnimationFrame(function () { $wrap.addClass('expand'); });
+    });
+
+    setTimeout(function () { commitTheme(nextTheme); }, 1000);
+    setTimeout(function () { $wrap.removeClass('expand'); }, 1080);
+    setTimeout(function () { $wrap.remove(); }, 2100);
+  });
 
   /* ═══════════════════════════════════════════
      3. Smooth Scroll — Anchor Links
@@ -64,14 +107,20 @@ $(function () {
 
     e.preventDefault();
 
-    // Close mobile nav
-    const $collapse = $('.navbar-collapse');
-    if ($collapse.hasClass('show')) {
-      bootstrap.Collapse.getInstance($collapse[0])?.hide();
+    const $panel = $('#mobileNavPanel');
+    if ($panel.hasClass('show')) {
+      bootstrap.Collapse.getInstance($panel[0])?.hide();
     }
 
-    const offset = $navbar.outerHeight() + 20;
+    const offset = $siteHeader.outerHeight() + 24;
     $('html, body').animate({ scrollTop: $target.offset().top - offset }, 600, 'swing');
+  });
+
+  $('.mobile-nav-links a').on('click', function () {
+    const $panel = $('#mobileNavPanel');
+    if ($panel.hasClass('show')) {
+      bootstrap.Collapse.getOrCreateInstance($panel[0]).hide();
+    }
   });
 
   /* ═══════════════════════════════════════════
@@ -195,40 +244,142 @@ $(function () {
   });
 
   /* ═══════════════════════════════════════════
-     10. Card Tilt Effect (desktop)
+     10. کرسر اختصاصی مایع (Liquid Custom Cursor)
   ═══════════════════════════════════════════ */
-  if (window.innerWidth >= 992) {
-    $(document).on('mousemove', '.card-sol', function (e) {
-      const $card  = $(this);
-      const offset = $card.offset();
-      const cw     = $card.outerWidth();
-      const ch     = $card.outerHeight();
-      const mx     = e.pageX - offset.left;
-      const my     = e.pageY - offset.top;
-      const tiltX  = ((my / ch) - 0.5) * 8;
-      const tiltY  = ((mx / cw) - 0.5) * -8;
-      $card.css({
-        transform : `perspective(1000px) rotateX(${tiltX}deg) rotateY(${tiltY}deg) translateY(-4px)`,
-        transition: 'transform 0.1s ease'
-      });
+  if (finePointer && !reduceMotion) {
+    $html.addClass('cursor-ready');
+
+    const $dot  = $('.cursor-dot');
+    const $ring = $('.cursor-ring');
+    let mouseX = window.innerWidth / 2, mouseY = window.innerHeight / 2;
+    let ringX = mouseX, ringY = mouseY;
+    const EASE = 0.16;
+
+    $(window).on('mousemove.cursor', function (e) {
+      mouseX = e.clientX; mouseY = e.clientY;
+      $dot[0].style.transform = `translate(${mouseX}px, ${mouseY}px) translate(-50%,-50%)`;
     });
-    $(document).on('mouseleave', '.card-sol', function () {
-      $(this).css({ transform: '', transition: 'transform 0.4s cubic-bezier(.34,1.56,.64,1)' });
+
+    (function raf() {
+      ringX += (mouseX - ringX) * EASE;
+      ringY += (mouseY - ringY) * EASE;
+      $ring[0].style.transform = `translate(${ringX}px, ${ringY}px) translate(-50%,-50%)`;
+      requestAnimationFrame(raf);
+    })();
+
+    const HOVER_SELECTOR = 'a, button, .btn, .filter-btn, .card-sol, [role="button"], [data-cursor-hover], input, textarea, select';
+    $(document).on('mouseenter.cursor', HOVER_SELECTOR, function () { $html.addClass('cursor-hover'); });
+    $(document).on('mouseleave.cursor', HOVER_SELECTOR, function () { $html.removeClass('cursor-hover'); });
+
+    $(document).on('mousedown.cursor', function (e) {
+      const $ripple = $('<span class="cursor-ripple"></span>').css({ top: e.clientY, left: e.clientX });
+      $('body').append($ripple);
+      setTimeout(function () { $ripple.remove(); }, 700);
     });
+
+    $(document).on('mouseleave.cursorPage', function () { $dot.add($ring).css('opacity', 0); });
+    $(document).on('mouseenter.cursorPage', function () { $dot.add($ring).css('opacity', 1); });
   }
 
   /* ═══════════════════════════════════════════
-     11. Navbar Mobile — Close on Link Click
+     11. روح سیال — پارالاکس هیرو با موس
   ═══════════════════════════════════════════ */
-  $('.navbar-nav .nav-link').on('click', function () {
-    const $col = $('#navbarNav');
-    if ($col.hasClass('show')) {
-      bootstrap.Collapse.getOrCreateInstance($col[0]).hide();
+  if (isDesktop && !reduceMotion) {
+    const $heroVisual = $('#heroVisual');
+    const soulOrb      = document.getElementById('soulOrb');
+    if ($heroVisual.length && soulOrb) {
+      $heroVisual.on('mousemove.soul', function (e) {
+        const rect = this.getBoundingClientRect();
+        const px = (e.clientX - rect.left) / rect.width - 0.5;
+        const py = (e.clientY - rect.top) / rect.height - 0.5;
+        soulOrb.style.setProperty('--rx', (px * 22) + 'deg');
+        soulOrb.style.setProperty('--ry', (py * -22) + 'deg');
+      }).on('mouseleave.soul', function () {
+        soulOrb.style.setProperty('--rx', '0deg');
+        soulOrb.style.setProperty('--ry', '0deg');
+      });
     }
-  });
+  }
 
   /* ═══════════════════════════════════════════
-     12. Scroll Progress Bar
+     12. المان‌های معلق پس‌زمینه (Floating Parallax)
+  ═══════════════════════════════════════════ */
+  if (isDesktop && !reduceMotion) {
+    const $floaters = $('.floating-parallax');
+    let floatTicking = false;
+    function updateFloatParallax() {
+      const scrollY = window.scrollY;
+      $floaters.each(function () {
+        const speed = parseFloat($(this).attr('data-speed')) || 0.1;
+        this.style.transform = `translateY(${scrollY * speed}px)`;
+      });
+      floatTicking = false;
+    }
+    $(window).on('scroll.floatParallax', function () {
+      if (!floatTicking) { requestAnimationFrame(updateFloatParallax); floatTicking = true; }
+    });
+    updateFloatParallax();
+  }
+
+  /* ═══════════════════════════════════════════
+     13. مسیر منحنی خط‌چین «چطور کار می‌کنیم؟»
+  ═══════════════════════════════════════════ */
+  function initWorkflowPaths() {
+    document.querySelectorAll('.workflow-progress').forEach(function (path) {
+      const len = path.getTotalLength();
+      path.style.strokeDasharray  = len;
+      path.style.strokeDashoffset = len;
+    });
+  }
+  initWorkflowPaths();
+  $(window).on('resize.workflow', debounce(initWorkflowPaths, 250));
+
+  if ('IntersectionObserver' in window) {
+    const workflowObs = new IntersectionObserver(function (entries) {
+      entries.forEach(function (entry) {
+        if (entry.isIntersecting) {
+          $(entry.target).addClass('in-view');
+          entry.target.querySelectorAll('.workflow-progress').forEach(function (p) {
+            p.style.strokeDashoffset = '0';
+          });
+          workflowObs.unobserve(entry.target);
+        }
+      });
+    }, { threshold: 0.35 });
+    document.querySelectorAll('.workflow-wrap, .workflow-wrap-mobile').forEach(function (el) {
+      workflowObs.observe(el);
+    });
+  } else {
+    $('.workflow-wrap, .workflow-wrap-mobile').addClass('in-view');
+    document.querySelectorAll('.workflow-progress').forEach(function (p) { p.style.strokeDashoffset = '0'; });
+  }
+
+  /* ═══════════════════════════════════════════
+     14. کارت‌های معلق نظرات — پارالاکس پراکنده
+  ═══════════════════════════════════════════ */
+  if (isDesktop && !reduceMotion) {
+    const $testiCards = $('.testimonial-glass');
+    if ($testiCards.length) {
+      let testiTicking = false;
+      function updateTestimonialParallax() {
+        const vh = window.innerHeight;
+        $testiCards.each(function () {
+          const depth = parseFloat($(this).attr('data-depth')) || 0.2;
+          const rect  = this.getBoundingClientRect();
+          const centerDelta = (rect.top + rect.height / 2) - vh / 2;
+          this.style.setProperty('--parallax-y', (centerDelta * depth * -0.05) + 'px');
+        });
+        testiTicking = false;
+      }
+      $(window).on('scroll.testiParallax', function () {
+        if (!testiTicking) { requestAnimationFrame(updateTestimonialParallax); testiTicking = true; }
+      });
+      updateTestimonialParallax();
+    }
+  }
+
+  /* ═══════════════════════════════════════════
+     15. Scroll Progress Bar
   ═══════════════════════════════════════════ */
   const $progressBar = $('#scrollProgress');
   if ($progressBar.length) {
@@ -241,28 +392,7 @@ $(function () {
   }
 
   /* ═══════════════════════════════════════════
-     13. Parallax Hero Background
-  ═══════════════════════════════════════════ */
-  if (window.innerWidth >= 992) {
-    const $heroBlobs = $('.hero-blob');
-    $(window).on('scroll.parallax', function () {
-      const scrollY = $(window).scrollTop();
-      $heroBlobs.each(function (i) {
-        $(this).css('transform', `translateY(${scrollY * (i + 1) * 0.1}px)`);
-      });
-    });
-  }
-
-  /* ═══════════════════════════════════════════
-     14. Section Active Highlight (ScrollSpy)
-  ═══════════════════════════════════════════ */
-  const $body = $('body');
-  if ($body.attr('data-bs-spy')) {
-    bootstrap.ScrollSpy.getOrCreateInstance($body[0]).refresh();
-  }
-
-  /* ═══════════════════════════════════════════
-     15. Lazy Load Images
+     16. Lazy Load Images
   ═══════════════════════════════════════════ */
   if ('IntersectionObserver' in window) {
     const lazyObs = new IntersectionObserver(function (entries) {
@@ -281,13 +411,6 @@ $(function () {
       $(this).attr('src', $(this).attr('data-src')).removeAttr('data-src');
     });
   }
-
-  /* ═══════════════════════════════════════════
-     16. Bootstrap Carousel — RTL Fix
-  ═══════════════════════════════════════════ */
-  $('.carousel').each(function () {
-    bootstrap.Carousel.getOrCreateInstance(this, { ride: false, touch: true });
-  });
 
   /* ═══════════════════════════════════════════
      17. Toast Notification Helper
@@ -323,23 +446,17 @@ $(function () {
   }
 
   /* ═══════════════════════════════════════════
-     Utility: Debounce
-  ═══════════════════════════════════════════ */
-  function debounce(fn, delay) {
-    let timer;
-    return function () { clearTimeout(timer); timer = setTimeout(() => fn.apply(this, arguments), delay); };
-  }
-
-  /* ═══════════════════════════════════════════
      18. Window Resize Handler
   ═══════════════════════════════════════════ */
   $(window).on('resize', debounce(function () {
-    if (window.innerWidth < 992) $('.hero-blob').css('transform', '');
+    if (window.innerWidth < 992) {
+      $('.hero-blob, .float-soft').css('transform', '');
+    }
   }, 200));
 
   /* ═══════════════════════════════════════════
      Init Complete
   ═══════════════════════════════════════════ */
-  console.log('%c تیم سُل وب 🚀 ', 'background:linear-gradient(135deg,#6447f4,#0090e8);color:#fff;font-size:14px;font-weight:bold;font-family: "YekanBakh", "Tahoma", sans-serif;padding:8px 16px;border-radius:8px;');
+  console.log('%c تیم سُل وب 🚀', 'background:linear-gradient(135deg,#6447f4,#0090e8);color:#fff;font-size:14px;font-weight:bold;font-family: "YekanBakh", "Tahoma", sans-serif;padding:8px 16px;border-radius:8px;');
 
 }); // end document.ready

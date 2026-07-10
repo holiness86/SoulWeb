@@ -972,7 +972,7 @@ html.cursor-hover .cursor-dot { width: 0; height: 0; }
 .portfolio-media i { font-size: 4rem; color: rgba(255,255,255,.7); }
 .card-portfolio:hover .portfolio-media { transform: scale(1.08); }
 
-.portfolio-body { padding: 1.25rem 4.5rem 1.5rem 1.5rem; }
+.portfolio-body { padding: 1.25rem 1.5rem 1.5rem 4.5rem; }
 .portfolio-body .tag {
   font-size    : .75rem;
   font-weight  : 700;
@@ -1346,7 +1346,7 @@ html.cursor-hover .cursor-dot { width: 0; height: 0; }
   .btn-lg { padding: .75rem 1.75rem; font-size: .925rem; }
   .stat-card { flex: 1 1 100%; }
   .footer-inner { border-radius: var(--radius-lg); }
-  .portfolio-body { padding-left: 1.25rem; padding-right: 4rem; }
+  .portfolio-body { padding-left: 4rem; padding-right: 1.25rem; }
 }
 
 /* ─── 28. Print ───────────────────────────────────────── */

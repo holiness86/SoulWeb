@@ -1000,6 +1000,7 @@ html.cursor-hover .cursor-dot { width: 0; height: 0; }
 
 /* ─── 16. Portfolio Section ────────────────────────────── */
 .portfolio-section { padding: var(--section-py) 0; background: var(--color-bg-soft); position: relative; }
+.portfolio-section .row.g-4 { --bs-gutter-x: 2.5rem; --bs-gutter-y: 2.5rem; }
 [data-bs-theme="dark"] .portfolio-section { background: var(--color-bg-muted); }
 
 .portfolio-filter { display: flex; flex-wrap: wrap; gap: .5rem; margin-bottom: 2.5rem; position: relative; z-index: 1; }
@@ -1052,27 +1053,42 @@ html.cursor-hover .cursor-dot { width: 0; height: 0; }
   height: 52%;
   width: 2.9rem;
   transform: translateY(-50%) translateX(0);
-  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: .55rem;
+  display: flex; align-items: center; justify-content: center;
   background: var(--grad-main);
-  color: #fff !important;
   text-decoration: none;
-  writing-mode: vertical-rl;
-  text-orientation: mixed;
-  font-weight: 700;
-  font-size: .76rem;
-  letter-spacing: .03em;
   border-radius: var(--radius-full);
   box-shadow: 0 10px 28px rgba(100,71,244,.35), 0 0 0 5px var(--color-surface);
   transition: transform var(--dur-normal) var(--ease-spring), box-shadow var(--dur-normal) var(--ease-smooth);
   z-index: 3;
+  overflow: hidden;
 }
-.portfolio-edge-btn i { transform: rotate(90deg); transition: transform var(--dur-normal) var(--ease-spring); }
+/* ردیف افقی معمولی (متن + آیکون درست کنار هم) که یک‌جا می‌چرخد؛
+   دیگر به writing-mode متکی نیست تا ترتیب آیتم‌ها به‌هم نریزد */
+.portfolio-edge-btn-inner {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: .45rem;
+  white-space: nowrap;
+  transform: rotate(-90deg);
+  color: #fff;
+  font-weight: 700;
+  font-size: .76rem;
+  letter-spacing: .03em;
+  transition: transform var(--dur-normal) var(--ease-spring);
+}
+.portfolio-edge-btn-inner i { font-size: .82rem; line-height: 1; }
 .portfolio-edge-btn:hover,
 .card-portfolio:hover .portfolio-edge-btn {
-  transform: translateY(-50%) translateX(-7px);
+  transform: translateY(-50%) translateX(-5px);
   box-shadow: 0 16px 38px rgba(100,71,244,.5), 0 0 0 5px var(--color-surface);
 }
-.card-portfolio:hover .portfolio-edge-btn i { transform: rotate(90deg) translateX(-3px); }
+.card-portfolio:hover .portfolio-edge-btn-inner { transform: rotate(-90deg) translateX(-3px); }
+
+@media (max-width: 575.98px) {
+  .portfolio-edge-btn { left: -1.1rem; width: 2.5rem; }
+  .portfolio-edge-btn:hover, .card-portfolio:hover .portfolio-edge-btn { transform: translateY(-50%) translateX(-3px); }
+}
 
 /* ─── 17. Packages Section ─────────────────────────────── */
 .packages-section { padding: var(--section-py) 0; background: var(--color-bg); }
@@ -1174,7 +1190,7 @@ html.cursor-hover .cursor-dot { width: 0; height: 0; }
   box-shadow: var(--glass-shadow);
   padding: 1.75rem;
   display: flex; flex-direction: column; gap: .85rem;
-  transition: transform var(--dur-normal) var(--ease-spring), box-shadow var(--dur-normal);
+  transition: transform 480ms var(--ease-smooth), box-shadow 420ms var(--ease-smooth);
   will-change: transform;
   transform: rotate(var(--tilt, 0deg)) translateY(calc(var(--base-y, 0px) + var(--parallax-y, 0px)));
 }

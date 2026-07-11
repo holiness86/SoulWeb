@@ -97,58 +97,21 @@ $(function () {
   });
 
   /* ═══════════════════════════════════════════
-     3. موتور اسکرول نرم (Wheel + Anchor + Back-To-Top یکپارچه)
+     3. اسکرول نرم — Anchor Links و Back To Top
+     (روی اسکرول Wheel/Touch دست نمی‌زنیم؛ اسکرول native
+      مرورگر خودش کاملا روانه. فقط پرش‌های برنامه‌ای —
+      Anchor و Back-To-Top — را با scrollTo نرم می‌کنیم
+      تا با scroll-behavior:smooth تداخل/Loop ایجاد نشود)
   ═══════════════════════════════════════════ */
-  const smoothScrollActive = !reduceMotion && finePointer;
-  let scrollTargetY   = window.scrollY;
-  let scrollRafId      = null;
-  let scrollProgrammatic = false;
-
-  function clampScrollY(y) {
-    const max = Math.max(0, document.documentElement.scrollHeight - window.innerHeight);
-    return Math.max(0, Math.min(y, max));
-  }
-
-  function scrollEngineLoop() {
-    const current = window.scrollY;
-    const diff = scrollTargetY - current;
-    if (Math.abs(diff) < 0.4) {
-      scrollProgrammatic = true;
-      window.scrollTo(0, scrollTargetY);
-      requestAnimationFrame(function () { scrollProgrammatic = false; });
-      scrollRafId = null;
-      return;
-    }
-    scrollProgrammatic = true;
-    window.scrollTo(0, current + diff * 0.15);
-    scrollRafId = requestAnimationFrame(scrollEngineLoop);
-  }
-
   function smoothScrollTo(y) {
-    if (smoothScrollActive) {
-      scrollTargetY = clampScrollY(y);
-      if (scrollRafId === null) scrollRafId = requestAnimationFrame(scrollEngineLoop);
-    } else if (!reduceMotion) {
-      window.scrollTo({ top: clampScrollY(y), behavior: 'smooth' });
+    const top = Math.max(0, y);
+    if (reduceMotion) {
+      window.scrollTo(0, top);
     } else {
-      window.scrollTo(0, clampScrollY(y));
+      window.scrollTo({ top: top, left: 0, behavior: 'smooth' });
     }
   }
 
-  if (smoothScrollActive) {
-    window.addEventListener('wheel', function (e) {
-      if (e.ctrlKey) return; // زوم Ctrl+Wheel طبیعی باقی می‌ماند
-      e.preventDefault();
-      if (scrollRafId === null) scrollTargetY = window.scrollY; // هماهنگ‌سازی با موقعیت واقعی
-      smoothScrollTo(scrollTargetY + e.deltaY);
-    }, { passive: false });
-
-    window.addEventListener('scroll', function () {
-      if (!scrollProgrammatic && scrollRafId === null) scrollTargetY = window.scrollY;
-    }, { passive: true });
-  }
-
-  /* ── لینک‌های Anchor ── */
   $(document).on('click', 'a[href^="#"]', function (e) {
     const target = $(this).attr('href');
     if (!target || target === '#') return;

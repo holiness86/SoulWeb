@@ -97,8 +97,58 @@ $(function () {
   });
 
   /* ═══════════════════════════════════════════
-     3. Smooth Scroll — Anchor Links
+     3. موتور اسکرول نرم (Wheel + Anchor + Back-To-Top یکپارچه)
   ═══════════════════════════════════════════ */
+  const smoothScrollActive = !reduceMotion && finePointer;
+  let scrollTargetY   = window.scrollY;
+  let scrollRafId      = null;
+  let scrollProgrammatic = false;
+
+  function clampScrollY(y) {
+    const max = Math.max(0, document.documentElement.scrollHeight - window.innerHeight);
+    return Math.max(0, Math.min(y, max));
+  }
+
+  function scrollEngineLoop() {
+    const current = window.scrollY;
+    const diff = scrollTargetY - current;
+    if (Math.abs(diff) < 0.4) {
+      scrollProgrammatic = true;
+      window.scrollTo(0, scrollTargetY);
+      requestAnimationFrame(function () { scrollProgrammatic = false; });
+      scrollRafId = null;
+      return;
+    }
+    scrollProgrammatic = true;
+    window.scrollTo(0, current + diff * 0.15);
+    scrollRafId = requestAnimationFrame(scrollEngineLoop);
+  }
+
+  function smoothScrollTo(y) {
+    if (smoothScrollActive) {
+      scrollTargetY = clampScrollY(y);
+      if (scrollRafId === null) scrollRafId = requestAnimationFrame(scrollEngineLoop);
+    } else if (!reduceMotion) {
+      window.scrollTo({ top: clampScrollY(y), behavior: 'smooth' });
+    } else {
+      window.scrollTo(0, clampScrollY(y));
+    }
+  }
+
+  if (smoothScrollActive) {
+    window.addEventListener('wheel', function (e) {
+      if (e.ctrlKey) return; // زوم Ctrl+Wheel طبیعی باقی می‌ماند
+      e.preventDefault();
+      if (scrollRafId === null) scrollTargetY = window.scrollY; // هماهنگ‌سازی با موقعیت واقعی
+      smoothScrollTo(scrollTargetY + e.deltaY);
+    }, { passive: false });
+
+    window.addEventListener('scroll', function () {
+      if (!scrollProgrammatic && scrollRafId === null) scrollTargetY = window.scrollY;
+    }, { passive: true });
+  }
+
+  /* ── لینک‌های Anchor ── */
   $(document).on('click', 'a[href^="#"]', function (e) {
     const target = $(this).attr('href');
     if (!target || target === '#') return;
@@ -113,7 +163,7 @@ $(function () {
     }
 
     const offset = $siteHeader.outerHeight() + 24;
-    $('html, body').animate({ scrollTop: $target.offset().top - offset }, 600, 'swing');
+    smoothScrollTo($target.offset().top - offset);
   });
 
   $('.mobile-nav-links a').on('click', function () {
@@ -131,7 +181,7 @@ $(function () {
     $backToTop.toggleClass('visible', $(this).scrollTop() > 400);
   });
   $backToTop.on('click', function () {
-    $('html, body').animate({ scrollTop: 0 }, 600, 'swing');
+    smoothScrollTo(0);
   });
 
   /* ═══════════════════════════════════════════
@@ -457,6 +507,6 @@ $(function () {
   /* ═══════════════════════════════════════════
      Init Complete
   ═══════════════════════════════════════════ */
-  console.log('%c تیم سُل وب 🚀', 'background:linear-gradient(135deg,#6447f4,#0090e8);color:#fff;font-size:14px;font-weight:bold;font-family: "YekanBakh", "Tahoma", sans-serif;padding:8px 16px;border-radius:8px;');
+  console.log('%c تیم سُل وب 🚀 Liquid Glass ', 'background:linear-gradient(135deg,#6447f4,#0090e8);color:#fff;font-size:14px;font-weight:bold;font-family: "YekanBakh", "Tahoma", sans-serif;padding:8px 16px;border-radius:8px;');
 
 }); // end document.ready

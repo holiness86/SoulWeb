@@ -463,8 +463,20 @@
 
 
 <!-- ═══════════════════════════════════════
-     PORTFOLIO SECTION — دکمه‌های عمودی
+     PORTFOLIO SECTION — دکمه‌های عمودی (داینامیک از دیتابیس)
 ═══════════════════════════════════════ -->
+<%
+  // نگاشت category اسکیما به کلاس فیلتر، لیبل فارسی و آیکون پیش‌فرض
+  const portfolioCategoryMap = {
+    web:      { filterClass: 'web',  label: 'طراحی وب',        icon: 'bi-laptop' },
+    store:    { filterClass: 'shop', label: 'فروشگاه',          icon: 'bi-cart3' },
+    ui_ux:    { filterClass: 'ui',   label: 'UI/UX',            icon: 'bi-palette2' },
+    webapp:   { filterClass: 'web',  label: 'اپلیکیشن وب',      icon: 'bi-window-stack' },
+    branding: { filterClass: 'web',  label: 'برندینگ',          icon: 'bi-award' },
+    other:    { filterClass: 'web',  label: 'سایر',             icon: 'bi-grid-3x3-gap-fill' }
+  };
+  const tiltClasses = ['tilt-1', 'tilt-2', 'tilt-3', 'tilt-4', 'tilt-5', 'tilt-6'];
+%>
 <section class="portfolio-section" id="portfolio">
   <div class="floating-parallax float-soft float-c" data-speed="0.1" aria-hidden="true"></div>
 
@@ -490,133 +502,35 @@
     </div>
 
     <div class="row g-4">
-
-      <div class="col-md-6 col-lg-4 portfolio-item web reveal reveal-delay-1">
-        <div class="card-sol card-portfolio card-tilt tilt-1">
-          <div class="portfolio-img">
-            <div class="portfolio-media" style="background:linear-gradient(135deg,#6447f4,#0090e8);">
-              <i class="bi bi-laptop"></i>
+      <% portfolio.forEach(function (item, idx) { %>
+        <%
+          const cat = portfolioCategoryMap[item.category] || portfolioCategoryMap.other;
+          const tilt = tiltClasses[idx % tiltClasses.length];
+          const delay = (idx % 3) + 1;
+        %>
+        <div class="col-md-6 col-lg-4 portfolio-item <%= cat.filterClass %> reveal reveal-delay-<%= delay %>">
+          <div class="card-sol card-portfolio card-tilt <%= tilt %>">
+            <div class="portfolio-img">
+              <div class="portfolio-media" style="background-image:url('<%= item.coverImage %>'); background-size:cover; background-position:center;">
+                <% if (!item.coverImage) { %>
+                  <i class="bi <%= cat.icon %>"></i>
+                <% } %>
+              </div>
+            </div>
+            <a href="<%= item.liveUrl || '#' %>" class="portfolio-edge-btn" data-cursor-hover>
+              <span class="portfolio-edge-btn-inner">
+                <span>مشاهده پروژه</span>
+                <i class="bi bi-arrow-up-left"></i>
+              </span>
+            </a>
+            <div class="portfolio-body">
+              <p class="tag"><%= cat.label %></p>
+              <h5><%= item.title %></h5>
+              <p class="text-muted" style="font-size:.82rem;margin:0;"><%= item.description %></p>
             </div>
           </div>
-          <a href="#" class="portfolio-edge-btn" data-cursor-hover>
-            <span class="portfolio-edge-btn-inner">
-              <span>مشاهده پروژه</span>
-              <i class="bi bi-arrow-up-left"></i>
-            </span>
-          </a>
-          <div class="portfolio-body">
-            <p class="tag">طراحی وب</p>
-            <h5>وب‌سایت شرکتی آتین‌دیزاین</h5>
-            <p class="text-muted" style="font-size:.82rem;margin:0;">طراحی و توسعه وب‌سایت شرکت دیزاین آتین</p>
-          </div>
         </div>
-      </div>
-
-      <div class="col-md-6 col-lg-4 portfolio-item shop reveal reveal-delay-2">
-        <div class="card-sol card-portfolio card-tilt tilt-2">
-          <div class="portfolio-img">
-            <div class="portfolio-media" style="background:linear-gradient(135deg,#0090e8,#4dc3ff);">
-              <i class="bi bi-bag-heart"></i>
-            </div>
-          </div>
-          <a href="#" class="portfolio-edge-btn" data-cursor-hover>
-            <span class="portfolio-edge-btn-inner">
-              <span>مشاهده پروژه</span>
-              <i class="bi bi-arrow-up-left"></i>
-            </span>
-          </a>
-          <div class="portfolio-body">
-            <p class="tag">فروشگاه</p>
-            <h5>فروشگاه آنلاین مد و پوشاک</h5>
-            <p class="text-muted" style="font-size:.82rem;margin:0;">طراحی فروشگاه برند لباس لوکس کیانی</p>
-          </div>
-        </div>
-      </div>
-
-      <div class="col-md-6 col-lg-4 portfolio-item ui reveal reveal-delay-3">
-        <div class="card-sol card-portfolio card-tilt tilt-3">
-          <div class="portfolio-img">
-            <div class="portfolio-media" style="background:linear-gradient(135deg,#a394fb,#6447f4);">
-              <i class="bi bi-palette2"></i>
-            </div>
-          </div>
-          <a href="#" class="portfolio-edge-btn" data-cursor-hover>
-            <span class="portfolio-edge-btn-inner">
-              <span>مشاهده پروژه</span>
-              <i class="bi bi-arrow-up-left"></i>
-            </span>
-          </a>
-          <div class="portfolio-body">
-            <p class="tag">UI/UX</p>
-            <h5>اپلیکیشن مدیریت مالی</h5>
-            <p class="text-muted" style="font-size:.82rem;margin:0;">طراحی رابط کاربری اپ مدیریت بودجه</p>
-          </div>
-        </div>
-      </div>
-
-      <div class="col-md-6 col-lg-4 portfolio-item web reveal reveal-delay-1">
-        <div class="card-sol card-portfolio card-tilt tilt-4">
-          <div class="portfolio-img">
-            <div class="portfolio-media" style="background:linear-gradient(135deg,#1e1274,#4028b8);">
-              <i class="bi bi-building"></i>
-            </div>
-          </div>
-          <a href="#" class="portfolio-edge-btn" data-cursor-hover>
-            <span class="portfolio-edge-btn-inner">
-              <span>مشاهده پروژه</span>
-              <i class="bi bi-arrow-up-left"></i>
-            </span>
-          </a>
-          <div class="portfolio-body">
-            <p class="tag">طراحی وب</p>
-            <h5>پورتال سازمانی پارسیان</h5>
-            <p class="text-muted" style="font-size:.82rem;margin:0;">طراحی پورتال اینترانت سازمان پارسیان</p>
-          </div>
-        </div>
-      </div>
-
-      <div class="col-md-6 col-lg-4 portfolio-item shop reveal reveal-delay-2">
-        <div class="card-sol card-portfolio card-tilt tilt-5">
-          <div class="portfolio-img">
-            <div class="portfolio-media" style="background:linear-gradient(135deg,#005896,#0090e8);">
-              <i class="bi bi-cart3"></i>
-            </div>
-          </div>
-          <a href="#" class="portfolio-edge-btn" data-cursor-hover>
-            <span class="portfolio-edge-btn-inner">
-              <span>مشاهده پروژه</span>
-              <i class="bi bi-arrow-up-left"></i>
-            </span>
-          </a>
-          <div class="portfolio-body">
-            <p class="tag">فروشگاه</p>
-            <h5>فروشگاه دیجیتال پرتو</h5>
-            <p class="text-muted" style="font-size:.82rem;margin:0;">راه‌اندازی فروشگاه آنلاین تجهیزات الکترونیک</p>
-          </div>
-        </div>
-      </div>
-
-      <div class="col-md-6 col-lg-4 portfolio-item ui reveal reveal-delay-3">
-        <div class="card-sol card-portfolio card-tilt tilt-6">
-          <div class="portfolio-img">
-            <div class="portfolio-media" style="background:linear-gradient(135deg,#4028b8,#836af8);">
-              <i class="bi bi-grid-3x3-gap-fill"></i>
-            </div>
-          </div>
-          <a href="#" class="portfolio-edge-btn" data-cursor-hover>
-            <span class="portfolio-edge-btn-inner">
-              <span>مشاهده پروژه</span>
-              <i class="bi bi-arrow-up-left"></i>
-            </span>
-          </a>
-          <div class="portfolio-body">
-            <p class="tag">UI/UX</p>
-            <h5>داشبورد تحلیل داده</h5>
-            <p class="text-muted" style="font-size:.82rem;margin:0;">طراحی داشبورد مدیریت و گزارش‌گیری هوشمند</p>
-          </div>
-        </div>
-      </div>
-
+      <% }); %>
     </div>
 
     <div class="text-center mt-5 reveal">
@@ -631,8 +545,26 @@
 
 
 <!-- ═══════════════════════════════════════
-     PACKAGES / PRICING
+     PACKAGES / PRICING (داینامیک از دیتابیس)
 ═══════════════════════════════════════ -->
+<%
+  const packageIconMap = {
+    web:         'bi-file-earmark-code',
+    store:       'bi-cart4',
+    ui_ux:       'bi-palette2',
+    seo:         'bi-graph-up-arrow',
+    maintenance: 'bi-tools',
+    other:       'bi-box-seam'
+  };
+  const packageBadgeMap = {
+    web:         'پایه',
+    store:       'فروشگاهی',
+    ui_ux:       'طراحی',
+    seo:         'سئو',
+    maintenance: 'پشتیبانی',
+    other:       'ویژه'
+  };
+%>
 <section class="packages-section" id="packages">
   <div class="container">
 
@@ -649,83 +581,33 @@
     </div>
 
     <div class="row g-4 justify-content-center">
-
-      <!-- Package 1: Basic -->
-      <div class="col-md-6 col-lg-3 reveal reveal-delay-1">
-        <div class="card-sol card-package card-tilt tilt-4 h-100">
-          <div class="package-badge">پایه</div>
-          <div class="package-icon"><i class="bi bi-file-earmark-code"></i></div>
-          <h4 class="package-name">پایه</h4>
-          <p class="package-desc">طراحی ساده وردپرسی با قالب آماده — مناسب کسب‌وکارهای نوپا</p>
-          <ul class="package-features">
-            <li><i class="bi bi-check-lg"></i> قالب وردپرس آماده</li>
-            <li><i class="bi bi-check-lg"></i> ۵ صفحه اصلی</li>
-            <li><i class="bi bi-check-lg"></i> ریسپانسیو</li>
-            <li><i class="bi bi-check-lg"></i> ۱ ماه پشتیبانی</li>
-            <li class="disabled"><i class="bi bi-x-lg"></i> سئو پیشرفته</li>
-            <li class="disabled"><i class="bi bi-x-lg"></i> طراحی اختصاصی</li>
-          </ul>
-          <a href="contact.html" class="btn btn-outline-main w-100 mt-auto">مشاوره رایگان</a>
+      <% packages.forEach(function (pkg, idx) { %>
+        <%
+          const icon = packageIconMap[pkg.category] || packageIconMap.other;
+          const badge = packageBadgeMap[pkg.category] || packageBadgeMap.other;
+          const tilt = tiltClasses[idx % tiltClasses.length];
+          const delay = (idx % 4) + 1;
+        %>
+        <div class="col-md-6 col-lg-3 reveal reveal-delay-<%= delay %>">
+          <% if (pkg.isFeatured) { %>
+            <div class="card-sol card-package card-package-featured h-100">
+              <div class="package-badge package-badge-featured">پرطرفدار</div>
+          <% } else { %>
+            <div class="card-sol card-package card-tilt <%= tilt %> h-100">
+              <div class="package-badge"><%= badge %></div>
+          <% } %>
+              <div class="package-icon"><i class="bi <%= icon %>"></i></div>
+              <h4 class="package-name"><%= pkg.name %></h4>
+              <p class="package-desc"><%= pkg.description %></p>
+              <ul class="package-features">
+                <% pkg.features.forEach(function (feature) { %>
+                  <li><i class="bi bi-check-lg"></i> <%= feature %></li>
+                <% }); %>
+              </ul>
+              <a href="contact.html" class="btn <%= pkg.isFeatured ? 'btn-main' : 'btn-outline-main' %> w-100 mt-auto">مشاوره رایگان</a>
+            </div>
         </div>
-      </div>
-
-      <!-- Package 2: Economy -->
-      <div class="col-md-6 col-lg-3 reveal reveal-delay-2">
-        <div class="card-sol card-package card-tilt tilt-1 h-100">
-          <div class="package-badge">اقتصادی</div>
-          <div class="package-icon"><i class="bi bi-window-stack"></i></div>
-          <h4 class="package-name">اقتصادی</h4>
-          <p class="package-desc">طراحی وردپرسی با شخصی‌سازی بیشتر — ایده‌آل برای کسب‌وکارهای متوسط</p>
-          <ul class="package-features">
-            <li><i class="bi bi-check-lg"></i> وردپرس شخصی‌سازی‌شده</li>
-            <li><i class="bi bi-check-lg"></i> تا ۱۰ صفحه</li>
-            <li><i class="bi bi-check-lg"></i> سئو پایه</li>
-            <li><i class="bi bi-check-lg"></i> ۳ ماه پشتیبانی</li>
-            <li><i class="bi bi-check-lg"></i> فرم تماس</li>
-            <li class="disabled"><i class="bi bi-x-lg"></i> کد اختصاصی</li>
-          </ul>
-          <a href="contact.html" class="btn btn-outline-main w-100 mt-auto">مشاوره رایگان</a>
-        </div>
-      </div>
-
-      <!-- Package 3: Pro -->
-      <div class="col-md-6 col-lg-3 reveal reveal-delay-3">
-        <div class="card-sol card-package card-package-featured h-100">
-          <div class="package-badge package-badge-featured">پرطرفدار</div>
-          <div class="package-icon"><i class="bi bi-rocket-takeoff"></i></div>
-          <h4 class="package-name">حرفه‌ای</h4>
-          <p class="package-desc">طراحی کاملاً اختصاصی با PHP یا Node.js — بدون محدودیت</p>
-          <ul class="package-features">
-            <li><i class="bi bi-check-lg"></i> کدنویسی اختصاصی</li>
-            <li><i class="bi bi-check-lg"></i> صفحات نامحدود</li>
-            <li><i class="bi bi-check-lg"></i> سئو پیشرفته</li>
-            <li><i class="bi bi-check-lg"></i> ۶ ماه پشتیبانی</li>
-            <li><i class="bi bi-check-lg"></i> پنل مدیریت</li>
-            <li><i class="bi bi-check-lg"></i> بهینه‌سازی سرعت</li>
-          </ul>
-          <a href="contact.html" class="btn btn-main w-100 mt-auto">مشاوره رایگان</a>
-        </div>
-      </div>
-
-      <!-- Package 4: Enterprise -->
-      <div class="col-md-6 col-lg-3 reveal reveal-delay-4">
-        <div class="card-sol card-package card-tilt tilt-5 h-100">
-          <div class="package-badge">پیشرفته</div>
-          <div class="package-icon"><i class="bi bi-building-gear"></i></div>
-          <h4 class="package-name">سازمانی</h4>
-          <p class="package-desc">پروژه‌های بزرگ و سازمانی با معماری مقیاس‌پذیر و امنیت بالا</p>
-          <ul class="package-features">
-            <li><i class="bi bi-check-lg"></i> معماری سفارشی</li>
-            <li><i class="bi bi-check-lg"></i> API اختصاصی</li>
-            <li><i class="bi bi-check-lg"></i> یکپارچه‌سازی سیستم‌ها</li>
-            <li><i class="bi bi-check-lg"></i> ۱۲ ماه پشتیبانی</li>
-            <li><i class="bi bi-check-lg"></i> امنیت پیشرفته</li>
-            <li><i class="bi bi-check-lg"></i> SLA اختصاصی</li>
-          </ul>
-          <a href="contact.html" class="btn btn-outline-main w-100 mt-auto">مشاوره رایگان</a>
-        </div>
-      </div>
-
+      <% }); %>
     </div>
   </div>
 </section>
@@ -932,7 +814,7 @@
 
       <div class="d-flex flex-column flex-md-row justify-content-between align-items-center gap-3">
         <p style="font-size:.825rem;margin:0;color:rgba(255,255,255,.4);">
-          © ۱۴۰۴ تیم سُل وب. تمامی حقوق محفوظ است.
+          © 1405 تیم سُل وب. تمامی حقوق محفوظ است.
         </p>
         <div class="d-flex gap-3">
           <a href="#" style="font-size:.8rem;color:rgba(255,255,255,.4);text-decoration:none;">حریم خصوصی</a>

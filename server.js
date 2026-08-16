@@ -235,7 +235,7 @@ const kanbanColumns = [
 
 const defaultTechOptions = ['HTML', 'CSS', 'JavaScript', 'Node.js', 'React', 'MongoDB'];
 
-res.render('admin/projects', {
+res.render('admin/Projects', {
   projects,
   clients,
   serviceCategories,

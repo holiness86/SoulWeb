@@ -10,7 +10,7 @@ async function main() {
   const admin = await User.create({
     name: 'Arshya',
     email: 'admin@soulweb.com',   // ایمیل دلخواه خودتو بذار
-    password: '1234', // پسورد ساده - خودش هش میشه
+    password: '12345678', // پسورد ساده - خودش هش میشه
     role: 'admin'
   });
 

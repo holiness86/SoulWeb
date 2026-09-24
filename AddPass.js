@@ -1,6 +1,6 @@
 // createAdmin.js
 const mongoose = require('mongoose');
-const User = require('./models/User'); // مسیر فایل مدلت رو درست کن
+const User = require('./models/user.model'); // مسیر فایل مدلت رو درست کن
 
 const MONGO_URI = 'mongodb://admin:pM8U6IsnbQBsnGspAg1f@soulwebdb-ttk-service:27017/soulwebdb'; // اسم دیتابیس درست رو بذار
 
@@ -10,7 +10,7 @@ async function main() {
   const admin = await User.create({
     name: 'Arshya',
     email: 'admin@soulweb.com',   // ایمیل دلخواه خودتو بذار
-    password: 'رمز_جدید_پلین_اینجا', // پسورد ساده - خودش هش میشه
+    password: '1234', // پسورد ساده - خودش هش میشه
     role: 'admin'
   });
 

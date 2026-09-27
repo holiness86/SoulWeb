@@ -8,6 +8,7 @@ const puppeteer  = require('puppeteer-core')
 const ejs        = require('ejs')
 const session    = require('express-session');
 const moment     = require('jalali-moment');
+const methodOverride = require('method-override');
 // require('dotenv').config();
 
 const app = express()
@@ -20,6 +21,7 @@ app.set('views', path.join(__dirname, 'views'))
 app.use(express.static(path.join(__dirname, 'public')))
 app.use(express.urlencoded({ extended: true }))
 app.use(express.json())
+app.use(methodOverride('_method'))
 const CHROME_PATH = 'C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe'
 
 async function launchBrowser() {
@@ -109,7 +111,6 @@ const Category  = require('./models/category')
 // ─────────────────────────────────────────
 //  DB + SERVER START
 // ─────────────────────────────────────────
-// const DB_URL = process.env.DB_URL || 'mongodb://localhost:27017/SoulWeb'
 const DB_URL = 'mongodb://admin:pM8U6IsnbQBsnGspAg1f@soulwebdb-ttk-service:27017/admin'
 // const DB_URL = 'mongodb://localhost:27017/SoulWeb'
 const PORT   = 3000
@@ -2233,23 +2234,6 @@ app.post('/sw-admin/service-categories/add', requireAdminAuth, async (req, res) 
 //   res.render('./admin/blog-form')
 // })
 
-
-
-
-// تست ////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-// تست ////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-// تست ////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-// تست ////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-// تست ////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-// تست ////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-// تست ////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-// تست ////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-// تست ////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-// تست ////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-// تست ////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-// تست ////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-// تست ////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-// تست ////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 app.get('/sw-admin/blog-form', requireAdminAuth, async (req, res) => {
   try {
     const authors = await BlogPost.distinct('author');
@@ -2325,6 +2309,53 @@ app.post('/sw-admin/blog', requireAdminAuth, upload.single('coverImage'), async 
   } catch (err) {
     console.error(err);
     res.status(500).send('خطا در ذخیره مقاله');
+  }
+});
+
+
+
+app.post('/clients/:id', async (req, res) => {
+  try {
+    const { name, company, email, phone, address, notes } = req.body;
+
+    if (!name || !name.trim()) {
+      return res.redirect('/sw-admin/clients?error=نام مشتری الزامی است');
+    }
+
+    const updateData = {
+      name: name.trim(),
+      company: company ? company.trim() : '',
+      email: email ? email.trim().toLowerCase() : undefined,
+      phone: phone ? phone.trim() : '',
+      address: address ? address.trim() : '',
+      notes: notes ? notes.trim() : ''
+    };
+
+    // اگه ایمیل خالی فرستاده بشه، حذفش کن که unique index رو خراب نکنه
+    if (!updateData.email) {
+      delete updateData.email;
+      await Client.findByIdAndUpdate(req.params.id, { $unset: { email: 1 } });
+    }
+
+    const client = await Client.findByIdAndUpdate(
+      req.params.id,
+      updateData,
+      { new: true, runValidators: true }
+    );
+
+    if (!client) {
+      return res.redirect('/sw-admin/clients?error=مشتری پیدا نشد');
+    }
+
+    res.redirect('/sw-admin/clients?success=اطلاعات مشتری با موفقیت به‌روزرسانی شد');
+  } catch (err) {
+    console.error('Edit client error:', err);
+
+    if (err.code === 11000) {
+      return res.redirect('/sw-admin/clients?error=این ایمیل قبلاً برای مشتری دیگری ثبت شده');
+    }
+
+    res.redirect('/sw-admin/clients?error=خطا در به‌روزرسانی اطلاعات مشتری');
   }
 });
 

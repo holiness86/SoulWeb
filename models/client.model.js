@@ -14,7 +14,6 @@ const clientSchema = new mongoose.Schema({
   company: { type: String, trim: true },
   email: {
     type: String,
-    required: true,
     unique: true,
     lowercase: true,
     trim: true

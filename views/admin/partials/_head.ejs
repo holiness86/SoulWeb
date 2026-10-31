@@ -8,7 +8,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>سُل وب — <%= title %></title>
+  <title>سُل وب — <%= typeof title !== 'undefined' ? title : 'پنل' %></title>
 
     <!-- Bootstrap RTL -->
     <link rel="stylesheet" href="/assets/css/bootstrap.rtl.min.css">
@@ -18,5 +18,7 @@
     <link rel="stylesheet" href="/assets/css/admin.css">
     <!-- jalalidatepicker Styles -->
     <link rel="stylesheet" href="/assets/css/jalalidatepicker.min.css">
+  <meta name="robots" content="noindex,nofollow">
+  <%- typeof extraHead !== 'undefined' ? extraHead : '' %>
 </head>
-<body>
+<body class="sw-ios">

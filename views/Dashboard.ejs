@@ -1,0 +1,182 @@
+<%
+  /* داده‌ها: اگر Backend مقدار بدهد (locals.dashboard) همان استفاده می‌شود؛ وگرنه نمونه‌ی نمایشی (قابل جایگزینی) */
+  const D = locals.dashboard || {};
+  const adm = locals.adminUser || { name: 'علی' };
+  const first = String(adm.name || 'علی').trim().split(/\s+/)[0];
+  const today = new Intl.DateTimeFormat('fa-IR-u-ca-persian', { dateStyle: 'full' }).format(new Date());
+  const stats = D.stats || [
+    { icon: 'kanban-fill',      tone: '',       n: 24,  label: 'پروژه فعال',          note: '۸ پروژه در مرحله ریویو',  trend: 12, up: true  },
+    { icon: 'people-fill',      tone: 'accent', n: 86,  label: 'مشتری فعال',          note: '۳ مشتری جدید این هفته',   trend: 8,  up: true  },
+    { icon: 'check-circle-fill',tone: 'ok',     n: 153, label: 'پروژه تحویل‌داده‌شده', note: '۹۸٪ رضایت مشتری',          trend: 22, up: true  },
+    { icon: 'chat-dots-fill',   tone: 'warn',   n: 5,   label: 'پیام خوانده‌نشده',     note: 'آخرین پیام: ۲ ساعت پیش',   trend: 3,  up: false }
+  ];
+  const minis = D.minis || [
+    { icon: 'clock-history', tone: '',       val: '۱۴۲ ساعت', label: 'کل ساعات کاری این ماه' },
+    { icon: 'stars',         tone: 'accent', val: '۴.۹ / ۵',  label: 'میانگین امتیاز مشتریان' },
+    { icon: 'lightning-charge-fill', tone: '', val: '۷ روز',  label: 'میانگین زمان تحویل پروژه' }
+  ];
+  const bars = D.bars || [
+    { h: 55, label: 'دی', val: '۱۱' }, { h: 70, label: 'بهمن', val: '۱۴' }, { h: 45, label: 'اسفند', val: '۹' },
+    { h: 85, label: 'فروردین', val: '۱۷' }, { h: 65, label: 'اردیبهشت', val: '۱۳' }, { h: 90, label: 'خرداد', val: '۱۸', active: true }
+  ];
+  const activities = D.activities || [
+    { icon: 'check-circle-fill', tone: '',        strong: 'پروژه آتین‌دیزاین',  text: 'به مرحله تحویل رسید',            time: '۱۵ دقیقه پیش' },
+    { icon: 'person-plus-fill',  tone: 'accent',  strong: 'مشتری جدید',        text: 'ثبت‌نام کرد — محسن رضایی',        time: '۴۵ دقیقه پیش' },
+    { icon: 'chat-left-dots-fill', tone: 'warning', strong: '۳ پیام جدید',     text: 'از طریق فرم تماس',               time: '۱ ساعت پیش' },
+    { icon: 'file-earmark-plus-fill', tone: '',   strong: 'پروژه جدید',        text: 'ثبت شد — فروشگاه پرتو',           time: '۳ ساعت پیش' },
+    { icon: 'receipt-cutoff',    tone: 'success', strong: 'فاکتور #۱۰۴۸',      text: 'پرداخت شد',                      time: 'دیروز' },
+    { icon: 'star-fill',         tone: 'accent',  strong: 'نظر جدید',          text: '۵ ستاره از سارا طاهری',          time: 'دیروز' },
+    { icon: 'exclamation-triangle-fill', tone: 'warning', strong: 'ددلاین',    text: 'پروژه پارسیان فرداست',           time: '۲ روز پیش' }
+  ];
+  const projects = D.projects || [
+    { name: 'وب‌سایت شرکتی آتین‌دیزاین', type: 'طراحی وب — PHP',       client: 'امیر حسینی',  cat: 'وب',     status: 'done',   prog: 100, deadline: '۱ خرداد' },
+    { name: 'فروشگاه آنلاین کیانی لباس', type: 'فروشگاه — WooCommerce', client: 'کیانی لباس',   cat: 'فروشگاه', status: 'inprog', prog: 68,  deadline: '۱۵ خرداد' },
+    { name: 'اپلیکیشن مدیریت مالی',      type: 'UI/UX — React',        client: 'آفیلیو',       cat: 'UI/UX',   status: 'review', prog: 85,  deadline: '۲۲ خرداد' },
+    { name: 'پورتال سازمانی پارسیان',     type: 'وب اپ — Laravel',      client: 'گروه پارسیان', cat: 'وب اپ',   status: 'inprog', prog: 42,  deadline: 'فردا', urgent: true },
+    { name: 'فروشگاه دیجیتال پرتو',      type: 'فروشگاه — Node.js',    client: 'شرکت پرتو',   cat: 'فروشگاه', status: 'hold',   prog: 30,  deadline: 'نامشخص' }
+  ];
+  const messages = D.messages || [
+    { name: 'محسن رضایی', ini: 'محر', v: '',   preview: 'سلام، میخواستم درباره پروژه فروشگاه صحبت کنیم…', time: 'الان',  unread: true },
+    { name: 'سارا طاهری', ini: 'سار', v: 'v2', preview: 'ممنونم از طراحی عالی، فقط یه تغییر کوچیک داشتم', time: '۲۰ د',  unread: true },
+    { name: 'رضا محمدی',  ini: 'رضا', v: 'v3', preview: 'پیش‌فاکتور رو دیدم، تأیید می‌کنم. بریم جلو!',    time: '۱ س',   unread: true },
+    { name: 'علی امینی',  ini: 'علی', v: 'v4', preview: 'سایت فروشگاه رو لانچ کردیم، عالیه! ممنون',       time: 'دیروز', unread: false },
+    { name: 'نگار صادقی', ini: 'نگر', v: 'v2', preview: 'آیا امکان اضافه کردن بلاگ به سایت هست؟',          time: 'دیروز', unread: false }
+  ];
+  const tasks = D.tasks || [
+    { text: 'ریویو طراحی اپ مالی', pri: 'low', done: true }, { text: 'جلسه مشاوره با کیانی لباس', pri: 'medium', done: true },
+    { text: 'ارسال پیش‌فاکتور به پرتو', pri: 'high' }, { text: 'بروزرسانی صفحه خدمات سُل وب', pri: 'medium' },
+    { text: 'تکمیل مرحله سوم پورتال پارسیان', pri: 'high' }, { text: 'پاسخ به پیام‌های ریسپانسیو', pri: 'low' },
+    { text: 'آپلود نمونه کار جدید در پورتفولیو', pri: 'medium' }
+  ];
+  const STATUS = { done: 'تحویل داده شد', inprog: 'در حال انجام', review: 'در ریویو', hold: 'متوقف' };
+  const PRI = { high: 'بالا', medium: 'متوسط', low: 'کم' };
+%>
+<%- include('partials/_page-open', { title: 'پنل مدیریت', activePage: 'dashboard', breadcrumbs: [{ label: 'داشبورد' }], searchPlaceholder: 'جستجو در پنل…' }) %>
+
+<header class="page-header fade-up fade-up-1">
+  <div>
+    <h1 class="page-title">خوش آمدید، <%= first %> 👋</h1>
+    <p class="page-subtitle"><%= today %> — وضعیت کلی پروژه‌ها و فعالیت‌های تیم</p>
+  </div>
+  <div class="d-flex gap-2 flex-wrap">
+    <a href="/sw-admin/reports" class="btn-ghost-sm"><i class="bi bi-download"></i> گزارش</a>
+    <a href="/sw-admin/projects" class="btn-sol-sm"><i class="bi bi-plus-lg"></i> پروژه جدید</a>
+  </div>
+</header>
+
+<section class="sw-g c4" aria-label="آمار کلی">
+  <% stats.forEach(function (s, i) { %>
+  <article class="stat-card-dash fade-up fade-up-<%= i + 1 %>">
+    <div class="d-flex align-items-center justify-content-between">
+      <div class="stat-ico <%= s.tone %>"><i class="bi bi-<%= s.icon %>" aria-hidden="true"></i></div>
+      <span class="stat-trend <%= s.up ? 'up' : 'down' %>"><i class="bi bi-arrow-<%= s.up ? 'up' : 'down' %>-short" aria-hidden="true"></i><%= Number(s.trend).toLocaleString('fa-IR') %>٪</span>
+    </div>
+    <div>
+      <div class="stat-value text-grad" data-count="<%= s.n %>"><%= Number(s.n).toLocaleString('fa-IR') %></div>
+      <div class="stat-label"><%= s.label %></div>
+      <div class="stat-note"><%= s.note %></div>
+    </div>
+  </article>
+  <% }) %>
+</section>
+
+<section class="sw-g c3 fade-up fade-up-5" aria-label="شاخص‌های سریع">
+  <% minis.forEach(function (m) { %>
+  <div class="mini-card">
+    <div class="mini-ico <%= m.tone %>"><i class="bi bi-<%= m.icon %>" aria-hidden="true"></i></div>
+    <div><div class="mini-val"><%= m.val %></div><div class="stat-label"><%= m.label %></div></div>
+  </div>
+  <% }) %>
+</section>
+
+<div class="sw-g c21 fade-up fade-up-5">
+  <section class="dash-panel" aria-labelledby="chartTitle">
+    <div class="panel-header">
+      <h2 class="panel-title" id="chartTitle"><i class="bi bi-bar-chart-fill" aria-hidden="true"></i> پروژه‌های ماهانه</h2>
+      <a href="/sw-admin/reports" class="panel-action">جزئیات <i class="bi bi-arrow-left" aria-hidden="true"></i></a>
+    </div>
+    <div class="chart-bars" role="img" aria-label="نمودار تعداد پروژه در ماه‌های اخیر">
+      <% bars.forEach(function (b, i) { %>
+      <div class="chart-col">
+        <div class="chart-bar<%= b.active ? ' active' : '' %>" style="--h:<%= b.h %>%;animation-delay:<%= i * 60 %>ms" data-val="<%= b.val %>" tabindex="0" aria-label="<%= b.label %>: <%= b.val %> پروژه"></div>
+        <span><%= b.label %></span>
+      </div>
+      <% }) %>
+    </div>
+    <div class="legend"><span><i></i>تحویل‌شده</span><span><i class="soft"></i>در جریان</span></div>
+  </section>
+
+  <section class="dash-panel" aria-labelledby="actTitle">
+    <div class="panel-header">
+      <h2 class="panel-title" id="actTitle"><i class="bi bi-activity" aria-hidden="true"></i> فعالیت‌های اخیر</h2>
+      <a href="#" class="panel-action">همه <i class="bi bi-arrow-left" aria-hidden="true"></i></a>
+    </div>
+    <% activities.forEach(function (a) { %>
+    <div class="feed-item">
+      <div class="feed-ico <%= a.tone %>"><i class="bi bi-<%= a.icon %>" aria-hidden="true"></i></div>
+      <div>
+        <p class="feed-text"><strong><%= a.strong %></strong> <%= a.text %></p>
+        <div class="feed-time"><i class="bi bi-clock" aria-hidden="true"></i> <%= a.time %></div>
+      </div>
+    </div>
+    <% }) %>
+  </section>
+</div>
+
+<section class="dash-panel fade-up fade-up-6" style="margin-bottom:var(--sw-s3)" aria-labelledby="prjTitle">
+  <div class="panel-header">
+    <h2 class="panel-title" id="prjTitle"><i class="bi bi-kanban-fill" aria-hidden="true"></i> پروژه‌های جاری</h2>
+    <a href="/sw-admin/projects" class="panel-action">همه پروژه‌ها <i class="bi bi-arrow-left" aria-hidden="true"></i></a>
+  </div>
+  <div class="sw-tw">
+    <table class="sol-table">
+      <thead><tr><th scope="col">پروژه</th><th scope="col">مشتری</th><th scope="col">نوع</th><th scope="col">وضعیت</th><th scope="col">پیشرفت</th><th scope="col">ددلاین</th></tr></thead>
+      <tbody>
+        <% projects.forEach(function (p) { %>
+        <tr>
+          <td><div class="cell-title"><%= p.name %></div><div class="cell-sub"><%= p.type %></div></td>
+          <td><%= p.client %></td>
+          <td><%= p.cat %></td>
+          <td><span class="badge-status badge-<%= p.status %>"><%= STATUS[p.status] || p.status %></span></td>
+          <td><div class="prog-wrap"><div class="prog-bar-mini"><div class="prog-fill" style="width:<%= Number(p.prog) || 0 %>%"></div></div><span><%= Number(p.prog).toLocaleString('fa-IR') %>٪</span></div></td>
+          <td class="<%= p.urgent ? 'urgent' : '' %>"><%= p.deadline %><%= p.urgent ? ' ⚠️' : '' %></td>
+        </tr>
+        <% }) %>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<div class="sw-g c2 fade-up fade-up-6">
+  <section class="dash-panel" aria-labelledby="msgTitle">
+    <div class="panel-header">
+      <h2 class="panel-title" id="msgTitle"><i class="bi bi-chat-dots-fill" aria-hidden="true"></i> پیام‌های اخیر</h2>
+      <a href="#" class="panel-action">همه <i class="bi bi-arrow-left" aria-hidden="true"></i></a>
+    </div>
+    <% messages.forEach(function (m) { %>
+    <div class="msg-item<%= m.unread ? ' unread' : '' %>">
+      <div class="msg-av <%= m.v %>" aria-hidden="true"><%= m.ini %></div>
+      <div class="msg-main">
+        <div class="msg-top"><b><%= m.name %></b><span class="msg-time"><%= m.time %></span></div>
+        <div class="msg-prev"><%= m.preview %></div>
+      </div>
+    </div>
+    <% }) %>
+  </section>
+
+  <section class="dash-panel" aria-labelledby="tskTitle">
+    <div class="panel-header">
+      <h2 class="panel-title" id="tskTitle"><i class="bi bi-list-check" aria-hidden="true"></i> وظایف امروز</h2>
+      <button type="button" class="btn-sol-sm"><i class="bi bi-plus" aria-hidden="true"></i> جدید</button>
+    </div>
+    <% tasks.forEach(function (t) { %>
+    <div class="task-item">
+      <div class="task-check<%= t.done ? ' done' : '' %>" role="img" aria-label="<%= t.done ? 'انجام‌شده' : 'انجام‌نشده' %>"><% if (t.done) { %><i class="bi bi-check-lg" aria-hidden="true"></i><% } %></div>
+      <span class="task-text<%= t.done ? ' done' : '' %>"><%= t.text %></span>
+      <span class="pri <%= t.pri %>"><%= PRI[t.pri] || t.pri %></span>
+    </div>
+    <% }) %>
+  </section>
+</div>
+
+<%- include('partials/_page-close') %>

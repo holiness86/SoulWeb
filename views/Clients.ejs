@@ -1,0 +1,182 @@
+<%
+  /* متغیرهای سمت سرور (بدون تغییر): clients, clientsCount, activeClientsCount, newClientsThisWeekCount, startItem, endItem, totalPages, currentPage */
+  const list   = locals.clients || [];
+  const total  = Number(locals.clientsCount) || 0;
+  const active = Number(locals.activeClientsCount) || 0;
+  const fresh  = Number(locals.newClientsThisWeekCount) || 0;
+  const page   = Number(locals.currentPage) || 1;
+  const pages  = Number(locals.totalPages) || 1;
+  const from   = Number(locals.startItem) || 0, to = Number(locals.endItem) || 0;
+  const fa = n => Number(n).toLocaleString('fa-IR');
+  const initials = c => c.avatar || String(c.name || '؟').trim().split(/\s+/).map(p => p[0]).join('').substring(0, 3);
+%>
+<%- include('partials/_page-open', {
+  title: 'مدیریت مشتریان', activePage: 'clients',
+  breadcrumbs: [{ label: 'داشبورد', href: '/sw-admin' }, { label: 'مشتریان' }],
+  searchPlaceholder: 'جستجو در مشتریان…'
+}) %>
+
+<header class="page-header fade-up fade-up-1">
+  <div>
+    <h1 class="page-title">مدیریت مشتریان</h1>
+    <p class="page-subtitle"><%= fa(total) %> مشتری ثبت‌شده · <%= fa(fresh) %> مشتری جدید این هفته</p>
+  </div>
+  <div class="d-flex gap-2 flex-wrap">
+    <a href="/sw-admin/clients/export" class="btn-ghost-sm"><i class="bi bi-download" aria-hidden="true"></i> خروجی CSV</a>
+    <button type="button" class="btn-sol-sm" data-modal-open="clientModal"><i class="bi bi-person-plus-fill" aria-hidden="true"></i> مشتری جدید</button>
+  </div>
+</header>
+
+<section class="sw-g c4 fade-up fade-up-2" aria-label="آمار مشتریان">
+  <div class="pstat"><div class="pstat-icon"><i class="bi bi-people-fill" aria-hidden="true"></i></div>
+    <div><div class="pstat-val text-grad stat-value" data-count="<%= total %>"><%= fa(total) %></div><div class="pstat-lbl">کل مشتریان</div></div></div>
+  <div class="pstat"><div class="pstat-icon ok"><i class="bi bi-person-check-fill" aria-hidden="true"></i></div>
+    <div><div class="pstat-val text-grad stat-value" data-count="<%= active %>"><%= fa(active) %></div><div class="pstat-lbl">مشتری فعال</div></div></div>
+  <div class="pstat"><div class="pstat-icon accent"><i class="bi bi-person-plus-fill" aria-hidden="true"></i></div>
+    <div><div class="pstat-val text-grad stat-value" data-count="<%= fresh %>"><%= fa(fresh) %></div><div class="pstat-lbl">جدید این هفته</div></div></div>
+  <div class="pstat"><div class="pstat-icon warn"><i class="bi bi-star-fill" aria-hidden="true"></i></div>
+    <div><div class="pstat-val text-grad"><%= locals.avgRating ? fa(locals.avgRating) : '—' %></div><div class="pstat-lbl">میانگین رضایت</div></div></div>
+</section>
+
+<div class="sw-toolbar fade-up fade-up-2" role="search">
+  <label class="sw-search" for="clientSearch"><i class="bi bi-search" aria-hidden="true"></i>
+    <input type="search" id="clientSearch" placeholder="نام، ایمیل یا شرکت…" autocomplete="off"></label>
+  <select class="sol-select" id="statusFilter" aria-label="فیلتر وضعیت">
+    <option value="all">همه وضعیت‌ها</option><option value="active">فعال</option><option value="inactive">غیرفعال</option>
+  </select>
+</div>
+
+<section class="dash-panel fade-up fade-up-3" aria-label="فهرست مشتریان">
+  <div class="sw-tw">
+    <table class="sol-table" id="clientsTable">
+      <thead><tr>
+        <th scope="col">مشتری</th><th scope="col">ایمیل / تلفن</th><th scope="col">پروژه‌ها</th>
+        <th scope="col">آخرین پروژه</th><th scope="col">وضعیت</th><th scope="col">رضایت</th><th scope="col">عملیات</th>
+      </tr></thead>
+      <tbody>
+        <% if (list.length) { list.forEach(function (client, index) { %>
+        <tr data-status="<%= client.isActive ? 'active' : 'inactive' %>">
+          <td><div class="cell-person">
+            <div class="cl-av av-<%= (index % 6) + 1 %>" aria-hidden="true"><%= initials(client) %></div>
+            <div><div class="cell-title"><%= client.name || '-' %></div><div class="cell-sub"><%= client.company || '-' %></div></div>
+          </div></td>
+          <td><div><%= client.email || '-' %></div><div class="cell-sub"><%= client.phone || '-' %></div></td>
+          <td><b><%= fa(client.projectsCount || 0) %></b></td>
+          <td><%= client.lastProject || '—' %></td>
+          <td><span class="badge-status <%= client.isActive ? 'badge-done' : 'badge-inprog' %>"><%= client.isActive ? 'فعال' : 'غیرفعال' %></span></td>
+          <td><span class="stars" aria-label="امتیاز مشتری"><%= client.rating || '★★★★★' %></span></td>
+          <td>
+            <div class="row-actions">
+              <button type="button" class="btn-icon btn-view-client" aria-label="مشاهده <%= client.name || '' %>" data-modal-open="clientDetail"
+                data-id="<%= client._id %>" data-name="<%= client.name || '' %>" data-company="<%= client.company || '' %>"
+                data-email="<%= client.email || '' %>" data-phone="<%= client.phone || '' %>" data-address="<%= client.address || '' %>"
+                data-notes="<%= client.notes || '' %>" data-active="<%= client.isActive ? 'true' : 'false' %>"
+                data-created-at="<%= client.createdAt ? client.createdAt.toISOString() : '' %>"
+                data-projects-count="<%= client.projectsCount || 0 %>" data-rating="<%= client.rating || '★★★★★' %>"
+                data-project="<%= client.projectTitle || '---' %>"><i class="bi bi-eye" aria-hidden="true"></i></button>
+              <button type="button" class="btn-icon btn-edit-client" aria-label="ویرایش <%= client.name || '' %>"
+                data-id="<%= client._id %>" data-name="<%= client.name || '' %>" data-company="<%= client.company || '' %>"
+                data-email="<%= client.email || '' %>" data-phone="<%= client.phone || '' %>" data-address="<%= client.address || '' %>"
+                data-notes="<%= client.notes || '' %>" data-active="<%= client.isActive ? 'true' : 'false' %>"><i class="bi bi-pencil" aria-hidden="true"></i></button>
+              <form action="/sw-admin/clients/<%= client._id %>/delete" method="POST" data-sw-confirm="مطمئنی می‌خوای این مشتری حذف بشه؟">
+                <button type="submit" class="btn-icon danger" aria-label="حذف <%= client.name || '' %>"><i class="bi bi-trash" aria-hidden="true"></i></button>
+              </form>
+            </div>
+          </td>
+        </tr>
+        <% }) } else { %>
+        <tr><td colspan="7"><div class="sw-empty"><i class="bi bi-people" aria-hidden="true"></i><strong>هنوز هیچ مشتری‌ای ثبت نشده است</strong><div>با «مشتری جدید» اولین مشتری را اضافه کنید.</div></div></td></tr>
+        <% } %>
+        <tr id="noResultRow" hidden><td colspan="7"><div class="sw-empty"><i class="bi bi-search" aria-hidden="true"></i><strong>نتیجه‌ای پیدا نشد</strong><div>عبارت جستجو یا فیلتر را تغییر دهید.</div></div></td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="tbl-foot">
+    <span>نمایش <%= fa(from) %>–<%= fa(to) %> از <%= fa(total) %> مشتری</span>
+    <% if (pages > 1) { %>
+    <nav class="sw-pager" aria-label="صفحه‌بندی">
+      <% if (page > 1) { %><a class="pg-btn" href="/sw-admin/clients?page=<%= page - 1 %>" aria-label="صفحه قبل"><i class="bi bi-chevron-right" aria-hidden="true"></i></a>
+      <% } else { %><button type="button" class="pg-btn" disabled aria-label="صفحه قبل"><i class="bi bi-chevron-right" aria-hidden="true"></i></button><% } %>
+      <% for (let i = 1; i <= pages; i++) { %><a class="pg-btn<%= page === i ? ' active' : '' %>" href="/sw-admin/clients?page=<%= i %>"<%- page === i ? ' aria-current="page"' : '' %>><%= fa(i) %></a><% } %>
+      <% if (page < pages) { %><a class="pg-btn" href="/sw-admin/clients?page=<%= page + 1 %>" aria-label="صفحه بعد"><i class="bi bi-chevron-left" aria-hidden="true"></i></a>
+      <% } else { %><button type="button" class="pg-btn" disabled aria-label="صفحه بعد"><i class="bi bi-chevron-left" aria-hidden="true"></i></button><% } %>
+    </nav>
+    <% } %>
+  </div>
+</section>
+
+<!-- مودال: مشتری جدید -->
+<form method="post" action="/sw-admin/clients" novalidate>
+  <div class="modal-overlay" id="clientModal">
+    <div class="modal-box">
+      <div class="modal-head"><h2 class="modal-title">مشتری جدید</h2>
+        <button type="button" class="btn-icon" data-modal-close aria-label="بستن"><i class="bi bi-x-lg" aria-hidden="true"></i></button></div>
+      <div class="form-row two">
+        <div><label class="sol-label" for="newName">نام</label><input class="sol-input" id="newName" type="text" name="name" placeholder="نام مشتری" autocomplete="off" required></div>
+        <div><label class="sol-label" for="newCompany">نام شرکت</label><input class="sol-input" id="newCompany" type="text" name="company" placeholder="نام شرکت یا برند" autocomplete="off"></div>
+      </div>
+      <div class="form-row two">
+        <div><label class="sol-label" for="newEmail">ایمیل</label><input class="sol-input" id="newEmail" type="email" name="email" placeholder="example@domain.com" dir="ltr" autocomplete="off"></div>
+        <div><label class="sol-label" for="newPhone">شماره تماس</label><input class="sol-input" id="newPhone" type="tel" name="phone" placeholder="۰۹۱۲۱۲۳۴۵۶۷" dir="ltr" autocomplete="off"></div>
+      </div>
+      <div class="form-row"><div><label class="sol-label" for="newAddress">آدرس</label><input class="sol-input" id="newAddress" type="text" name="address" placeholder="آدرس مشتری"></div></div>
+      <div class="form-row"><div><label class="sol-label" for="newNotes">یادداشت</label><textarea class="sol-input" id="newNotes" rows="2" name="notes" placeholder="یادداشت اختیاری…"></textarea></div></div>
+      <div class="modal-foot">
+        <button type="button" class="btn-ghost-sm" data-modal-close>انصراف</button>
+        <button type="submit" class="btn-sol-sm"><i class="bi bi-check-lg" aria-hidden="true"></i> ثبت مشتری</button>
+      </div>
+    </div>
+  </div>
+</form>
+
+<!-- مودال: ویرایش مشتری (آدرس فرم توسط clients.js تنظیم می‌شود) -->
+<form method="post" action="/sw-admin/clients/EDIT_CLIENT_ID?_method=PUT" id="editClientForm" novalidate>
+  <div class="modal-overlay" id="editClientModal">
+    <div class="modal-box">
+      <div class="modal-head"><h2 class="modal-title">ویرایش اطلاعات مشتری</h2>
+        <button type="button" class="btn-icon" data-modal-close aria-label="بستن"><i class="bi bi-x-lg" aria-hidden="true"></i></button></div>
+      <div class="form-row two">
+        <div><label class="sol-label" for="editClientName">نام</label><input class="sol-input" type="text" name="name" id="editClientName" placeholder="نام مشتری" required></div>
+        <div><label class="sol-label" for="editClientCompany">نام شرکت</label><input class="sol-input" type="text" name="company" id="editClientCompany" placeholder="نام شرکت یا برند"></div>
+      </div>
+      <div class="form-row two">
+        <div><label class="sol-label" for="editClientEmail">ایمیل</label><input class="sol-input" type="email" name="email" id="editClientEmail" placeholder="example@domain.com" dir="ltr"></div>
+        <div><label class="sol-label" for="editClientPhone">شماره تماس</label><input class="sol-input" type="tel" name="phone" id="editClientPhone" placeholder="۰۹۱۲۱۲۳۴۵۶۷" dir="ltr"></div>
+      </div>
+      <div class="form-row"><div><label class="sol-label" for="editClientAddress">آدرس</label><input class="sol-input" type="text" name="address" id="editClientAddress" placeholder="آدرس مشتری"></div></div>
+      <div class="form-row"><div><label class="sol-label" for="editClientNotes">یادداشت</label><textarea class="sol-input" rows="2" name="notes" id="editClientNotes" placeholder="یادداشت اختیاری…"></textarea></div></div>
+      <div class="modal-foot">
+        <button type="button" class="btn-ghost-sm" data-modal-close>انصراف</button>
+        <button type="submit" class="btn-sol-sm"><i class="bi bi-check-lg" aria-hidden="true"></i> ذخیره تغییرات</button>
+      </div>
+    </div>
+  </div>
+</form>
+
+<!-- مودال: پروفایل مشتری -->
+<div class="modal-overlay" id="clientDetail">
+  <div class="modal-box">
+    <div class="modal-head"><h2 class="modal-title">پروفایل مشتری</h2>
+      <button type="button" class="btn-icon" data-modal-close aria-label="بستن"><i class="bi bi-x-lg" aria-hidden="true"></i></button></div>
+    <div class="detail-hero">
+      <div class="cl-av" id="detailAvatar" aria-hidden="true">-</div>
+      <div class="grow"><div class="detail-name" id="detailName">-</div><div class="detail-meta" id="detailMeta">-</div></div>
+      <span id="detailStatus" class="badge-status badge-done">فعال</span>
+    </div>
+    <div class="detail-stats">
+      <div><b class="text-grad" id="detailProjectsCount">۰</b><span>پروژه</span></div>
+      <div><b class="text-grad" id="detailSatisfaction">۵★</b><span>رضایت</span></div>
+      <div><b class="text-grad" id="detailCooperationTime">-</b><span>همکاری</span></div>
+    </div>
+    <div class="detail-sub">اطلاعات تکمیلی مشتری</div>
+    <div class="detail-row"><span>آدرس</span><span id="detailAddress">-</span></div>
+    <div class="detail-row"><span>یادداشت</span><span id="detailNotes">-</span></div>
+    <div class="modal-foot">
+      <button type="button" class="btn-ghost-sm" data-modal-close>بستن</button>
+      <button type="button" class="btn-sol-sm" id="editClientFromDetail"><i class="bi bi-pencil" aria-hidden="true"></i> ویرایش اطلاعات</button>
+    </div>
+  </div>
+</div>
+
+<%- include('partials/_page-close', { extraScripts: '<script src="/assets/js/clients.js"></script>' }) %>

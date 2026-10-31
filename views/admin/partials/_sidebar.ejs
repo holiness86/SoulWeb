@@ -8,11 +8,13 @@
 <%
   // helper برای تشخیص active
   const isActive = (page) => activePage === page ? 'active' : '';
+  // هویت کاربر: از res.locals.adminUser (وقتی Backend بفرستد) یا همان مقدار ثابت قبلی
+  var adminUser = (typeof locals !== 'undefined' && locals.adminUser) || { name: 'علی مدیری', role: 'مدیر کل سیستم', initials: 'ادم' };
 
   // nav items
   const navMain = [
     { page: 'dashboard', href: '/sw-admin',          icon: 'bi-grid-1x2-fill',  label: 'داشبورد' },
-    { page: 'projects',  href: '/sw-admin/projects', icon: 'bi-kanban-fill',    label: 'پروژه‌ها', badge: '۱۲' },
+    { page: 'projects',  href: '/sw-admin/projects', icon: 'bi-kanban-fill',    label: 'پروژه‌ها' },
     { page: 'clients',   href: '/sw-admin/clients',  icon: 'bi-people-fill',    label: 'مشتریان' },
     { page: 'Tickets',   href: '/sw-admin/tickets',  icon: 'bi-ticket-detailed-fill', label: 'تیکت‌ها', badge: '۵' },
     { page: 'invoices',  href: '/sw-admin/invoices', icon: 'bi-receipt',        label: 'فاکتورها' },

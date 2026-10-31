@@ -1,246 +1,331 @@
-<!DOCTYPE html>
-<html lang="fa" dir="rtl" data-bs-theme="light">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>نمونه کارها — سُل وب</title>
+<%- include('partials/_head', { title: 'پورتفولیو' }) %>
 
-  <script>
-    (function () {
-      try {
-        var t = localStorage.getItem('sol-theme') || 'light';
-        document.documentElement.setAttribute('data-bs-theme', t);
-      } catch (e) {}
-    })();
-  </script>
+<div class="sidebar-overlay" id="sidebarOverlay"></div>
+<div class="admin-shell">
 
-  <link rel="stylesheet" href="/assets/css/bootstrap.rtl.min.css">
-  <link rel="stylesheet" href="/assets/css/style.css">
-  <link rel="stylesheet" href="/assets/css/icons-1.13.1/font/bootstrap-icons.min.css">
-</head>
-<body>
+<%- include('partials/_sidebar', {
+  activePage: 'portfolio'
+}) %>
 
-<svg width="0" height="0" style="position:absolute;overflow:hidden;" aria-hidden="true" focusable="false">
-  <defs>
-    <filter id="goo-filter">
-      <feGaussianBlur in="SourceGraphic" stdDeviation="9" result="blur" />
-      <feColorMatrix in="blur" mode="matrix" values="1 0 0 0 0  0 1 0 0 0  0 0 1 0 0  0 0 0 19 -9" result="goo" />
-      <feComposite in="SourceGraphic" in2="goo" operator="atop" />
-    </filter>
-  </defs>
-</svg>
+<div class="main-content" id="mainContent">
+<%- include('partials/_header', {
+  breadcrumbs: [{ label: 'داشبورد', href: '/sw-admin' }, { label: 'محتوا' }, { label: 'پورتفولیو' }],
+  searchPlaceholder: 'جستجو در پورتفولیو…'
+}) %>
+<%
+const publishedCount = items.filter(item => item.isPublished).length
+const draftCount = items.filter(item => !item.isPublished).length
+%>
 
-<div id="scrollProgress" aria-hidden="true"></div>
+<main class="page-content">
 
-<div id="preloader" aria-hidden="true">
-  <div class="preloader-logo">سُل وب</div>
-  <div class="preloader-orb"></div>
+  <div class="page-header fade-up fade-up-1">
+    <div>
+      <h1 class="page-title">مدیریت پورتفولیو</h1>
+<p class="page-subtitle">
+  <%= publishedCount.toLocaleString('fa-IR') %> نمونه کار منتشر‌شده ·
+  <%= draftCount.toLocaleString('fa-IR') %> پیش‌نویس
+</p>
+    </div>
+<a
+  href="/sw-admin/portfolio/form"
+  class="btn-sol-sm create-btn"
+>
+  <i class="bi bi-plus-lg"></i> نمونه کار جدید
+</a>
+  </div>
+
+  <!-- Filter -->
+<div class="filter-bar fade-up fade-up-2" data-filter-group style="display:flex;gap:.6rem;flex-wrap:wrap;margin-bottom:1.25rem;">
+
+  <button class="filter-chip active" data-filter="all">همه</button>
+
+  <% if (categories && categories.length) { %>
+    <% categories.forEach(cat => { %>
+      <button class="filter-chip" data-filter="<%= cat.slug %>">
+        <%= cat.title %>
+      </button>
+    <% }) %>
+  <% } %>
+
 </div>
 
-<header class="site-header" id="siteHeader">
-  <div class="container header-flex">
 
-    <div class="glass-segment seg-brand">
-      <a class="navbar-brand" href="/">سُل وب</a>
+  <!-- Portfolio Grid -->
+<div class="port-grid fade-up fade-up-3">
+
+<%
+const categoryMap = {
+  web: 'طراحی وب',
+  shop: 'فروشگاه',
+  uiux: 'UI/UX',
+  app: 'وب اپ'
+}
+
+const gradients = [
+  'linear-gradient(135deg,#6447f4,#0090e8)',
+  'linear-gradient(135deg,#0090e8,#4dc3ff)',
+  'linear-gradient(135deg,#a394fb,#6447f4)',
+  'linear-gradient(135deg,#1e1274,#4028b8)',
+  'linear-gradient(135deg,#005896,#0090e8)',
+  'linear-gradient(135deg,#4028b8,#836af8)'
+]
+
+const icons = [
+  'bi-laptop',
+  'bi-bag-heart',
+  'bi-palette2',
+  'bi-building',
+  'bi-cart3',
+  'bi-bar-chart-fill'
+]
+%>
+
+<% items.forEach(function(item,index){ %>
+
+<div class="port-card" data-category="<%= item.category && item.category.slug ? item.category.slug : item.category %>">
+
+<div class="port-thumb">
+
+  <% if(item.coverImage){ %>
+    <img 
+      src="<%= item.coverImage %>" 
+      alt="<%= item.title %>" 
+      class="port-thumb-img"
+    >
+  <% } else { %>
+    <div 
+      class="port-thumb-fallback" 
+      style="background:<%= gradients[index % gradients.length] %>;"
+    >
+      <i 
+        class="bi <%= icons[index % icons.length] %>" 
+        style="font-size:3rem;color:rgba(255,255,255,.7);"
+      ></i>
+    </div>
+  <% } %>
+
+  <div class="port-thumb-overlay">
+    <a 
+      href="/sw-admin/portfolio/form?id=<%= item._id %>"
+      class="btn-ghost-sm edit-btn"
+    >
+      <i class="bi bi-pencil"></i> ویرایش
+    </a>
+  </div>
+
+  <% if(!item.isPublished){ %>
+    <span class="port-draft-badge">پیش‌نویس</span>
+  <% } %>
+
+</div>
+
+
+  <div class="port-body">
+
+    <div class="port-cat">
+      <%= categoryMap[item.category] || item.category %>
     </div>
 
-    <nav class="glass-segment seg-nav d-none d-lg-flex" aria-label="منوی اصلی">
-      <ul class="nav-pills-liquid">
-        <li><a href="/" data-cursor-hover>صفحه اصلی</a></li>
-        <li><a href="/services" data-cursor-hover>خدمات</a></li>
-        <li><a href="/portfolio" class="active" data-cursor-hover>نمونه کارها</a></li>
-        <li><a href="/packages" data-cursor-hover>پکیج‌ها</a></li>
-        <li><a href="/about" data-cursor-hover>درباره ما</a></li>
-        <li><a href="/contact" data-cursor-hover>تماس با ما</a></li>
-      </ul>
-    </nav>
+    <div class="port-title">
+      <%= item.title %>
+    </div>
 
-    <div class="glass-segment seg-actions">
-      <button class="btn-theme-toggle" id="themeToggle" aria-label="تغییر تم">
-        <i class="bi bi-moon-stars-fill"></i>
-      </button>
-      <a href="/contact" class="btn btn-main btn-sm d-none d-lg-inline-flex align-items-center gap-1">
-        مشاوره رایگان
-        <i class="bi bi-arrow-left"></i>
-      </a>
-      <button class="navbar-toggler d-lg-none" type="button"
-              data-bs-toggle="collapse" data-bs-target="#mobileNavPanel"
-              aria-controls="mobileNavPanel" aria-expanded="false" aria-label="باز کردن منو">
-        <i class="bi bi-list" style="font-size:1.3rem;"></i>
-      </button>
+    <div class="port-meta">
+      <span>
+        <i class="bi bi-person" style="font-size:.75rem;"></i>
+          <%= item.client ? item.client.name : '—' %>
+      </span>
+
+      <span>
+        <i class="bi bi-code-slash" style="font-size:.75rem;"></i>
+        <%= item.techStack ? item.techStack.join(' + ') : '' %>
+      </span>
+    </div>
+
+    <div class="port-footer">
+
+      <div class="port-footer-main">
+
+      <% if(item.isPublished){ %>
+
+      <div style="display:flex;align-items:center;gap:.3rem;font-size:.73rem;color:var(--color-text-muted);">
+        <i class="bi bi-eye"></i>
+        <%= item.views ? item.views.toLocaleString('fa-IR') : '۰' %> بازدید
+      </div>
+
+      <span class="badge-status badge-done">منتشرشده</span>
+
+      <% } else { %>
+
+<span class="badge-status badge-new">پیش‌نویس</span>
+
+<form action="/sw-admin/portfolio/<%= item._id %>/publish" method="POST">
+  <button 
+    class="btn-sol-sm"
+    type="submit"
+    style="padding:.28rem .75rem;font-size:.73rem;"
+  >
+    <i class="bi bi-send"></i> انتشار
+  </button>
+</form>
+
+      <% } %>
+
+      </div>
+
+      <form
+        action="/sw-admin/portfolio/<%= item._id %>/delete"
+        method="POST"
+        class="port-delete-form"
+        data-confirm-title="<%= item.title || 'این نمونه کار' %>"
+      >
+        <button type="submit" class="port-delete-btn" title="حذف نمونه کار">
+          <i class="bi bi-trash"></i>
+        </button>
+      </form>
+
     </div>
 
   </div>
 
-  <div class="collapse mobile-nav-panel glass-segment" id="mobileNavPanel">
-    <ul class="mobile-nav-links">
-      <li><a href="/">صفحه اصلی</a></li>
-      <li><a href="/services">خدمات</a></li>
-      <li><a href="/portfolio" class="active">نمونه کارها</a></li>
-      <li><a href="/packages">پکیج‌ها</a></li>
-      <li><a href="/about">درباره ما</a></li>
-      <li><a href="/contact">تماس با ما</a></li>
-      <li><a href="/contact" class="btn btn-main w-100 justify-content-center mt-2">مشاوره رایگان <i class="bi bi-arrow-left"></i></a></li>
-    </ul>
-  </div>
-</header>
+</div>
 
-<section class="hero-section" style="min-height: 55vh; padding-bottom: var(--section-py);">
-  <div class="floating-parallax hero-blob hero-blob-1" data-speed="0.1" aria-hidden="true"></div>
-  <div class="floating-parallax hero-blob hero-blob-2" data-speed="0.15" aria-hidden="true"></div>
-  <div class="hero-dots" aria-hidden="true"></div>
+<% }) %>
 
-  <div class="container text-center">
-    <div class="row py-5">
-      <div class="col-lg-8 hero-content mx-auto">
-        <div class="hero-badge mx-auto">
-          <span class="badge-dot"></span>
-          شاهکارهای دیجیتال ما
-        </div>
-        <h1 class="hero-title">
-          پروژه‌های متمایز <span class="hero-title-accent">سُل وب</span>
-        </h1>
-        <p class="hero-subtitle mx-auto">
-          تلفیقی از هنر پیکسلی کامپوننت‌های شیشه‌ای و قدرت معماری سیستم‌های اختصاصی بک‌اند.
-        </p>
-      </div>
-    </div>
-  </div>
-</section>
+</div>
 
-<section class="portfolio-section py-5 position-relative">
-  <div class="container py-5">
-    
-    <div class="d-flex justify-content-center mb-5 reveal">
-      <div class="glass-segment p-2 d-inline-flex gap-2 nav-pills-liquid" style="border-radius: var(--radius-lg);">
-        <button class="btn btn-sm active px-4 filter-btn" data-filter="all" data-cursor-hover>همه</button>
-        <button class="btn btn-sm px-4 filter-btn" data-filter="node" data-cursor-hover>Node.js / MVC</button>
-        <button class="btn btn-sm px-4 filter-btn" data-filter="uiux" data-cursor-hover>رابط کاربری مایع</button>
-        <button class="btn btn-sm px-4 filter-btn" data-filter="shop" data-cursor-hover>فروشگاهی</button>
-      </div>
-    </div>
 
-    <div class="row g-4 portfolio-grid">
-      
-      <div class="col-md-6 col-lg-4 portfolio-item" data-category="node">
-        <div class="card-sol card-tilt tilt-1 h-100 p-0 overflow-hidden position-relative" data-cursor-hover>
-          <div class="portfolio-img-wrapper" style="height: 240px; background: linear-gradient(135deg, var(--main-400), var(--main-700)); opacity: 0.85; display:flex; align-items:center; justify-content:center; color:#fff;">
-            <i class="bi bi-terminal-box" style="font-size: 4rem;"></i>
-          </div>
-          <div class="p-4">
-            <span class="badge bg-main-100 text-main-700 mb-2 px-3 py-1.5 rounded-pill fs-7">Node.js / MVC</span>
-            <h5 class="fw-bold text-dark mt-1">پلتفرم مدیریت پروژه‌های تسکینو</h5>
-            <p class="text-muted fs-6 mt-2">سامانه بک‌اند پیشرفته ماژولار با معماری تمیز مبتنی بر MVC جهت هندل همزمان وظایف تیمی و لاگ دیتابیس.</p>
-            <div class="d-flex justify-content-between align-items-center mt-4 pt-2 border-top border-secondary border-opacity-10">
-              <span class="fs-7 text-muted"><i class="bi bi-calendar3 me-1"></i> سال ۱۴۰۵</span>
-              <a href="#" class="text-main fw-bold text-decoration-none fs-6">مشاهده جزییات <i class="bi bi-arrow-left"></i></a>
-            </div>
-          </div>
-        </div>
-      </div>
+</main>
+</div>
+</div>
 
-      <div class="col-md-6 col-lg-4 portfolio-item" data-category="uiux">
-        <div class="card-sol card-tilt tilt-2 h-100 p-0 overflow-hidden position-relative" data-cursor-hover>
-          <div class="portfolio-img-wrapper" style="height: 240px; background: linear-gradient(135deg, #a394fb, #6447f4); opacity: 0.85; display:flex; align-items:center; justify-content:center; color:#fff;">
-            <i class="bi bi-layers-half" style="font-size: 4rem;"></i>
-          </div>
-          <div class="p-4">
-            <span class="badge bg-main-100 text-main-700 mb-2 px-3 py-1.5 rounded-pill fs-7">رابط کاربری مایع</span>
-            <h5 class="fw-bold text-dark mt-1">وب‌سایت آوانگارد استودیو نِکست</h5>
-            <p class="text-muted fs-6 mt-2">طراحی فرانت‌اند پیشرو با افکت‌های گلس‌مورفیسم پیشرفته، انیمیشن فیلتر گویی (Gooey) متحرک بر اساس موقعیت ماوس.</p>
-            <div class="d-flex justify-content-between align-items-center mt-4 pt-2 border-top border-secondary border-opacity-10">
-              <span class="fs-7 text-muted"><i class="bi bi-calendar3 me-1"></i> سال ۱۴۰۵</span>
-              <a href="#" class="text-main fw-bold text-decoration-none fs-6">مشاهده جزییات <i class="bi bi-arrow-left"></i></a>
-            </div>
-          </div>
-        </div>
-      </div>
+<%- include('partials/_scripts', { extraScripts: `
+<style>
 
-      <div class="col-md-6 col-lg-4 portfolio-item" data-category="shop">
-        <div class="card-sol card-tilt tilt-3 h-100 p-0 overflow-hidden position-relative" data-cursor-hover>
-          <div class="portfolio-img-wrapper" style="height: 240px; background: linear-gradient(135deg, #2f1d95, #5236d6); opacity: 0.85; display:flex; align-items:center; justify-content:center; color:#fff;">
-            <i class="bi bi-bag-heart-fill" style="font-size: 4rem;"></i>
-          </div>
-          <div class="p-4">
-            <span class="badge bg-main-100 text-main-700 mb-2 px-3 py-1.5 rounded-pill fs-7">فروشگاهی</span>
-            <h5 class="fw-bold text-dark mt-1">مارکت بزرگ اینترنتی هوم‌لند</h5>
-            <p class="text-muted fs-6 mt-2">طراحی یکپارچه سبد خرید تک‌صفحه‌ای هوشمند با لود همزمان باجه بانکی و پردازش دیتابیس سنگین محصولات بدون ریفرش صفحه.</p>
-            <div class="d-flex justify-content-between align-items-center mt-4 pt-2 border-top border-secondary border-opacity-10">
-              <span class="fs-7 text-muted"><i class="bi bi-calendar3 me-1"></i> سال ۱۴۰۴</span>
-              <a href="#" class="text-main fw-bold text-decoration-none fs-6">مشاهده جزییات <i class="bi bi-arrow-left"></i></a>
-            </div>
-          </div>
-        </div>
-      </div>
+  .port-thumb{
+  height:180px;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  position:relative;
+  overflow:hidden;
+  background:var(--color-bg);
+}
 
-    </div>
-  </div>
-</section>
+.port-thumb-img{
+  width:100%;
+  height:100%;
+  object-fit:cover;
+  display:block;
+  transition:transform var(--dur-normal) var(--ease-spring);
+}
 
-<footer class="footer-sol">
-  <div class="footer-inner">
-    <div class="container">
-      <div class="row g-5">
-        <div class="col-lg-4">
-          <a href="/" class="footer-brand text-decoration-none">سُل وب</a>
-          <p>تیم سُل وب روح وب‌سایت‌ها را می‌آفریند. ما پلتفرم‌هایی توسعه می‌دهیم که نه‌تنها هویت بصری منحصربه‌فردی دارند، بلکه بیزینس شما را متحول می‌کنند.</p>
-        </div>
-        <div class="col-6 col-lg-2">
-          <h6>خدمات</h6>
-          <ul class="footer-links">
-            <li><a href="/services"><i class="bi bi-chevron-left"></i>توسعه وب اختصاصی</a></li>
-            <li><a href="/services"><i class="bi bi-chevron-left"></i>رابط کاربری مایع</a></li>
-          </ul>
-        </div>
-        <div class="col-6 col-lg-2">
-          <h6>دسترسی سریع</h6>
-          <ul class="footer-links">
-            <li><a href="/"><i class="bi bi-chevron-left"></i>صفحه اصلی</a></li>
-            <li><a href="/portfolio"><i class="bi bi-chevron-left"></i>نمونه کارها</a></li>
-            <li><a href="/packages"><i class="bi bi-chevron-left"></i>پکیج‌ها</a></li>
-          </ul>
-        </div>
-        <div class="col-lg-4">
-          <h6>تماس با ما</h6>
-          <ul class="footer-links mb-4">
-            <li><a href="mailto:hello@solweb.ir"><i class="bi bi-envelope"></i>hello@solweb.ir</a></li>
-          </ul>
-          <div class="footer-trust">
-            <div class="trust-badge"><i class="bi bi-patch-check-fill"></i> <span>اینماد</span></div>
-            <div class="trust-badge"><i class="bi bi-lock-fill"></i> <span>پرداخت امن</span></div>
-          </div>
-        </div>
-      </div>
-      <hr class="footer-divider" />
-      <div class="d-flex justify-content-between align-items-center">
-        <p style="font-size:.825rem;margin:0;color:rgba(255,255,255,.4);">© ۱۴۰۵ آژانس سُل وب. تمامی حقوق محفوظ است.</p>
-      </div>
-    </div>
-  </div>
-</footer>
+.port-card:hover .port-thumb-img{
+  transform:scale(1.06);
+}
 
-<button id="backToTop" aria-label="رفتن به بالای صفحه"><i class="bi bi-chevron-up"></i></button>
+.port-thumb-fallback{
+  width:100%;
+  height:100%;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+}
 
-<script src="/assets/js/jquery-3.7.1.min.js"></script>
-<script src="/assets/js/bootstrap.bundle.min.js"></script>
-<script src="/assets/js/script.js"></script>
+.filter-chip{display:inline-flex;align-items:center;gap:.35rem;font-family:var(--font-primary);font-size:.78rem;font-weight:600;padding:.38rem .9rem;border-radius:var(--radius-full);border:1.5px solid var(--color-border);background:var(--color-surface);color:var(--color-text-muted);cursor:pointer;transition: transform var(--dur-fast), opacity var(--dur-fast), background-color var(--dur-fast), border-color var(--dur-fast), color var(--dur-fast);}
+.filter-chip:hover,.filter-chip.active{background:var(--main-500);border-color:var(--main-500);color:#fff;}
+.port-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:1.25rem;}
+.port-card{background:var(--color-surface);border:1px solid var(--color-border);border-radius:var(--radius-lg);overflow:hidden;transition: transform var(--dur-normal) var(--ease-spring), opacity var(--dur-normal) var(--ease-spring), background-color var(--dur-normal) var(--ease-spring), border-color var(--dur-normal) var(--ease-spring), color var(--dur-normal) var(--ease-spring);}
+.port-card:hover{transform:translateY(-4px);box-shadow:var(--shadow-lg);border-color:var(--main-200);}
+.port-thumb{height:180px;display:flex;align-items:center;justify-content:center;position:relative;overflow:hidden;}
+.port-thumb-overlay{position:absolute;inset:0;background:rgba(30,18,116,.6);backdrop-filter:blur(4px);display:flex;align-items:center;justify-content:center;opacity:0;transition:opacity var(--dur-normal);}
+.port-card:hover .port-thumb-overlay{opacity:1;}
+.port-draft-badge{position:absolute;top:.75rem;right:.75rem;background:rgba(0,0,0,.6);color:#fff;font-size:.67rem;font-weight:700;padding:.2rem .6rem;border-radius:99px;backdrop-filter:blur(4px);}
+.port-body{padding:1.1rem;}
+.port-cat{font-size:.7rem;font-weight:700;color:var(--main-500);text-transform:uppercase;letter-spacing:.06em;margin-bottom:.3rem;}
+.port-title{font-size:.88rem;font-weight:700;margin-bottom:.5rem;line-height:1.4;}
+.port-meta{display:flex;gap:.85rem;flex-wrap:wrap;margin-bottom:.75rem;}
+.port-meta span{font-size:.73rem;color:var(--color-text-muted);display:flex;align-items:center;gap:.25rem;}
 
+.port-footer{display:flex;align-items:center;justify-content:space-between;gap:.6rem;}
+.port-footer-main{display:flex;align-items:center;gap:.5rem;flex-wrap:wrap;flex:1;min-width:0;}
+
+.port-delete-form{flex-shrink:0;}
+.port-delete-btn{
+  width:2.1rem;
+  height:2.1rem;
+  border-radius:14px;
+  border:1.5px solid var(--color-border);
+  background:var(--color-surface);
+  color:var(--color-text-muted);
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  font-size:.85rem;
+  cursor:pointer;
+  transition: transform var(--dur-fast) var(--ease-smooth), opacity var(--dur-fast) var(--ease-smooth), background-color var(--dur-fast) var(--ease-smooth), border-color var(--dur-fast) var(--ease-smooth), color var(--dur-fast) var(--ease-smooth);
+}
+.port-delete-btn:hover{
+  background:#ef4444;
+  border-color:#ef4444;
+  color:#fff;
+  transform:translateY(-2px);
+  box-shadow:0 6px 16px rgba(239,68,68,.35);
+}
+</style>
 <script>
-  $(function() {
-    $('.filter-btn').on('click', function() {
-      $('.filter-btn').removeClass('active');
-      $(this).addClass('active');
-      
-      const filterValue = $(this).attr('data-filter');
-      
-      if(filterValue === 'all') {
-        $('.portfolio-item').fadeIn(300);
+(function(){
+
+  const filterGroup = document.querySelector('[data-filter-group]')
+  if(!filterGroup) return
+
+  const buttons = filterGroup.querySelectorAll('.filter-chip')
+  const cards   = document.querySelectorAll('.port-card')
+
+  filterGroup.addEventListener('click', function(e){
+
+    const btn = e.target.closest('.filter-chip')
+    if(!btn) return
+
+    buttons.forEach(b => b.classList.remove('active'))
+    btn.classList.add('active')
+
+    const selectedCat = btn.dataset.filter
+
+    cards.forEach(card => {
+      const cardCat = card.dataset.category
+
+      if(selectedCat === 'all' || cardCat === selectedCat){
+        card.style.display = ''
       } else {
-        $('.portfolio-item').hide();
-        $('.portfolio-item[data-category="' + filterValue + '"]').fadeIn(300);
+        card.style.display = 'none'
       }
-    });
-  });
+    })
+
+  })
+
+})();
+
+// تأیید حذف نمونه کار پیش از ارسال فرم
+(function () {
+
+  document.addEventListener('submit', function (e) {
+    const form = e.target.closest('.port-delete-form')
+    if (!form || form.dataset.swOk) return
+
+    const title = form.dataset.confirmTitle || 'این نمونه کار'
+    const msg = 'آیا از حذف «' + title + '» مطمئن هستید؟ این عملیات غیرقابل بازگشت است.'
+    e.preventDefault()
+    // دیالوگ سفارشی (sw-admin.js)؛ در صورت نبود، confirm مرورگر
+    const ask = window.SW ? SW.confirm({ title: 'حذف نمونه کار', text: msg, ok: 'حذف', from: e.submitter }) : Promise.resolve(window.confirm(msg))
+    ask.then(function (yes) {
+      if (!yes) return
+      form.dataset.swOk = 1
+      form.requestSubmit ? form.requestSubmit(e.submitter || undefined) : form.submit()
+    })
+  })
+
+})();
 </script>
-</body>
-</html>
+`}) %>

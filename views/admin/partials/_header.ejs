@@ -48,7 +48,7 @@
       <i class="bi bi-fullscreen"></i>
     </button>
 
-    <div class="hdr-avatar" title="پروفایل">ادم</div>
+    <div class="hdr-avatar" title="پروفایل"><%= (typeof locals !== 'undefined' && locals.adminUser) ? locals.adminUser.initials : 'ادم' %></div>
   </div>
 
 </header>

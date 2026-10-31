@@ -6,14 +6,14 @@
 %>
 
   <!-- jQuery -->
-  <script src="../assets/js/jquery-3.7.1.min.js"></script>
+  <script src="/assets/js/jquery-3.7.1.min.js"></script>
   <!-- Bootstrap Bundle -->
-  <script src="../assets/js/bootstrap.bundle.min.js"></script>
+  <script src="/assets/js/bootstrap.bundle.min.js"></script>
   <!-- Admin Core Scripts -->
-  <script src="../assets/js/admin.js"></script>
+  <script src="/assets/js/admin.js"></script>
     <!-- jalalidatepicker Scripts -->
-  <link rel="stylesheet" href="../assets/js/jalalidatepicker.min.js">
-  <script>jalaliDatepicker.startWatch();</script>
+  <script src="/assets/js/jalalidatepicker.min.js"></script>
+  <script>if (window.jalaliDatepicker) jalaliDatepicker.startWatch();</script>
 
   <!-- اسکریپت‌های اختصاصی صفحه (در صورت نیاز) -->
   <%- typeof extraScripts !== 'undefined' ? extraScripts : '' %>

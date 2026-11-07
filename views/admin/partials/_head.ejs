@@ -1,24 +1,24 @@
 <%#
-  admin/_head.ejs
-  پارامترهای مورد نیاز:
-    - title  (string)  — عنوان صفحه
-%>
+  admin/partials/_head.ejs
+  پارامترها (همه اختیاری):
+    - title      (string) — عنوان صفحه
+    - extraHead  (string) — تگ‌های اضافه مخصوص همان صفحه داخل <head>
+-%>
 <!DOCTYPE html>
 <html lang="fa" dir="rtl" data-bs-theme="light">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>سُل وب — <%= typeof title !== 'undefined' ? title : 'پنل' %></title>
-
-    <!-- Bootstrap RTL -->
-    <link rel="stylesheet" href="/assets/css/bootstrap.rtl.min.css">
-    <!-- Bootstrap Icons -->
-    <link rel="stylesheet" href="/assets/css/icons-1.13.1/font/bootstrap-icons.min.css">
-    <!-- Admin Styles -->
-    <link rel="stylesheet" href="/assets/css/admin.css">
-    <!-- jalalidatepicker Styles -->
-    <link rel="stylesheet" href="/assets/css/jalalidatepicker.min.css">
   <meta name="robots" content="noindex,nofollow">
-  <%- typeof extraHead !== 'undefined' ? extraHead : '' %>
+  <title>سُل وب — <%= locals.title || 'پنل' %></title>
+
+  <!-- Bootstrap RTL + Icons -->
+  <link rel="stylesheet" href="/assets/css/bootstrap.rtl.min.css">
+  <link rel="stylesheet" href="/assets/css/icons-1.13.1/font/bootstrap-icons.min.css">
+  <!-- Admin + jalalidatepicker Styles -->
+  <link rel="stylesheet" href="/assets/css/admin.css">
+  <link rel="stylesheet" href="/assets/css/jalalidatepicker.min.css">
+
+  <%- locals.extraHead || '' %>
 </head>
 <body class="sw-ios">

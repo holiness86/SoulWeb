@@ -1,22 +1,21 @@
 <%#
-  admin/_scripts.ejs
+  admin/partials/_scripts.ejs
   در انتهای body هر صفحه include می‌شود
   پارامتر اختیاری:
-    - extraScripts (string) — اسکریپت‌های اضافه مخصوص آن صفحه (inline یا path)
-%>
+    - extraScripts (string) — اسکریپت‌های اضافه مخصوص همان صفحه (inline یا <script src>)
+-%>
 
-  <!-- jQuery -->
+  <!-- jQuery + Bootstrap Bundle -->
   <script src="/assets/js/jquery-3.7.1.min.js"></script>
-  <!-- Bootstrap Bundle -->
   <script src="/assets/js/bootstrap.bundle.min.js"></script>
-  <!-- Admin Core Scripts -->
+  <!-- Admin Core -->
   <script src="/assets/js/admin.js"></script>
-    <!-- jalalidatepicker Scripts -->
+  <!-- jalalidatepicker -->
   <script src="/assets/js/jalalidatepicker.min.js"></script>
   <script>if (window.jalaliDatepicker) jalaliDatepicker.startWatch();</script>
 
-  <!-- اسکریپت‌های اختصاصی صفحه (در صورت نیاز) -->
-  <%- typeof extraScripts !== 'undefined' ? extraScripts : '' %>
+  <!-- اسکریپت‌های اختصاصی صفحه -->
+  <%- locals.extraScripts || '' %>
 
 </body>
 </html>

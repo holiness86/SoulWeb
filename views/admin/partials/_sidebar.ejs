@@ -1,35 +1,37 @@
 <%#
-  admin/_sidebar.ejs
-  پارامترهای مورد نیاز:
-    - activePage  (string)  — نام صفحه فعال: 'dashboard' | 'projects' | 'clients' | ...
-    - adminUser   (object)  — { name, role, initials }
-%>
-
+  admin/partials/_sidebar.ejs
+  پارامترها:
+    - activePage  (string)  — کلید صفحهٔ فعال (بزرگ/کوچک بودن حروف مهم نیست):
+                              dashboard | projects | clients | tickets | invoices |
+                              portfolio | packages | reviews | blog | reports | settings
+                              (کلیدهایی مثل blog-form و portfolio-form هم آیتم مادر را فعال می‌کنند)
+    - adminUser   (object, اختیاری) — { name, role, initials } (از res.locals)
+    - ticketBadge (number, اختیاری) — تعداد تیکت‌های باز؛ اگر صفر/خالی باشد نشان داده نمی‌شود
+-%>
 <%
-  // helper برای تشخیص active
-  const isActive = (page) => activePage === page ? 'active' : '';
-  // هویت کاربر: از res.locals.adminUser (وقتی Backend بفرستد) یا همان مقدار ثابت قبلی
-  var adminUser = (typeof locals !== 'undefined' && locals.adminUser) || { name: 'علی مدیری', role: 'مدیر کل سیستم', initials: 'ادم' };
+  const user   = locals.adminUser || { name: 'علی مدیری', role: 'مدیر کل سیستم', initials: 'ادم' };
+  const active = String(locals.activePage || '').toLowerCase();
+  const isActive = (page) => (active === page || active.startsWith(page + '-')) ? 'active' : '';
+  const badges = { tickets: locals.ticketBadge };
 
-  // nav items
-  const navMain = [
-    { page: 'dashboard', href: '/sw-admin',          icon: 'bi-grid-1x2-fill',  label: 'داشبورد' },
-    { page: 'projects',  href: '/sw-admin/projects', icon: 'bi-kanban-fill',    label: 'پروژه‌ها' },
-    { page: 'clients',   href: '/sw-admin/clients',  icon: 'bi-people-fill',    label: 'مشتریان' },
-    { page: 'Tickets',   href: '/sw-admin/tickets',  icon: 'bi-ticket-detailed-fill', label: 'تیکت‌ها', badge: '۵' },
-    { page: 'invoices',  href: '/sw-admin/invoices', icon: 'bi-receipt',        label: 'فاکتورها' },
-  ];
-  
-  const navContent = [
-    { page: 'portfolio', href: '/sw-admin/portfolio', icon: 'bi-collection-fill', label: 'پورتفولیو' },
-    { page: 'packages',  href: '/sw-admin/packages',  icon: 'bi-box-seam-fill',   label: 'پکیج‌ها' },
-    { page: 'reviews',   href: '/sw-admin/reviews',   icon: 'bi-star-fill',       label: 'نظرات' },
-    { page: 'blog',      href: '/sw-admin/blog',      icon: 'bi-journal-text',    label: 'وبلاگ' },
-  ];
-  
-  const navSystem = [
-    { page: 'reports',  href: '/sw-admin/reports',  icon: 'bi-bar-chart-line-fill', label: 'گزارش‌ها' },
-    { page: 'settings', href: '/sw-admin/settings', icon: 'bi-gear-fill',           label: 'تنظیمات' },
+  const nav = [
+    { label: 'اصلی', items: [
+      { page: 'dashboard', href: '/sw-admin',          icon: 'bi-grid-1x2-fill',        label: 'داشبورد' },
+      { page: 'projects',  href: '/sw-admin/projects', icon: 'bi-kanban-fill',          label: 'پروژه‌ها' },
+      { page: 'clients',   href: '/sw-admin/clients',  icon: 'bi-people-fill',          label: 'مشتریان' },
+      { page: 'tickets',   href: '/sw-admin/tickets',  icon: 'bi-ticket-detailed-fill', label: 'تیکت‌ها' },
+      { page: 'invoices',  href: '/sw-admin/invoices', icon: 'bi-receipt',              label: 'فاکتورها' },
+    ]},
+    { label: 'محتوا', items: [
+      { page: 'portfolio', href: '/sw-admin/portfolio', icon: 'bi-collection-fill', label: 'پورتفولیو' },
+      { page: 'packages',  href: '/sw-admin/packages',  icon: 'bi-box-seam-fill',   label: 'پکیج‌ها' },
+      { page: 'reviews',   href: '/sw-admin/reviews',   icon: 'bi-star-fill',       label: 'نظرات' },
+      { page: 'blog',      href: '/sw-admin/blog',      icon: 'bi-journal-text',    label: 'وبلاگ' },
+    ]},
+    { label: 'سیستم', items: [
+      { page: 'reports',  href: '/sw-admin/reports',  icon: 'bi-bar-chart-line-fill', label: 'گزارش‌ها' },
+      { page: 'settings', href: '/sw-admin/settings', icon: 'bi-gear-fill',           label: 'تنظیمات' },
+    ]},
   ];
 %>
 
@@ -41,49 +43,32 @@
   </a>
 
   <nav class="sidebar-nav">
-
-    <span class="nav-label">اصلی</span>
-    <% navMain.forEach(function(item){ %>
-      <a href="<%= item.href %>" class="nav-item-sol <%= isActive(item.page) %>">
-        <span class="nav-icon"><i class="bi <%= item.icon %>"></i></span>
-        <span class="nav-text"><%= item.label %></span>
-        <% if(item.badge){ %><span class="nav-badge"><%= item.badge %></span><% } %>
-      </a>
+    <% nav.forEach(function(group){ %>
+      <span class="nav-label"><%= group.label %></span>
+      <% group.items.forEach(function(item){ %>
+        <a href="<%= item.href %>" class="nav-item-sol <%= isActive(item.page) %>">
+          <span class="nav-icon"><i class="bi <%= item.icon %>"></i></span>
+          <span class="nav-text"><%= item.label %></span>
+          <% if(badges[item.page] > 0){ %><span class="nav-badge"><%= Number(badges[item.page]).toLocaleString('fa-IR') %></span><% } %>
+        </a>
+      <% }); %>
     <% }); %>
-
-    <span class="nav-label">محتوا</span>
-    <% navContent.forEach(function(item){ %>
-      <a href="<%= item.href %>" class="nav-item-sol <%= isActive(item.page) %>">
-        <span class="nav-icon"><i class="bi <%= item.icon %>"></i></span>
-        <span class="nav-text"><%= item.label %></span>
-        <% if(item.badge){ %><span class="nav-badge"><%= item.badge %></span><% } %>
-      </a>
-    <% }); %>
-
-    <span class="nav-label">سیستم</span>
-    <% navSystem.forEach(function(item){ %>
-      <a href="<%= item.href %>" class="nav-item-sol <%= isActive(item.page) %>">
-        <span class="nav-icon"><i class="bi <%= item.icon %>"></i></span>
-        <span class="nav-text"><%= item.label %></span>
-      </a>
-    <% }); %>
-
   </nav>
 
   <div class="sidebar-footer">
     <div class="user-dropdown" id="userDropdown">
 
       <button type="button" class="sidebar-user" id="userDropdownTrigger" aria-haspopup="true" aria-expanded="false" aria-controls="userDropdownMenu">
-        <div class="user-avatar"><%= adminUser ? adminUser.initials : 'ادم' %></div>
+        <div class="user-avatar"><%= user.initials %></div>
         <div class="user-info">
-          <div class="user-name"><%= adminUser ? adminUser.name : 'مدیر سیستم' %></div>
-          <div class="user-role"><%= adminUser ? adminUser.role : 'مدیر کل' %></div>
+          <div class="user-name"><%= user.name %></div>
+          <div class="user-role"><%= user.role %></div>
         </div>
         <i class="bi bi-three-dots-vertical user-dropdown-dots" id="userDropdownDots"></i>
       </button>
 
       <div class="user-dropdown-menu" id="userDropdownMenu" role="menu">
-        <a href="/sw-admin/profile" class="user-dropdown-item" role="menuitem">
+        <a href="/sw-admin/settings?tab=profile" class="user-dropdown-item" role="menuitem">
           <span class="user-dropdown-item-icon"><i class="bi bi-person-circle"></i></span>
           <span class="user-dropdown-item-text">مشاهده پروفایل</span>
         </a>
@@ -312,4 +297,4 @@
       });
     });
   })();
-</script>
+</script>

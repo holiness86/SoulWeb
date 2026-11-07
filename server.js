@@ -180,6 +180,27 @@ app.use('/sw-admin', async (req, res, next) => {
 
   next();
 });
+
+app.get('/sw-admin/api/notifications', requireAdminAuth, async (req, res) => {
+  try {
+    const [tickets, latest] = await Promise.all([
+      Ticket.countDocuments({ status: 'open' }),
+      Ticket.find({ status: 'open' }).sort({ createdAt: -1 }).limit(6).lean()
+    ])
+    res.json({
+      tickets,
+      items: latest.map(t => ({
+        id   : t._id,
+        title: t.subject || 'تیکت جدید',
+        body : t.requesterName ? `از طرف ${t.requesterName}` : '',
+        href : '/sw-admin/tickets',
+        at   : t.createdAt
+      }))
+    })
+  } catch (err) {
+    res.status(500).json({ tickets: 0, items: [] })
+  }
+})
 // ─────────────────────────────────────────
 //  PUBLIC ROUTES
 // ─────────────────────────────────────────

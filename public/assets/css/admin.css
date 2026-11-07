@@ -541,3 +541,10 @@ body.sw-ios{
   .main-content{margin:0!important}.page-content{padding:0}
   body.sw-ios :is(.dash-panel,.card-sol,.pf-box){box-shadow:none;break-inside:avoid}
 }
+
+/* ── تغییر تم با افشای دایره‌ای (JS کلاس sw-theme-vt را موقت می‌گذارد) ── */
+:root.sw-theme-vt::view-transition-old(root),:root.sw-theme-vt::view-transition-new(root){animation:none;mix-blend-mode:normal}
+:root.sw-theme-vt::view-transition-old(root){z-index:1}:root.sw-theme-vt::view-transition-new(root){z-index:2}
+:root.sw-theme-vt :is(.sidebar,.admin-header){view-transition-name:none}
+body.sw-ios .header-search:focus-within kbd{display:none}
+@media (max-width:767.98px){body.sw-ios .header-search kbd{display:none}}

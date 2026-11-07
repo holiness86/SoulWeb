@@ -13,6 +13,8 @@ const methodOverride = require('method-override');
 
 const app = express()
 
+
+
 // ─────────────────────────────────────────
 //  MIDDLEWARE
 // ─────────────────────────────────────────
@@ -143,7 +145,41 @@ const storage = multer.diskStorage({
 })
 
 const upload = multer({ storage })
+// ─────────────────────────────────────────
+// ADMIN GLOBAL DATA
+// ─────────────────────────────────────────
 
+app.use('/sw-admin', async (req, res, next) => {
+  try {
+    const user = req.session?.user;
+
+    res.locals.adminUser = user ? {
+      name: user.name || 'مدیر سیستم',
+      role: user.role || 'admin',
+      initials: (user.name || 'مدیر سیستم')
+        .trim()
+        .split(/\s+/)
+        .map(word => word[0])
+        .join('')
+        .slice(0, 3)
+    } : null;
+
+    res.locals.ticketBadge = await Ticket.countDocuments({
+      status: 'open'
+    });
+
+    res.locals.notifCount = 0;
+
+  } catch (err) {
+    console.error('Admin Global Middleware Error:', err);
+
+    res.locals.adminUser = null;
+    res.locals.ticketBadge = 0;
+    res.locals.notifCount = 0;
+  }
+
+  next();
+});
 // ─────────────────────────────────────────
 //  PUBLIC ROUTES
 // ─────────────────────────────────────────

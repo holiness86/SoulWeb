@@ -108,6 +108,82 @@ const BlogPost  = require('./models/blogPost.model')
 const Setting   = require('./models/setting.model')
 const Category  = require('./models/category')
 
+
+// ─────────────────────────────────────────
+// ADMIN LOCALS — اطلاعات مشترک هدر و سایدبار
+// ─────────────────────────────────────────
+
+app.use('/sw-admin', async (req, res, next) => {
+    const admin = req.session?.user;
+
+    if (!admin) return next();
+
+    try {
+        const name = String(admin.name || 'مدیر').trim();
+        const words = name.split(/\s+/).filter(Boolean);
+
+        res.locals.adminUser = {
+            name: name,
+            role: admin.role || 'مدیر',
+            initials: words.slice(0, 2).map(w => w[0]).join('')
+        };
+
+        const openTickets = await Ticket.countDocuments({
+            status: 'open'
+        });
+
+        res.locals.ticketBadge = openTickets;
+        res.locals.notifCount = openTickets;
+
+    } catch (err) {
+        console.error('Admin locals error:', err);
+
+        res.locals.ticketBadge = 0;
+        res.locals.notifCount = 0;
+    }
+
+    next();
+});
+
+
+// ─────────────────────────────────────────
+// ADMIN — LIVE NOTIFICATIONS API
+// ─────────────────────────────────────────
+
+app.get('/sw-admin/api/notifications', requireAdminAuth, async (req, res) => {
+    try {
+        const [tickets, latest] = await Promise.all([
+            Ticket.countDocuments({ status: 'open' }),
+
+            Ticket.find({ status: 'open' })
+                .sort({ createdAt: -1 })
+                .limit(6)
+                .lean()
+        ]);
+
+        res.json({
+            tickets,
+            items: latest.map(t => ({
+                id: t._id,
+                title: t.subject || 'تیکت جدید',
+                body: t.requesterName
+                    ? `از طرف ${t.requesterName}`
+                    : '',
+                href: '/sw-admin/tickets',
+                at: t.createdAt
+            }))
+        });
+
+    } catch (err) {
+        console.error('Notifications API error:', err);
+
+        res.status(500).json({
+            tickets: 0,
+            items: []
+        });
+    }
+});
+
 // ─────────────────────────────────────────
 //  DB + SERVER START
 // ─────────────────────────────────────────

@@ -266,14 +266,19 @@ app.get('/sw-admin' , requireAdminAuth , async (req, res) => {
 
     res.render('admin/Dashboard', {
       stats: {
-        activeProjects,
-        totalClients,
-        deliveredProjects,
-        openTickets
+          activeProjects,
+          totalClients,
+          deliveredProjects,
+          openTickets
       },
       recentActivities,
-      todayTasks
-    })
+      todayTasks,
+      todayFa: new Intl.DateTimeFormat('fa-IR', {
+          year: 'numeric',
+          month: 'long',
+          day: 'numeric'
+      }).format(new Date())
+  })
   } catch (err) {
     console.error(err)
     res.status(500).send('خطا در بارگذاری داشبورد')

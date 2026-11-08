@@ -1,22 +1,23 @@
 {
   "name": "soulweb",
   "version": "1.0.0",
-  "main": "server.js",
-  "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
-    "start": "node server.js"
+  "description": "<div align=\"center\">",
+  "homepage": "https://github.com/holiness86/SoulWeb#readme",
+  "bugs": {
+    "url": "https://github.com/holiness86/SoulWeb/issues"
   },
   "repository": {
     "type": "git",
     "url": "git+https://github.com/holiness86/SoulWeb.git"
   },
-  "author": "",
   "license": "ISC",
-  "bugs": {
-    "url": "https://github.com/holiness86/SoulWeb/issues"
+  "author": "",
+  "type": "commonjs",
+  "main": "server.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "node server.js"
   },
-  "homepage": "https://github.com/holiness86/SoulWeb#readme",
-  "description": "",
   "dependencies": {
     "bcryptjs": "^3.0.3",
     "connect-flash": "^0.1.1",

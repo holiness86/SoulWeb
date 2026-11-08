@@ -1,14 +1,25 @@
+<%
+  // ── Helpers (فقط نمایش؛ همه‌ی داده از server.js می‌آید) ──
+  const fa = (n) => Number(n || 0).toLocaleString('fa-IR');
+  const ago = (v) => {
+    const s = Math.round((Date.now() - new Date(v).getTime()) / 1000);
+    if (!isFinite(s)) return '';
+    if (s < 60) return 'همین الان';
+    const m = Math.round(s / 60); if (m < 60) return fa(m) + ' دقیقه پیش';
+    const h = Math.round(m / 60); if (h < 24) return fa(h) + ' ساعت پیش';
+    const dd = Math.round(h / 24); return dd === 1 ? 'دیروز' : fa(dd) + ' روز پیش';
+  };
+  const firstName = ((locals.adminUser && locals.adminUser.name) || '').split(' ')[0];
+  const VARIANTS = ['accent', 'success', 'warning'];
+  const PRI = { high: 'بالا', medium: 'متوسط', low: 'کم' };
+%>
 <%- include('partials/_head', { title: 'پنل مدیریت' }) %>
 
 <div class="sidebar-overlay" id="sidebarOverlay"></div>
 
 <div class="admin-shell">
 
-  <%- include('partials/_sidebar', {
-    activePage: 'dashboard',
-    adminUser: { name: 'علی مدیری', role: 'مدیر کل سیستم', initials: 'ادم' }
-  }) %>
-
+  <%- include('partials/_sidebar', { activePage: 'dashboard' }) %>
 
   <div class="main-content" id="mainContent">
 
@@ -22,199 +33,163 @@
       <!-- Page Header -->
       <div class="page-header fade-up fade-up-1">
         <div>
-          <h1 class="page-title">خوش آمدید، علی 👋</h1>
-          <p class="page-subtitle">امروز ۲۱ خرداد ۱۴۰۴ — وضعیت کلی پروژه‌ها و فعالیت‌های تیم</p>
+          <h1 class="page-title">خوش آمدید<%= firstName ? '، ' + firstName : '' %> 👋</h1>
+          <p class="page-subtitle">امروز <%= todayFa %> — وضعیت کلی پروژه‌ها و فعالیت‌های تیم</p>
         </div>
         <div class="d-flex gap-2">
-          <button class="btn-ghost-sm"><i class="bi bi-download"></i> گزارش</button>
-          <button class="btn-sol-sm"><i class="bi bi-plus-lg"></i> پروژه جدید</button>
+          <a href="/sw-admin/reports" class="btn-ghost-sm"><i class="bi bi-bar-chart-line-fill"></i> گزارش‌ها</a>
+          <a href="/sw-admin/projects" class="btn-sol-sm"><i class="bi bi-plus-lg"></i> پروژه جدید</a>
         </div>
       </div>
 
       <!-- Stat Cards -->
-      <div class="stat-grid" style="display:grid;grid-template-columns:repeat(4,1fr);gap:1rem;margin-bottom:1.5rem;">
+      <div class="sw-g c4">
 
         <div class="stat-card-dash fade-up fade-up-1">
-          <div class="stat-header" style="display:flex;align-items:center;justify-content:space-between;">
-            <div class="stat-icon-box main" style="width:40px;height:40px;border-radius:var(--radius-sm);background:rgba(100,71,244,.12);color:var(--main-500);display:flex;align-items:center;justify-content:center;font-size:1.1rem;"><i class="bi bi-kanban-fill"></i></div>
-            <span class="stat-trend up" style="display:flex;align-items:center;gap:.25rem;font-size:.73rem;font-weight:700;background:rgba(34,197,94,.12);color:#16a34a;border-radius:var(--radius-full);padding:.2rem .55rem;"><i class="bi bi-arrow-up-short"></i>۱۲٪</span>
+          <div class="stat-header">
+            <div class="stat-ico"><i class="bi bi-kanban-fill"></i></div>
           </div>
           <div>
-            <div class="stat-value text-grad" data-count="24" data-suffix="">۲۴</div>
-            <div style="font-size:.78rem;color:var(--color-text-muted);margin-top:.2rem;">پروژه فعال</div>
-            <div style="font-size:.73rem;color:var(--color-text-light);">۸ پروژه در مرحله ریویو</div>
+            <div class="stat-value text-grad" data-count="<%= stats.activeProjects %>"><%= fa(stats.activeProjects) %></div>
+            <div class="stat-label">پروژه فعال</div>
+            <div class="stat-note"><%= fa(stats.reviewProjects) %> پروژه در مرحله ریویو</div>
           </div>
         </div>
 
         <div class="stat-card-dash fade-up fade-up-2">
-          <div class="stat-header" style="display:flex;align-items:center;justify-content:space-between;">
-            <div class="stat-icon-box accent" style="width:40px;height:40px;border-radius:var(--radius-sm);background:rgba(0,144,232,.12);color:var(--accent-500);display:flex;align-items:center;justify-content:center;font-size:1.1rem;"><i class="bi bi-people-fill"></i></div>
-            <span class="stat-trend up" style="display:flex;align-items:center;gap:.25rem;font-size:.73rem;font-weight:700;background:rgba(34,197,94,.12);color:#16a34a;border-radius:var(--radius-full);padding:.2rem .55rem;"><i class="bi bi-arrow-up-short"></i>۸٪</span>
+          <div class="stat-header">
+            <div class="stat-ico accent"><i class="bi bi-people-fill"></i></div>
+            <% if (stats.newClients > 0) { %><span class="stat-trend up"><i class="bi bi-arrow-up-short"></i><%= fa(stats.newClients) %></span><% } %>
           </div>
           <div>
-            <div class="stat-value text-grad" data-count="86" data-suffix="">۸۶</div>
-            <div style="font-size:.78rem;color:var(--color-text-muted);margin-top:.2rem;">مشتری فعال</div>
-            <div style="font-size:.73rem;color:var(--color-text-light);">۳ مشتری جدید این هفته</div>
+            <div class="stat-value text-grad" data-count="<%= stats.totalClients %>"><%= fa(stats.totalClients) %></div>
+            <div class="stat-label">مشتری فعال</div>
+            <div class="stat-note"><%= fa(stats.newClients) %> مشتری جدید این هفته</div>
           </div>
         </div>
 
         <div class="stat-card-dash fade-up fade-up-3">
-          <div class="stat-header" style="display:flex;align-items:center;justify-content:space-between;">
-            <div style="width:40px;height:40px;border-radius:var(--radius-sm);background:rgba(34,197,94,.12);color:#16a34a;display:flex;align-items:center;justify-content:center;font-size:1.1rem;"><i class="bi bi-check-circle-fill"></i></div>
-            <span style="display:flex;align-items:center;gap:.25rem;font-size:.73rem;font-weight:700;background:rgba(34,197,94,.12);color:#16a34a;border-radius:var(--radius-full);padding:.2rem .55rem;"><i class="bi bi-arrow-up-short"></i>۲۲٪</span>
+          <div class="stat-header">
+            <div class="stat-ico ok"><i class="bi bi-check-circle-fill"></i></div>
           </div>
           <div>
-            <div class="stat-value text-grad" data-count="153" data-suffix="">۱۵۳</div>
-            <div style="font-size:.78rem;color:var(--color-text-muted);margin-top:.2rem;">پروژه تحویل‌داده‌شده</div>
-            <div style="font-size:.73rem;color:var(--color-text-light);">۹۸٪ رضایت مشتری</div>
+            <div class="stat-value text-grad" data-count="<%= stats.doneProjects %>"><%= fa(stats.doneProjects) %></div>
+            <div class="stat-label">پروژه تحویل‌داده‌شده</div>
+            <div class="stat-note"><%= fa(stats.donePct) %>٪ از کل پروژه‌ها</div>
           </div>
         </div>
 
-        <div class="stat-card-dash fade-up fade-up-4">
-          <div class="stat-header" style="display:flex;align-items:center;justify-content:space-between;">
-            <div style="width:40px;height:40px;border-radius:var(--radius-sm);background:rgba(245,158,11,.12);color:#d97706;display:flex;align-items:center;justify-content:center;font-size:1.1rem;"><i class="bi bi-chat-dots-fill"></i></div>
-            <span style="display:flex;align-items:center;gap:.25rem;font-size:.73rem;font-weight:700;background:rgba(239,68,68,.12);color:#dc2626;border-radius:var(--radius-full);padding:.2rem .55rem;"><i class="bi bi-arrow-down-short"></i>۳٪</span>
+        <a href="/sw-admin/tickets" class="stat-card-dash fade-up fade-up-4">
+          <div class="stat-header">
+            <div class="stat-ico warn"><i class="bi bi-ticket-detailed-fill"></i></div>
           </div>
           <div>
-            <div class="stat-value text-grad" data-count="5" data-suffix="">۵</div>
-            <div style="font-size:.78rem;color:var(--color-text-muted);margin-top:.2rem;">پیام خوانده‌نشده</div>
-            <div style="font-size:.73rem;color:var(--color-text-light);">آخرین پیام: ۲ ساعت پیش</div>
+            <div class="stat-value text-grad" data-count="<%= stats.openTickets %>"><%= fa(stats.openTickets) %></div>
+            <div class="stat-label">تیکت باز</div>
+            <div class="stat-note"><%= stats.lastTicketAt ? 'آخرین تیکت: ' + ago(stats.lastTicketAt) : 'تیکتی ثبت نشده' %></div>
           </div>
-        </div>
+        </a>
 
-      </div><!-- /stat-grid -->
+      </div>
 
       <!-- Quick Mini Cards -->
-      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:1.25rem;margin-bottom:1.5rem;" class="fade-up fade-up-5">
-        <div class="mini-card" style="background:var(--color-surface);border:1px solid var(--color-border);border-radius:var(--radius-lg);padding:1.1rem 1.25rem;display:flex;align-items:center;gap:1rem;">
-          <div style="width:44px;height:44px;border-radius:var(--radius-md);background:rgba(100,71,244,.1);color:var(--main-500);display:flex;align-items:center;justify-content:center;font-size:1.2rem;flex-shrink:0;"><i class="bi bi-clock-history"></i></div>
-          <div><div style="font-size:1.35rem;font-weight:900;line-height:1;">۱۴۲ ساعت</div><div style="font-size:.75rem;color:var(--color-text-muted);margin-top:.15rem;">کل ساعات کاری این ماه</div></div>
+      <div class="sw-g c3 fade-up fade-up-5">
+        <div class="mini-card">
+          <div class="mini-ico ok"><i class="bi bi-cash-stack"></i></div>
+          <div>
+            <div class="mini-val"><%= fa(minis.paidAmount) %> تومان</div>
+            <div class="stat-note">مجموع فاکتورهای پرداخت‌شده</div>
+          </div>
         </div>
-        <div class="mini-card" style="background:var(--color-surface);border:1px solid var(--color-border);border-radius:var(--radius-lg);padding:1.1rem 1.25rem;display:flex;align-items:center;gap:1rem;">
-          <div style="width:44px;height:44px;border-radius:var(--radius-md);background:rgba(0,144,232,.1);color:var(--accent-500);display:flex;align-items:center;justify-content:center;font-size:1.2rem;flex-shrink:0;"><i class="bi bi-stars"></i></div>
-          <div><div style="font-size:1.35rem;font-weight:900;line-height:1;">۴.۹ / ۵</div><div style="font-size:.75rem;color:var(--color-text-muted);margin-top:.15rem;">میانگین امتیاز مشتریان</div></div>
+        <div class="mini-card">
+          <div class="mini-ico"><i class="bi bi-receipt-cutoff"></i></div>
+          <div>
+            <div class="mini-val"><%= fa(minis.pendingCount) %> فاکتور</div>
+            <div class="stat-note"><%= minis.pendingCount ? 'در انتظار پرداخت: ' + fa(minis.pendingAmount) + ' تومان' : 'فاکتور پرداخت‌نشده‌ای نیست' %></div>
+          </div>
         </div>
-        <div class="mini-card" style="background:var(--color-surface);border:1px solid var(--color-border);border-radius:var(--radius-lg);padding:1.1rem 1.25rem;display:flex;align-items:center;gap:1rem;">
-          <div style="width:44px;height:44px;border-radius:var(--radius-md);background:rgba(34,197,94,.1);color:#16a34a;display:flex;align-items:center;justify-content:center;font-size:1.2rem;flex-shrink:0;"><i class="bi bi-lightning-charge-fill"></i></div>
-          <div><div style="font-size:1.35rem;font-weight:900;line-height:1;">۷ روز</div><div style="font-size:.75rem;color:var(--color-text-muted);margin-top:.15rem;">میانگین زمان تحویل پروژه</div></div>
+        <div class="mini-card">
+          <div class="mini-ico accent"><i class="bi bi-stars"></i></div>
+          <div>
+            <div class="mini-val"><%= minis.ratingAvg ? fa(minis.ratingAvg) + ' / ۵' : '—' %></div>
+            <div class="stat-note"><%= minis.ratingCount ? 'میانگین از ' + fa(minis.ratingCount) + ' نظر تاییدشده' : 'هنوز نظری ثبت نشده' %></div>
+          </div>
         </div>
       </div>
 
       <!-- Main Grid: Chart + Activity -->
-      <div style="display:grid;grid-template-columns:1fr 340px;gap:1.25rem;margin-bottom:1.25rem;" class="fade-up fade-up-5">
+      <div class="sw-layout fade-up fade-up-5" style="margin-bottom:var(--sw-s3);">
 
         <!-- Chart Panel -->
         <div class="dash-panel">
           <div class="panel-header">
-            <h6 class="panel-title"><i class="bi bi-bar-chart-fill me-1" style="color:var(--main-500);"></i> پروژه‌های ماهانه</h6>
-            <a href="#" class="panel-action">جزئیات <i class="bi bi-arrow-left"></i></a>
+            <h2 class="panel-title"><i class="bi bi-bar-chart-fill" style="color:var(--main-500);"></i> پروژه‌های ثبت‌شده در ۶ ماه اخیر</h2>
+            <a href="/sw-admin/reports" class="panel-action">جزئیات <i class="bi bi-arrow-left"></i></a>
           </div>
-          <div style="padding:1.25rem;">
-            <div style="display:flex;align-items:flex-end;gap:.6rem;height:140px;">
-              <% const bars = [
-                { h:'55%', label:'دی',       val:'۱۱' },
-                { h:'70%', label:'بهمن',     val:'۱۴' },
-                { h:'45%', label:'اسفند',    val:'۹'  },
-                { h:'85%', label:'فروردین',  val:'۱۷' },
-                { h:'65%', label:'اردیبهشت', val:'۱۳' },
-                { h:'90%', label:'خرداد',    val:'۱۸', active: true }
-              ]; %>
-              <% bars.forEach(function(bar){ %>
-                <div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:.4rem;height:100%;justify-content:flex-end;">
-                  <div class="chart-bar <%= bar.active ? 'active' : '' %>"
-                       style="width:100%;max-width:40px;height:<%= bar.h %>;border-radius:var(--radius-sm) var(--radius-sm) .25rem .25rem;cursor:pointer;"
-                       data-val="<%= bar.val %>"></div>
-                  <span style="font-size:.68rem;color:var(--color-text-light);text-align:center;"><%= bar.label %></span>
-                </div>
-              <% }); %>
-            </div>
-            <div style="display:flex;gap:1.25rem;flex-wrap:wrap;margin-top:1rem;">
-              <div style="display:flex;align-items:center;gap:.4rem;font-size:.75rem;color:var(--color-text-muted);">
-                <div style="width:8px;height:8px;border-radius:50%;background:var(--main-500);"></div>تحویل‌شده
+          <div class="chart-bars" role="img" aria-label="نمودار تعداد پروژه‌های ثبت‌شده در هر ماه">
+            <% chart.forEach(function (bar) { %>
+              <div class="chart-col">
+                <button type="button" class="chart-bar <%= bar.active ? 'active' : '' %>" style="--h:<%= bar.h %>%;"
+                        data-val="<%= fa(bar.val) %>" aria-label="<%= bar.label %>: <%= fa(bar.val) %> پروژه"></button>
+                <span><%= bar.label %></span>
               </div>
-              <div style="display:flex;align-items:center;gap:.4rem;font-size:.75rem;color:var(--color-text-muted);">
-                <div style="width:8px;height:8px;border-radius:50%;background:var(--main-200);"></div>در جریان
-              </div>
-            </div>
+            <% }); %>
           </div>
+          <div class="legend"><span><i></i>پروژه ثبت‌شده در ماه</span></div>
         </div>
 
         <!-- Activity Feed -->
         <div class="dash-panel">
           <div class="panel-header">
-            <h6 class="panel-title"><i class="bi bi-activity me-1" style="color:var(--main-500);"></i> فعالیت‌های اخیر</h6>
-            <a href="#" class="panel-action">همه <i class="bi bi-arrow-left"></i></a>
+            <h2 class="panel-title"><i class="bi bi-activity" style="color:var(--main-500);"></i> فعالیت‌های اخیر</h2>
           </div>
-          <div>
-            <% const activities = [
-              { icon:'bi-check-circle-fill', type:'main',    text:'<strong>پروژه آتین‌دیزاین</strong> به مرحله تحویل رسید', time:'۱۵ دقیقه پیش' },
-              { icon:'bi-person-plus-fill',  type:'accent',  text:'<strong>مشتری جدید</strong> ثبت‌نام کرد — محسن رضایی',  time:'۴۵ دقیقه پیش' },
-              { icon:'bi-chat-left-dots-fill',type:'warning', text:'<strong>۳ پیام جدید</strong> از طریق فرم تماس',         time:'۱ ساعت پیش' },
-              { icon:'bi-file-earmark-plus-fill', type:'main', text:'<strong>پروژه جدید</strong> ثبت شد — فروشگاه پرتو',  time:'۳ ساعت پیش' },
-              { icon:'bi-receipt-cutoff',    type:'success', text:'<strong>فاکتور #۱۰۴۸</strong> پرداخت شد',              time:'دیروز' },
-              { icon:'bi-star-fill',         type:'accent',  text:'<strong>نظر جدید</strong> ۵ ستاره از سارا طاهری',      time:'دیروز' },
-              { icon:'bi-exclamation-triangle-fill', type:'warning', text:'<strong>ددلاین</strong> پروژه پارسیان فرداست', time:'۲ روز پیش' }
-            ]; %>
-            <% activities.forEach(function(act){ %>
-              <div style="display:flex;align-items:flex-start;gap:.85rem;padding:.7rem 1.25rem;transition:background var(--dur-fast);">
-                <div style="width:32px;height:32px;border-radius:var(--radius-sm);display:flex;align-items:center;justify-content:center;font-size:.85rem;flex-shrink:0;margin-top:.1rem;
-                  background:<%= act.type==='main' ? 'rgba(100,71,244,.12)' : act.type==='accent' ? 'rgba(0,144,232,.12)' : act.type==='success' ? 'rgba(34,197,94,.12)' : 'rgba(245,158,11,.12)' %>;
-                  color:<%= act.type==='main' ? 'var(--main-500)' : act.type==='accent' ? 'var(--accent-500)' : act.type==='success' ? '#16a34a' : '#d97706' %>;">
-                  <i class="bi <%= act.icon %>"></i>
-                </div>
-                <div style="flex:1;">
-                  <p style="font-size:.82rem;margin:0;line-height:1.5;"><%- act.text %></p>
-                  <div style="font-size:.7rem;color:var(--color-text-light);margin-top:.15rem;"><i class="bi bi-clock me-1"></i><%= act.time %></div>
-                </div>
+          <% if (!recentActivities.length) { %>
+            <div class="sw-empty"><i class="bi bi-inbox"></i>فعالیتی ثبت نشده است</div>
+          <% } %>
+          <% recentActivities.forEach(function (act) { %>
+            <div class="feed-item">
+              <div class="feed-ico <%= VARIANTS.includes(act.colorVariant) ? act.colorVariant : '' %>"><i class="bi <%= act.icon || 'bi-lightning-charge-fill' %>"></i></div>
+              <div style="flex:1;min-width:0;">
+                <p class="feed-text"><%= act.title %></p>
+                <div class="feed-time"><i class="bi bi-clock"></i> <%= ago(act.createdAt) %></div>
               </div>
-            <% }); %>
-          </div>
+            </div>
+          <% }); %>
         </div>
 
-      </div><!-- /main-grid -->
+      </div>
 
       <!-- Projects Table -->
-      <div class="dash-panel fade-up fade-up-6 mb-4">
+      <div class="dash-panel fade-up fade-up-6" style="margin-bottom:var(--sw-s3);">
         <div class="panel-header">
-          <h6 class="panel-title"><i class="bi bi-kanban-fill me-1" style="color:var(--main-500);"></i> پروژه‌های جاری</h6>
+          <h2 class="panel-title"><i class="bi bi-kanban-fill" style="color:var(--main-500);"></i> آخرین پروژه‌ها</h2>
           <a href="/sw-admin/projects" class="panel-action">همه پروژه‌ها <i class="bi bi-arrow-left"></i></a>
         </div>
-        <div style="overflow-x:auto;">
+        <div class="sw-tw">
           <table class="sol-table">
             <thead>
-              <tr>
-                <th>پروژه</th><th>مشتری</th><th>نوع</th>
-                <th>وضعیت</th><th>پیشرفت</th><th>ددلاین</th>
-              </tr>
+              <tr><th>پروژه</th><th>مشتری</th><th>نوع</th><th>وضعیت</th><th>پیشرفت</th><th>ددلاین</th></tr>
             </thead>
             <tbody>
-              <% const projects = [
-                { name:'وب‌سایت شرکتی آتین‌دیزاین', type:'طراحی وب — PHP',       client:'امیر حسینی', cat:'وب',     status:'done',   prog:100, deadline:'۱ خرداد',    urgent:false },
-                { name:'فروشگاه آنلاین کیانی لباس',  type:'فروشگاه — WooCommerce', client:'کیانی لباس',  cat:'فروشگاه', status:'inprog', prog:68,  deadline:'۱۵ خرداد',   urgent:false },
-                { name:'اپلیکیشن مدیریت مالی',       type:'UI/UX — React',         client:'آفیلیو',      cat:'UI/UX',   status:'review', prog:85,  deadline:'۲۲ خرداد',   urgent:false },
-                { name:'پورتال سازمانی پارسیان',      type:'وب اپ — Laravel',       client:'گروه پارسیان',cat:'وب اپ',   status:'inprog', prog:42,  deadline:'فردا! ⚠️',   urgent:true  },
-                { name:'فروشگاه دیجیتال پرتو',       type:'فروشگاه — Node.js',     client:'شرکت پرتو',  cat:'فروشگاه', status:'hold',   prog:30,  deadline:'نامشخص',      urgent:false }
-              ]; %>
-              <% projects.forEach(function(p){ %>
+              <% if (!projects.length) { %>
+                <tr><td colspan="6"><div class="sw-empty"><i class="bi bi-kanban"></i>هنوز پروژه‌ای ثبت نشده است</div></td></tr>
+              <% } %>
+              <% projects.forEach(function (p) { %>
                 <tr>
                   <td>
-                    <div style="font-weight:600;font-size:.85rem;"><%= p.name %></div>
-                    <div style="font-size:.73rem;color:var(--color-text-muted);"><%= p.type %></div>
+                    <div class="cell-title"><%= p.name %></div>
+                    <% if (p.type) { %><div class="cell-sub"><%= p.type %></div><% } %>
                   </td>
-                  <td style="font-size:.83rem;"><%= p.client %></td>
-                  <td style="font-size:.78rem;color:var(--color-text-muted);"><%= p.cat %></td>
+                  <td><%= p.client %></td>
+                  <td class="cell-sub"><%= p.cat %></td>
+                  <td><span class="badge-status badge-<%= p.cls %>"><%= p.label %></span></td>
                   <td>
-                    <span class="badge-status badge-<%= p.status %>">
-                      <%= p.status==='done' ? 'تحویل داده شد' : p.status==='inprog' ? 'در حال انجام' : p.status==='review' ? 'در ریویو' : 'متوقف' %>
-                    </span>
-                  </td>
-                  <td>
-                    <div style="display:flex;align-items:center;gap:.5rem;">
+                    <div class="prog-wrap">
                       <div class="prog-bar-mini"><div class="prog-fill" style="width:<%= p.prog %>%;"></div></div>
-                      <span style="font-size:.73rem;color:<%= p.urgent ? '#dc2626' : 'var(--color-text-muted)' %>;font-weight:<%= p.urgent ? '700' : 'normal' %>;"><%= p.prog %>٪</span>
+                      <span class="<%= p.urgent ? 'urgent' : '' %>"><%= fa(p.prog) %>٪</span>
                     </div>
                   </td>
-                  <td style="font-size:.78rem;color:<%= p.urgent ? '#dc2626' : 'var(--color-text-muted)' %>;font-weight:<%= p.urgent ? '600' : 'normal' %>;"><%= p.deadline %></td>
+                  <td class="<%= p.urgent ? 'urgent' : 'cell-sub' %>"><%= p.deadline %><%= p.urgent ? ' ⚠️' : '' %></td>
                 </tr>
               <% }); %>
             </tbody>
@@ -222,62 +197,43 @@
         </div>
       </div>
 
-      <!-- Bottom: Messages + Tasks -->
-      <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:1.25rem;margin-bottom:1.5rem;" class="fade-up fade-up-6">
+      <!-- Bottom: Tickets + Tasks -->
+      <div class="sw-g c2 fade-up fade-up-6">
 
-        <!-- Messages -->
+        <!-- Tickets -->
         <div class="dash-panel">
           <div class="panel-header">
-            <h6 class="panel-title"><i class="bi bi-chat-dots-fill me-1" style="color:var(--main-500);"></i> پیام‌های اخیر</h6>
-            <a href="#" class="panel-action">همه <i class="bi bi-arrow-left"></i></a>
+            <h2 class="panel-title"><i class="bi bi-chat-dots-fill" style="color:var(--main-500);"></i> آخرین تیکت‌ها</h2>
+            <a href="/sw-admin/tickets" class="panel-action">همه <i class="bi bi-arrow-left"></i></a>
           </div>
-          <% const messages = [
-            { name:'محسن رضایی',  initials:'محر', color:'var(--grad-main)',                            preview:'سلام، میخواستم درباره پروژه فروشگاه صحبت کنیم…', time:'الان',   unread:true  },
-            { name:'سارا طاهری',  initials:'سار', color:'linear-gradient(135deg,#0090e8,#4dc3ff)',    preview:'ممنونم از طراحی عالی، فقط یه تغییر کوچیک داشتم', time:'۲۰ د',  unread:true  },
-            { name:'رضا محمدی',   initials:'رضا', color:'linear-gradient(135deg,#a394fb,#6447f4)',    preview:'پیش‌فاکتور رو دیدم، تأیید می‌کنم. بریم جلو!',    time:'۱ س',   unread:true  },
-            { name:'علی امینی',   initials:'علی', color:'linear-gradient(135deg,#22c55e,#0090e8)',    preview:'سایت فروشگاه رو لانچ کردیم، عالیه! ممنون',       time:'دیروز',  unread:false },
-            { name:'نگار صادقی',  initials:'نگر', color:'linear-gradient(135deg,#f59e0b,#ef4444)',    preview:'آیا امکان اضافه کردن بلاگ به سایت هست؟',          time:'دیروز',  unread:false }
-          ]; %>
-          <% messages.forEach(function(msg){ %>
-            <div style="display:flex;align-items:flex-start;gap:.85rem;padding:.9rem 1.25rem;border-bottom:1px solid var(--color-border);cursor:pointer;background:<%= msg.unread ? 'rgba(100,71,244,.04)' : 'transparent' %>;">
-              <div style="width:36px;height:36px;border-radius:var(--radius-sm);background:<%= msg.color %>;display:flex;align-items:center;justify-content:center;font-size:.72rem;font-weight:800;color:#fff;flex-shrink:0;"><%= msg.initials %></div>
-              <div style="flex:1;min-width:0;">
-                <div style="display:flex;align-items:center;justify-content:space-between;gap:.5rem;margin-bottom:.25rem;">
-                  <span style="font-size:.83rem;font-weight:700;"><%= msg.name %></span>
-                  <span style="font-size:.7rem;color:var(--color-text-light);white-space:nowrap;"><%= msg.time %></span>
-                </div>
-                <div style="font-size:.77rem;color:var(--color-text-muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:<%= msg.unread ? '500' : 'normal' %>;"><%= msg.preview %></div>
+          <% if (!tickets.length) { %>
+            <div class="sw-empty"><i class="bi bi-chat-square-text"></i>تیکتی ثبت نشده است</div>
+          <% } %>
+          <% tickets.forEach(function (t) { %>
+            <a href="/sw-admin/tickets" class="msg-item <%= t.unread ? 'unread' : '' %>">
+              <div class="msg-av v<%= t.v %>"><%= t.initials %></div>
+              <div class="msg-main">
+                <div class="msg-top"><b><%= t.name %></b><span class="msg-time"><%= ago(t.time) %></span></div>
+                <div class="msg-prev"><%= t.preview %></div>
               </div>
-            </div>
+            </a>
           <% }); %>
         </div>
 
         <!-- Tasks -->
         <div class="dash-panel">
           <div class="panel-header">
-            <h6 class="panel-title"><i class="bi bi-list-check me-1" style="color:var(--main-500);"></i> وظایف امروز</h6>
-            <button class="btn-sol-sm" style="padding:.3rem .8rem;font-size:.74rem;"><i class="bi bi-plus"></i> جدید</button>
+            <h2 class="panel-title"><i class="bi bi-list-check" style="color:var(--main-500);"></i> وظایف</h2>
+            <button type="button" class="btn-sol-sm" data-modal-open="taskModal"><i class="bi bi-plus-lg"></i> جدید</button>
           </div>
-          <% const tasks = [
-            { text:'ریویو طراحی اپ مالی',             pri:'low',    done:true  },
-            { text:'جلسه مشاوره با کیانی لباس',       pri:'medium', done:true  },
-            { text:'ارسال پیش‌فاکتور به پرتو',        pri:'high',   done:false },
-            { text:'بروزرسانی صفحه خدمات سُل وب',    pri:'medium', done:false },
-            { text:'تکمیل مرحله سوم پورتال پارسیان', pri:'high',   done:false },
-            { text:'پاسخ به پیام‌های ریسپانسیو',      pri:'low',    done:false },
-            { text:'آپلود نمونه کار جدید در پورتفولیو',pri:'medium', done:false }
-          ]; %>
-          <% tasks.forEach(function(task){ %>
-            <div class="task-item" style="display:flex;align-items:center;gap:.75rem;padding:.75rem 1.25rem;border-bottom:1px solid var(--color-border);cursor:pointer;">
-              <div class="task-check <%= task.done ? 'done' : '' %>" style="width:18px;height:18px;border-radius:5px;border:2px solid var(--color-border);display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:all var(--dur-fast);cursor:pointer;background:<%= task.done ? 'var(--main-500)' : 'transparent' %>;border-color:<%= task.done ? 'var(--main-500)' : 'var(--color-border)' %>;color:#fff;font-size:.65rem;">
-                <%= task.done ? '<i class="bi bi-check-lg"></i>' : '' %>
-              </div>
-              <span class="task-text <%= task.done ? 'done' : '' %>" style="flex:1;font-size:.83rem;<%= task.done ? 'text-decoration:line-through;color:var(--color-text-muted);' : '' %>"><%= task.text %></span>
-              <span style="font-size:.67rem;font-weight:700;padding:.15rem .5rem;border-radius:var(--radius-full);
-                background:<%= task.pri==='high' ? 'rgba(239,68,68,.1)' : task.pri==='medium' ? 'rgba(245,158,11,.1)' : 'rgba(34,197,94,.1)' %>;
-                color:<%= task.pri==='high' ? '#dc2626' : task.pri==='medium' ? '#d97706' : '#16a34a' %>;">
-                <%= task.pri==='high' ? 'بالا' : task.pri==='medium' ? 'متوسط' : 'کم' %>
-              </span>
+          <% if (!todayTasks.length) { %>
+            <div class="sw-empty"><i class="bi bi-check2-all"></i>وظیفه‌ای ثبت نشده است</div>
+          <% } %>
+          <% todayTasks.forEach(function (task) { %>
+            <div class="task-item" data-id="<%= task._id %>">
+              <div class="task-check <%= task.isDone ? 'done' : '' %>" role="checkbox" tabindex="0" aria-checked="<%= !!task.isDone %>"><%- task.isDone ? '<i class="bi bi-check-lg"></i>' : '' %></div>
+              <span class="task-text <%= task.isDone ? 'done' : '' %>"><%= task.title %></span>
+              <span class="pri <%= task.priority %>"><%= PRI[task.priority] || PRI.medium %></span>
             </div>
           <% }); %>
         </div>
@@ -288,37 +244,62 @@
   </div><!-- /main-content -->
 </div><!-- /admin-shell -->
 
+<!-- Modal: وظیفه جدید -->
+<div class="modal-overlay" id="taskModal">
+  <div class="modal-box">
+    <div class="modal-head">
+      <h3 class="modal-title">وظیفه جدید</h3>
+      <button type="button" class="btn-icon" data-modal-close aria-label="بستن"><i class="bi bi-x-lg"></i></button>
+    </div>
+    <form action="/sw-admin/tasks" method="POST" data-validate>
+      <div class="sw-field">
+        <label class="sol-label" for="taskTitle">عنوان</label>
+        <input class="sol-input" id="taskTitle" name="title" data-rule="required" placeholder="مثلاً: ارسال پیش‌فاکتور" autocomplete="off">
+      </div>
+      <div class="sw-field">
+        <label class="sol-label" for="taskPri">اولویت</label>
+        <select class="sol-select" id="taskPri" name="priority">
+          <option value="low">کم</option>
+          <option value="medium" selected>متوسط</option>
+          <option value="high">بالا</option>
+        </select>
+      </div>
+      <div class="modal-foot">
+        <button type="button" class="btn-ghost-sm" data-modal-close>انصراف</button>
+        <button type="submit" class="btn-sol-sm">ثبت وظیفه</button>
+      </div>
+    </form>
+  </div>
+</div>
+
 <%- include('partials/_scripts', {
   extraScripts: `
-  <style>
-    .stat-card-dash {
-      background: var(--color-surface);
-      border: 1px solid var(--color-border);
-      border-radius: var(--radius-lg);
-      padding: 1.25rem 1.4rem;
-      display: flex; flex-direction: column; gap: .85rem;
-      transition: all var(--dur-normal) var(--ease-spring);
-      position: relative; overflow: hidden; cursor: default;
+  <script>
+  // تغییر وضعیت وظیفه با کلیک یا Enter/Space (خوش‌بینانه؛ در خطا برمی‌گردد)
+  (function () {
+    function toggle(row) {
+      var chk = row.querySelector('.task-check'), txt = row.querySelector('.task-text'), was = chk.classList.contains('done');
+      function set(v) {
+        chk.classList.toggle('done', v); txt.classList.toggle('done', v);
+        chk.setAttribute('aria-checked', String(v)); chk.innerHTML = v ? '<i class="bi bi-check-lg"></i>' : '';
+      }
+      set(!was);
+      fetch('/sw-admin/tasks/' + row.dataset.id + '/toggle', { method: 'POST', credentials: 'same-origin', headers: { Accept: 'application/json' } })
+        .then(function (r) { return r.json(); })
+        .then(function (j) {
+          if (!j.success) throw new Error('fail');
+          set(j.isDone);
+          if (j.isDone) SW.island('وظیفه انجام شد', { type: 'success', icon: 'check2-circle', ms: 2200 });
+        })
+        .catch(function () { set(was); SW.island('تغییر وضعیت وظیفه انجام نشد', { type: 'error' }); });
     }
-    .stat-card-dash:hover { transform: translateY(-3px); box-shadow: var(--shadow-md); border-color: var(--main-200); }
-    .stat-card-dash::after {
-      content:''; position:absolute; bottom:0; right:0; left:0; height:3px;
-      background: var(--grad-main); transform:scaleX(0); transform-origin:right;
-      transition: transform var(--dur-normal) var(--ease-spring);
-    }
-    .stat-card-dash:hover::after { transform: scaleX(1); }
-    .chart-bar {
-      background: var(--grad-soft);
-      border: 1px solid var(--main-200);
-      transition: all .4s var(--ease-spring);
-      cursor: pointer;
-    }
-    .chart-bar.active, .chart-bar:hover {
-      background: var(--grad-main); border-color: transparent;
-      box-shadow: var(--shadow-main);
-    }
-    .mini-card { transition: all var(--dur-normal) var(--ease-spring); }
-    .mini-card:hover { transform: translateY(-2px); box-shadow: var(--shadow-sm); border-color: var(--main-200); }
-  </style>
+    document.addEventListener('click', function (e) {
+      var row = e.target.closest('.task-item'); if (row) toggle(row);
+    });
+    document.addEventListener('keydown', function (e) {
+      if ((e.key === 'Enter' || e.key === ' ') && e.target.classList && e.target.classList.contains('task-check')) { e.preventDefault(); toggle(e.target.closest('.task-item')); }
+    });
+  })();
+  </script>
   `
 }) %>

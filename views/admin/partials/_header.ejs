@@ -1,8 +1,14 @@
 <%#
-  admin/_header.ejs
-  پارامترهای مورد نیاز:
-    - breadcrumbs  (array)   — [{ label: 'داشبورد', href: '/sw-admin' }, { label: 'پروژه‌ها' }]
-    - searchPlaceholder (string, optional) — placeholder جستجو
+  admin/partials/_header.ejs
+  پارامترها (همه اختیاری):
+    - breadcrumbs       (array)  — [{ label: 'داشبورد', href: '/sw-admin' }, { label: 'پروژه‌ها' }]
+    - searchPlaceholder (string) — placeholder جستجو
+    - notifCount        (number) — اگر بزرگ‌تر از صفر باشد نقطهٔ اعلان نمایش داده می‌شود
+    - adminUser         (object) — { name, role, initials } (از res.locals)
+-%>
+<%
+  const crumbs   = locals.breadcrumbs || [];
+  const initials = (locals.adminUser && locals.adminUser.initials) || 'ادم';
 %>
 
 <header class="admin-header">
@@ -15,29 +21,27 @@
   <!-- Breadcrumb -->
   <div class="header-breadcrumb">
     <i class="bi bi-house-fill" style="font-size:.8rem;color:var(--color-text-light);"></i>
-    <% if(typeof breadcrumbs !== 'undefined' && breadcrumbs.length){ %>
-      <% breadcrumbs.forEach(function(crumb, i){ %>
-        <span class="sep">/</span>
-        <% if(crumb.href && i < breadcrumbs.length - 1){ %>
-          <a href="<%= crumb.href %>"><%= crumb.label %></a>
-        <% } else { %>
-          <span class="current"><%= crumb.label %></span>
-        <% } %>
-      <% }); %>
-    <% } %>
+    <% crumbs.forEach(function(crumb, i){ %>
+      <span class="sep">/</span>
+      <% if(crumb.href && i < crumbs.length - 1){ %>
+        <a href="<%= crumb.href %>"><%= crumb.label %></a>
+      <% } else { %>
+        <span class="current"><%= crumb.label %></span>
+      <% } %>
+    <% }); %>
   </div>
 
   <!-- Search -->
   <div class="header-search d-none d-md-flex">
     <i class="bi bi-search"></i>
-    <input type="text" placeholder="<%= typeof searchPlaceholder !== 'undefined' ? searchPlaceholder : 'جستجو در پنل…' %>">
+    <input type="text" id="headerSearch" placeholder="<%= locals.searchPlaceholder || 'جستجو در پنل…' %>">
   </div>
 
   <!-- Actions -->
   <div class="header-actions">
     <button class="hdr-btn" title="اعلان‌ها">
       <i class="bi bi-bell-fill"></i>
-      <span class="hdr-notif-dot"></span>
+      <% if(locals.notifCount > 0){ %><span class="hdr-notif-dot"></span><% } %>
     </button>
 
     <button class="hdr-btn" id="themeToggle" title="تغییر تم">
@@ -48,7 +52,7 @@
       <i class="bi bi-fullscreen"></i>
     </button>
 
-    <div class="hdr-avatar" title="پروفایل">ادم</div>
+    <div class="hdr-avatar" title="پروفایل"><%= initials %></div>
   </div>
 
 </header>

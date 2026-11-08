@@ -2362,18 +2362,19 @@ res.status(500).send('Delete error')
 
 })
 
-app.get('/sw-admin/login' , async (req , res) => {
-  res.render('./admin/Login')
-})
-
+app.get('/sw-admin/login', async (req, res) => {
+  if (req.session?.user) return res.redirect('/sw-admin');
+  res.render('./admin/Login');
+});
 
 app.post('/sw-admin/login', async (req, res) => {
-  try {
-    const { email, password } = req.body;
+  const { email, password, remember } = req.body;
 
-    if (!email || !password) {
+  try {
+    if (typeof email !== 'string' || typeof password !== 'string' || !email || !password) {
       return res.status(400).render('admin/Login', {
-        error: 'ایمیل و رمز عبور الزامی هستند'
+        error: 'ایمیل و رمز عبور الزامی هستند',
+        email: typeof email === 'string' ? email : ''
       });
     }
 
@@ -2383,13 +2384,15 @@ app.post('/sw-admin/login', async (req, res) => {
 
     if (!user) {
       return res.status(401).render('admin/Login', {
-        error: 'ایمیل یا رمز عبور اشتباه است'
+        error: 'ایمیل یا رمز عبور اشتباه است',
+        email
       });
     }
 
     if (!user.isActive) {
       return res.status(403).render('admin/Login', {
-        error: 'حساب کاربری شما غیرفعال شده است'
+        error: 'حساب کاربری شما غیرفعال شده است',
+        email
       });
     }
 
@@ -2397,7 +2400,8 @@ app.post('/sw-admin/login', async (req, res) => {
 
     if (!isMatch) {
       return res.status(401).render('admin/Login', {
-        error: 'ایمیل یا رمز عبور اشتباه است'
+        error: 'ایمیل یا رمز عبور اشتباه است',
+        email
       });
     }
 
@@ -2408,16 +2412,25 @@ app.post('/sw-admin/login', async (req, res) => {
       role: user.role
     };
 
+    // «مرا به خاطر بسپار»: ۳۰ روز، وگرنه همان ۱ روز پیش‌فرض
+    if (remember) req.session.cookie.maxAge = 1000 * 60 * 60 * 24 * 30;
+
     res.redirect('/sw-admin');
   } catch (err) {
     console.error(err);
     res.status(500).render('admin/Login', {
-      error: 'خطا در ورود به پنل'
+      error: 'خطا در ورود به پنل',
+      email: typeof email === 'string' ? email : ''
     });
   }
 });
 
-
+app.post('/sw-admin/logout', (req, res) => {
+  req.session.destroy(() => {
+    res.clearCookie('connect.sid');
+    res.redirect('/sw-admin/login');
+  });
+});
 
 app.post('/sw-admin/categories/add', requireAdminAuth, async (req, res) => {
   try {

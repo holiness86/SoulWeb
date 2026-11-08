@@ -253,7 +253,7 @@ body.sw-ios{
   /* دکمه‌ها */
   :is(.btn-sol-sm,.btn-ghost-sm,.btn-danger-sm,.export-btn){--sw-spin:#fff;display:inline-flex;align-items:center;justify-content:center;gap:.4rem;min-height:var(--sw-hit);padding:0 var(--sw-s2);border-radius:var(--radius-md);font-family:inherit;font-size:var(--sw-t-sm);font-weight:700;line-height:1;cursor:pointer;text-decoration:none;border:1.5px solid transparent;transition:transform .4s var(--sw-spring),background-color .15s var(--sw-ease),border-color .15s var(--sw-ease),box-shadow .2s var(--sw-ease)}
   .btn-sol-sm{background:var(--grad-main);color:#fff;box-shadow:var(--shadow-main)}
-  :is(.btn-ghost-sm,.export-btn){--sw-spin:var(--main-500);background:transparent;color:var(--main-500);border-color:var(--main-200)}
+  :is(.btn-ghost-sm,.export-btn){--sw-spin:var(--tint-fg);background:transparent;color:var(--tint-fg);border-color:var(--main-200)}
   :is(.btn-ghost-sm,.export-btn):hover{background:var(--tint);border-color:var(--main-400)}
   .btn-danger-sm{--sw-spin:var(--danger);background:transparent;color:var(--danger);border-color:color-mix(in srgb,var(--danger) 45%,transparent)}
   .btn-danger-sm:hover{background:var(--danger-bg);border-color:var(--danger)}
@@ -548,3 +548,79 @@ body.sw-ios{
 :root.sw-theme-vt :is(.sidebar,.admin-header){view-transition-name:none}
 body.sw-ios .header-search:focus-within kbd{display:none}
 @media (max-width:767.98px){body.sw-ios .header-search kbd{display:none}}
+
+/* لینک‌های کارت‌مانند (داشبورد): رنگ ارث‌بری و بدون خط‌زیر */
+body.sw-ios a:is(.msg-item,.feed-item,.stat-card-dash){color:inherit;text-decoration:none}
+
+/* ═══════════════ ۹) صفحه ورود (Login.ejs) ═══════════════ */
+html:has(.login-page){scrollbar-gutter:auto}
+.lv-blob,.lv-green-dot{corner-shape:round}
+@keyframes sw-blob{0%,100%{transform:translate3d(0,0,0) scale(1)}33%{transform:translate3d(28px,-20px,0) scale(1.05)}66%{transform:translate3d(-18px,14px,0) scale(.97)}}
+@keyframes sw-float{0%,100%{transform:translateY(0)}50%{transform:translateY(-10px)}}
+@keyframes sw-pulse{0%,100%{box-shadow:0 0 0 0 rgba(74,222,128,.45)}50%{box-shadow:0 0 0 7px rgba(74,222,128,0)}}
+body.sw-ios{
+  .login-page{min-height:100vh;min-height:100dvh;display:grid;grid-template-columns:minmax(0,1fr) minmax(0,480px)}
+
+  /* پنل برندینگ — blobها gradient هستند نه blur (ارزان‌تر برای GPU) */
+  .login-visual{position:relative;isolation:isolate;overflow:hidden;display:flex;flex-direction:column;justify-content:center;padding:3.5rem 4rem;background:var(--grad-hero);color:#fff}
+  .lv-blob{position:absolute;z-index:-1;pointer-events:none;will-change:transform;border-radius:50%}
+  .lv-blob-1{width:560px;height:560px;top:-200px;right:-160px;background:radial-gradient(circle,rgba(100,71,244,.6),transparent 68%);animation:sw-blob 14s ease-in-out infinite}
+  .lv-blob-2{width:480px;height:480px;bottom:-160px;left:-120px;background:radial-gradient(circle,rgba(0,144,232,.5),transparent 68%);animation:sw-blob 18s ease-in-out infinite reverse}
+  .lv-blob-3{width:300px;height:300px;top:45%;left:38%;background:radial-gradient(circle,rgba(163,148,251,.4),transparent 68%);animation:sw-blob 11s ease-in-out infinite -4s}
+  .lv-dots{position:absolute;inset:0;z-index:-1;pointer-events:none;background-image:radial-gradient(circle,rgba(255,255,255,.12) 1px,transparent 1px);background-size:28px 28px;-webkit-mask-image:linear-gradient(to bottom,#000,transparent 90%);mask-image:linear-gradient(to bottom,#000,transparent 90%)}
+  .lv-content{position:relative;max-width:460px}
+  .lv-logo{display:flex;align-items:center;gap:.85rem;margin-bottom:3rem}
+  .lv-logo-icon{width:3rem;height:3rem;display:grid;place-items:center;border-radius:var(--radius-md);background:rgba(255,255,255,.16);border:1.5px solid rgba(255,255,255,.28);font-size:.95rem;font-weight:900}
+  .lv-logo-text{font-size:1.35rem;font-weight:900;letter-spacing:-.02em;line-height:1.2}
+  .lv-logo-sub{font-size:var(--sw-t-xs);color:rgba(255,255,255,.6)}
+  .lv-title{margin:0 0 1rem;font-size:clamp(1.7rem,2.5vw,2.4rem);font-weight:900;line-height:1.3;letter-spacing:-.025em;color:#fff}
+  .lv-title span{display:block;background:linear-gradient(90deg,#c4bcfd,#4dc3ff);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent}
+  .lv-desc{margin:0 0 2rem;max-width:380px;font-size:var(--sw-t-sm);line-height:1.9;color:rgba(255,255,255,.72)}
+  .lv-features{display:flex;flex-direction:column;gap:.9rem}
+  .lv-feature{display:flex;align-items:center;gap:.75rem;font-size:var(--sw-t-sm);color:rgba(255,255,255,.88)}
+  .lv-feature-icon{width:2.25rem;height:2.25rem;flex:none;display:grid;place-items:center;border-radius:var(--radius-sm);background:rgba(255,255,255,.14);border:1px solid rgba(255,255,255,.2)}
+  .lv-card{position:absolute;z-index:1;display:flex;align-items:center;gap:.55rem;padding:.7rem 1.1rem;border-radius:var(--radius-lg);background:rgba(255,255,255,.14);border:1px solid rgba(255,255,255,.2);color:#fff;font-size:var(--sw-t-xs);font-weight:700;white-space:nowrap;animation:sw-float 5s ease-in-out infinite}
+  .lv-card-1{bottom:5rem;left:2rem;animation-delay:.4s}
+  .lv-card-2{top:6rem;left:3rem;animation-delay:1.2s}
+  .lv-green-dot{width:8px;height:8px;border-radius:50%;background:#4ade80;animation:sw-pulse 2s ease-in-out infinite}
+
+  /* پنل فرم */
+  .login-form-side{position:relative;z-index:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:2.5rem 2.75rem;padding-bottom:max(4rem,env(safe-area-inset-bottom));background:var(--color-surface);border-right:1px solid var(--color-border)}
+  .login-theme{position:absolute;top:max(1.25rem,env(safe-area-inset-top));left:1.25rem}
+  .login-mobile-logo{display:none;align-items:center;gap:.75rem;margin-bottom:2.25rem;text-decoration:none}
+  .lml-icon{width:2.75rem;height:2.75rem;display:grid;place-items:center;border-radius:var(--radius-md);background:var(--grad-main);box-shadow:var(--shadow-main);color:#fff;font-size:.88rem;font-weight:900}
+  .lml-text{font-size:1.25rem;font-weight:900;background:var(--grad-main);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent}
+  .login-box{width:100%;max-width:380px}
+  .login-box.shake{animation:sw-shake .45s var(--sw-smooth)}
+  .login-header{margin-bottom:2rem;text-align:center}
+  .login-header h1{margin:0 0 .4rem;font-size:1.55rem;font-weight:900;letter-spacing:-.025em}
+  .login-header p{margin:0;font-size:var(--sw-t-sm);color:var(--color-text-muted)}
+  .login-alert{display:flex;align-items:flex-start;gap:.6rem;margin-bottom:1.25rem;padding:.75rem 1rem;border-radius:var(--radius-md);background:var(--danger-bg);border:1px solid color-mix(in srgb,var(--danger) 28%,transparent);color:var(--danger);font-size:var(--sw-t-sm);font-weight:700}
+
+  /* فیلدهای آیکون‌دار (پیام خطای admin.js داخل .input-wrap اضافه می‌شود) */
+  .input-wrap{position:relative;display:flex;flex-wrap:wrap}
+  .input-wrap .sol-input{flex:1 1 100%;width:100%;padding-right:2.75rem;text-align:right}
+  .input-wrap>.bi{position:absolute;right:.95rem;top:calc(var(--sw-hit) / 2);transform:translateY(-50%);color:var(--color-text-light);pointer-events:none;transition:color .15s}
+  .input-wrap:focus-within>.bi{color:var(--main-500)}
+  .input-wrap .sw-err{flex-basis:100%}
+  .input-wrap:has(.login-eye) .sol-input{padding-left:2.75rem}
+  .login-eye{position:absolute;left:.3rem;top:calc(var(--sw-hit) / 2);transform:translateY(-50%);min-width:40px;min-height:40px;display:grid;place-items:center;border:0;border-radius:var(--radius-md);background:transparent;color:var(--color-text-light);cursor:pointer;transition:color .15s,background-color .15s}
+  .login-eye:hover{color:var(--main-500);background:var(--tint)}
+  .login-hint{display:none;align-items:center;gap:.4rem;margin-top:.4rem;font-size:var(--sw-t-xs);font-weight:700;color:var(--warn)}
+  .login-hint.show{display:flex;animation:sw-up .3s var(--sw-smooth)}
+  .login-options{display:flex;align-items:center;justify-content:space-between;margin:.25rem 0 1.5rem}
+  .login-remember{display:flex;align-items:center;gap:.6rem;font-size:var(--sw-t-sm);color:var(--color-text-muted);cursor:pointer;user-select:none}
+  .login-submit{width:100%;min-height:50px;font-size:var(--sw-t-md);font-weight:800}
+  .login-divider{display:flex;align-items:center;gap:.85rem;margin:1.5rem 0;font-size:var(--sw-t-xs);color:var(--color-text-light)}
+  .login-divider::before,.login-divider::after{content:"";flex:1;height:1px;background:var(--color-border)}
+  .login-back{width:100%}
+  .login-footer{position:absolute;bottom:max(1.25rem,env(safe-area-inset-bottom));inset-inline:0;text-align:center;font-size:var(--sw-t-xs);color:var(--color-text-light)}
+
+  @media (max-width:900px){
+    .login-page{grid-template-columns:minmax(0,1fr)}
+    .login-visual{display:none}
+    .login-form-side{min-height:100vh;min-height:100dvh;padding:2rem 1.5rem 4rem;border-right:0}
+    .login-mobile-logo{display:flex}
+  }
+  @media (max-width:480px){.login-form-side{padding-inline:1.1rem}}
+}

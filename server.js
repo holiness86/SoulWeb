@@ -280,6 +280,15 @@ app.get('/sw-admin' , requireAdminAuth , async (req, res) => {
           ratingCount: 0
       },
 
+      chart: [
+          { label: 'خرداد', val: 0, h: 0, active: false },
+          { label: 'تیر', val: 0, h: 0, active: false },
+          { label: 'مرداد', val: 0, h: 0, active: false },
+          { label: 'شهریور', val: 0, h: 0, active: false },
+          { label: 'مهر', val: 0, h: 0, active: false },
+          { label: 'آبان', val: 0, h: 0, active: true }
+      ],
+
       recentActivities,
       todayTasks,
 

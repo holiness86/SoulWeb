@@ -271,8 +271,18 @@ app.get('/sw-admin' , requireAdminAuth , async (req, res) => {
           deliveredProjects,
           openTickets
       },
+
+      minis: {
+          paidAmount: 0,
+          pendingCount: 0,
+          pendingAmount: 0,
+          ratingAvg: 0,
+          ratingCount: 0
+      },
+
       recentActivities,
       todayTasks,
+
       todayFa: new Intl.DateTimeFormat('fa-IR', {
           year: 'numeric',
           month: 'long',

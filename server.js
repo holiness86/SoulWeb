@@ -20,6 +20,7 @@ if (IS_PRODUCTION || COOKIE_SECURE) {
 // ─────────────────────────────────────────
 //  CONFIG  (مقادیر حساس را در .env / env سرور بگذار)
 // ─────────────────────────────────────────
+
 const PORT = Number(process.env.PORT) || 3000;
 
 const DB_URL = process.env.DB_URL || process.env.MONGODB_URI || '';
@@ -39,6 +40,7 @@ const CHROME_PATH =
     (process.platform === 'win32'
         ? 'C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe'
         : '/usr/bin/chromium');
+
 
 // ─────────────────────────────────────────
 //  MIDDLEWARE
@@ -1371,3 +1373,4 @@ async function startServer() {
 }
 
 startServer();
+

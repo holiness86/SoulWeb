@@ -13,15 +13,32 @@ const methodOverride = require('method-override')
 try { require('dotenv').config() } catch (e) { /* dotenv نصب نیست؛ از env سیستم استفاده می‌شود */ }
 
 const app = express()
+if (IS_PRODUCTION || COOKIE_SECURE) {
+    app.set('trust proxy', 1);
+}
 
 // ─────────────────────────────────────────
 //  CONFIG  (مقادیر حساس را در .env / env سرور بگذار)
 // ─────────────────────────────────────────
-const PORT           = process.env.PORT || 3000
-const DB_URL         = process.env.DB_URL || 'mongodb://localhost:27017/SoulWeb'
-const SESSION_SECRET = process.env.SESSION_SECRET || 'soulweb-super-secret-key'
-const COOKIE_SECURE  = process.env.COOKIE_SECURE === 'true'   // پشت https برابر true بگذار
-const CHROME_PATH    = process.env.CHROME_PATH || 'C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe'
+const PORT = Number(process.env.PORT) || 3000;
+
+const DB_URL = process.env.DB_URL || process.env.MONGODB_URI || '';
+
+const IS_PRODUCTION = process.env.NODE_ENV === 'production';
+
+const SESSION_SECRET = process.env.SESSION_SECRET || (
+    IS_PRODUCTION ? '' : 'development-secret-key'
+);
+
+const COOKIE_SECURE =
+    IS_PRODUCTION || process.env.COOKIE_SECURE === 'true';
+
+const CHROME_PATH =
+    process.env.CHROME_PATH ||
+    process.env.PUPPETEER_EXECUTABLE_PATH ||
+    (process.platform === 'win32'
+        ? 'C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe'
+        : '/usr/bin/chromium');
 
 // ─────────────────────────────────────────
 //  MIDDLEWARE
@@ -1327,12 +1344,30 @@ app.use((err, req, res, next) => {
 // ─────────────────────────────────────────
 //  DB + SERVER START
 // ─────────────────────────────────────────
-mongoose.connect(DB_URL)
-  .then(() => {
-    console.log('DB is connected ✅')
-    app.listen(PORT, () => console.log(`Server running on port ${PORT} 🚀`))
-  })
-  .catch(err => {
-    console.error('DB connection failed ❌', err.message)
-    process.exit(1)
-  })
+async function startServer() {
+    try {
+        if (!DB_URL) {
+            throw new Error('DB_URL environment variable is missing');
+        }
+
+        if (!SESSION_SECRET) {
+            throw new Error('SESSION_SECRET environment variable is missing');
+        }
+
+        await mongoose.connect(DB_URL, {
+            serverSelectionTimeoutMS: 15000
+        });
+
+        console.log('MongoDB connected successfully');
+
+        app.listen(PORT, '0.0.0.0', () => {
+            console.log(`Server running on port ${PORT}`);
+        });
+
+    } catch (error) {
+        console.error('Server startup failed:', error);
+        process.exit(1);
+    }
+}
+
+startServer();

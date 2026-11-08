@@ -289,6 +289,8 @@ app.get('/sw-admin' , requireAdminAuth , async (req, res) => {
           { label: 'آبان', val: 0, h: 0, active: true }
       ],
 
+      projects: [],
+
       recentActivities,
       todayTasks,
 

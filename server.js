@@ -246,65 +246,225 @@ app.get('/', async (req, res) => {
 // ─────────────────────────────────────────
 //  ADMIN — DASHBOARD
 // ─────────────────────────────────────────
-app.get('/sw-admin' , requireAdminAuth , async (req, res) => {
+app.get('/sw-admin', requireAdminAuth, async (req, res) => {
   try {
+    const now = new Date();
+
+    // شروع هفته
+    const weekStart = new Date(now);
+    weekStart.setDate(now.getDate() - 7);
+
+    // شروع بازه ۶ ماهه نمودار
+    const chartStart = new Date(now.getFullYear(), now.getMonth() - 5, 1);
+
     const [
       activeProjects,
+      reviewProjects,
       totalClients,
-      deliveredProjects,
+      newClients,
+      doneProjects,
+      totalProjects,
       openTickets,
-      recentActivities,
-      todayTasks
+      lastTicket,
+      recentActivitiesData,
+      projectsData,
+      ticketsData,
+      todayTasksData,
+      chartProjects
     ] = await Promise.all([
       Project.countDocuments({ status: 'active' }),
+      Project.countDocuments({ status: 'review' }),
       Client.countDocuments({ isActive: true }),
+      Client.countDocuments({ createdAt: { $gte: weekStart } }),
       Project.countDocuments({ status: 'done' }),
+      Project.countDocuments(),
       Ticket.countDocuments({ status: 'open' }),
-      Activity.find().sort({ createdAt: -1 }).limit(7),
-      Task.find().sort({ createdAt: -1 }).limit(7)
-    ])
+      Ticket.findOne().sort({ createdAt: -1 }).select('createdAt').lean(),
+      Activity.find().sort({ createdAt: -1 }).limit(7).lean(),
+      Project.find()
+        .populate('client', 'name company')
+        .populate('category', 'title')
+        .sort({ createdAt: -1 })
+        .limit(7)
+        .lean(),
+      Ticket.find().sort({ createdAt: -1 }).limit(5).lean(),
+      Task.find().sort({ createdAt: -1 }).limit(7).lean(),
+      Project.find({ createdAt: { $gte: chartStart } })
+        .select('createdAt')
+        .lean()
+    ]);
+
+    // آمار اصلی داشبورد
+    const stats = {
+      activeProjects: activeProjects || 0,
+      reviewProjects: reviewProjects || 0,
+      newClients: newClients || 0,
+      totalClients: totalClients || 0,
+      doneProjects: doneProjects || 0,
+      donePct: totalProjects
+        ? Math.round((doneProjects / totalProjects) * 100)
+        : 0,
+      openTickets: openTickets || 0,
+      lastTicketAt: lastTicket?.createdAt || null,
+      deliveredProjects: doneProjects || 0
+    };
+
+    // کارت های کوچک
+    const minis = {
+      paidAmount: 0,
+      pendingCount: 0,
+      pendingAmount: 0,
+      ratingAvg: 0,
+      ratingCount: 0
+    };
+
+    // نمودار ۶ ماه اخیر
+    const chart = [];
+
+    for (let i = 5; i >= 0; i--) {
+      const date = new Date(now.getFullYear(), now.getMonth() - i, 1);
+      const year = date.getFullYear();
+      const month = date.getMonth();
+
+      const count = chartProjects.filter(project => {
+        if (!project.createdAt) return false;
+
+        const projectDate = new Date(project.createdAt);
+
+        return (
+          projectDate.getFullYear() === year &&
+          projectDate.getMonth() === month
+        );
+      }).length;
+
+      chart.push({
+        label: new Intl.DateTimeFormat('fa-IR', {
+          month: 'long'
+        }).format(date),
+        val: count,
+        h: Math.max(5, count * 10),
+        active: i === 0
+      });
+    }
+
+    // فعالیت های اخیر
+    const recentActivities = (recentActivitiesData || []).map(activity => ({
+      ...activity,
+      title: activity.title || 'فعالیت جدید',
+      icon: activity.icon || 'bi-lightning-charge-fill',
+      colorVariant: activity.colorVariant || 'accent',
+      createdAt: activity.createdAt || now
+    }));
+
+    // پروژه های اخیر با ساختار مورد نیاز EJS
+    const statusLabels = {
+      active: { label: 'در حال انجام', cls: 'active' },
+      review: { label: 'در حال بررسی', cls: 'warning' },
+      done: { label: 'تکمیل شده', cls: 'success' },
+      pending: { label: 'در انتظار', cls: 'secondary' },
+      cancelled: { label: 'لغو شده', cls: 'danger' }
+    };
+
+    const projects = (projectsData || []).map(project => {
+      const status = statusLabels[project.status] || {
+        label: project.status || 'نامشخص',
+        cls: 'secondary'
+      };
+
+      const progress = Math.min(
+        100,
+        Math.max(0, Number(project.progress) || 0)
+      );
+
+      const deadline = project.deadline
+        ? new Date(project.deadline).toLocaleDateString('fa-IR')
+        : '—';
+
+      return {
+        name: project.name || project.title || 'بدون عنوان',
+        type: project.type || '',
+        client:
+          project.client?.name ||
+          project.client?.company ||
+          'بدون مشتری',
+        cat:
+          project.category?.title ||
+          project.category ||
+          '—',
+        cls: status.cls,
+        label: status.label,
+        prog: progress,
+        urgent: project.deadline
+          ? new Date(project.deadline) < now && project.status !== 'done'
+          : false,
+        deadline
+      };
+    });
+
+    // تیکت های اخیر با ساختار مورد نیاز EJS
+    const tickets = (ticketsData || []).map((ticket, index) => {
+      const ticketName =
+        ticket.name ||
+        ticket.user?.name ||
+        ticket.client?.name ||
+        ticket.sender?.name ||
+        'کاربر';
+
+      const initials = String(ticketName)
+        .trim()
+        .split(/\s+/)
+        .slice(0, 2)
+        .map(part => part[0] || '')
+        .join('');
+
+      return {
+        name: ticketName,
+        initials: initials || '؟',
+        preview:
+          ticket.subject ||
+          ticket.title ||
+          ticket.message ||
+          ticket.description ||
+          'تیکت جدید',
+        time: ticket.createdAt || now,
+        unread: ticket.isRead === false || ticket.unread === true,
+        v: (index % 5) + 1
+      };
+    });
+
+    // وظایف
+    const todayTasks = (todayTasksData || []).map(task => ({
+      _id: task._id,
+      title: task.title || 'بدون عنوان',
+      isDone: Boolean(task.isDone),
+      priority: ['high', 'medium', 'low'].includes(task.priority)
+        ? task.priority
+        : 'medium'
+    }));
+
+    // تاریخ امروز
+    const todayFa = new Intl.DateTimeFormat('fa-IR', {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric'
+    }).format(now);
 
     res.render('admin/Dashboard', {
-      stats: {
-          activeProjects,
-          totalClients,
-          deliveredProjects,
-          openTickets
-      },
-
-      minis: {
-          paidAmount: 0,
-          pendingCount: 0,
-          pendingAmount: 0,
-          ratingAvg: 0,
-          ratingCount: 0
-      },
-
-      chart: [
-          { label: 'خرداد', val: 0, h: 0, active: false },
-          { label: 'تیر', val: 0, h: 0, active: false },
-          { label: 'مرداد', val: 0, h: 0, active: false },
-          { label: 'شهریور', val: 0, h: 0, active: false },
-          { label: 'مهر', val: 0, h: 0, active: false },
-          { label: 'آبان', val: 0, h: 0, active: true }
-      ],
-
-      projects: [],
-
+      stats,
+      minis,
+      chart,
       recentActivities,
+      projects,
+      tickets,
       todayTasks,
+      todayFa
+    });
 
-      todayFa: new Intl.DateTimeFormat('fa-IR', {
-          year: 'numeric',
-          month: 'long',
-          day: 'numeric'
-      }).format(new Date())
-  })
   } catch (err) {
-    console.error(err)
-    res.status(500).send('خطا در بارگذاری داشبورد')
+    console.error('Dashboard Error:', err);
+    res.status(500).send('خطا در بارگذاری داشبورد');
   }
-})
+});
 
 // ─────────────────────────────────────────
 //  ADMIN — PROJECTS

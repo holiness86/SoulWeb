@@ -18,7 +18,7 @@ const app = express()
 //  CONFIG  (مقادیر حساس را در .env / env سرور بگذار)
 // ─────────────────────────────────────────
 const PORT           = process.env.PORT || 3000
-const DB_URL         = process.env.DB_URL || 'mongodb://localhost:27017/SoulWeb'
+const DB_URL         = process.env.DB_URL || 'mongodb://admin:pM8U6IsnbQBsnGspAg1f@soulwebdb-ttk-service:27017/admin'
 const SESSION_SECRET = process.env.SESSION_SECRET || 'soulweb-super-secret-key'
 const COOKIE_SECURE  = process.env.COOKIE_SECURE === 'true'   // پشت https برابر true بگذار
 const CHROME_PATH    = process.env.CHROME_PATH || 'C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe'

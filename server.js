@@ -608,6 +608,31 @@ app.post('/sw-admin/projects/:id/delete' , requireAdminAuth , async (req, res) =
   }
 })
 
+app.post('/sw-admin/projects/:id/status', requireAdminAuth, async (req, res) => {
+  try {
+    const { status } = req.body;
+    const allowed = ['active', 'review', 'done', 'hold', 'cancelled'];
+
+    if (!allowed.includes(status)) {
+      return res.status(400).json({ success: false, message: 'وضعیت نامعتبر است' });
+    }
+
+    const project = await Project.findByIdAndUpdate(
+      req.params.id,
+      { status },
+      { new: true }
+    );
+
+    if (!project) {
+      return res.status(404).json({ success: false, message: 'پروژه پیدا نشد' });
+    }
+
+    res.json({ success: true, status: project.status });
+  } catch (err) {
+    console.error('Project status error:', err);
+    res.status(500).json({ success: false, message: 'خطا در تغییر وضعیت پروژه' });
+  }
+});
 // ─────────────────────────────────────────
 //  ADMIN — CLIENTS
 // ─────────────────────────────────────────

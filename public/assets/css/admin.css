@@ -79,6 +79,7 @@ html{-webkit-text-size-adjust:100%;scrollbar-gutter:stable;-webkit-tap-highlight
 body{margin:0;font-family:var(--font-primary);color:var(--color-text-primary);background:var(--color-bg-soft);direction:rtl;overflow-x:hidden;-webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility}
 h1,h2,h3,h4,h5,h6{font-family:var(--font-primary);font-weight:800;line-height:1.25;color:var(--color-text-primary)}
 a,button,input,select,textarea,label,summary,[role=button]{touch-action:manipulation}
+[hidden]{display:none!important}
 ::selection{background:rgba(100,71,244,.25)}
 *{scrollbar-width:thin;scrollbar-color:var(--main-300) transparent}
 ::-webkit-scrollbar{width:6px;height:6px}::-webkit-scrollbar-track{background:transparent}::-webkit-scrollbar-thumb{background:var(--main-300);border-radius:9999px}
@@ -623,4 +624,98 @@ body.sw-ios{
     .login-mobile-logo{display:flex}
   }
   @media (max-width:480px){.login-form-side{padding-inline:1.1rem}}
+}
+
+/* ═══════════════ ۱۰) پروژه‌ها (Projects.ejs) ═══════════════ */
+@keyframes sw-land{0%{transform:scale(.96)}60%{transform:scale(1.025)}100%{transform:none}}
+body.is-card-dragging{cursor:grabbing;-webkit-user-select:none;user-select:none}
+body.sw-ios{
+  .pstat-icon.danger{background:var(--danger-bg);color:var(--danger)}
+
+  /* فیلتر / جستجو / نمایش */
+  .filter-bar{display:flex;flex-wrap:wrap;align-items:center;gap:.6rem;margin-bottom:var(--sw-s3)}
+  .filter-bar .tools{display:flex;flex-wrap:wrap;align-items:center;gap:.5rem;margin-inline-start:auto}
+  .filter-bar .tools .sw-search{min-width:220px}
+  .filter-bar .tools .sol-select{width:auto}
+  .filter-chip{min-height:38px;gap:.4rem;padding:0 var(--sw-s2);border:1.5px solid var(--color-border);border-radius:var(--radius-full);background:var(--color-surface);color:var(--color-text-muted)}
+  .filter-chip:hover{border-color:var(--main-300);color:var(--tint-fg)}
+  .filter-chip.active{background:var(--main-500);border-color:var(--main-500);color:#fff;box-shadow:var(--shadow-main)}
+  .filter-chip .dot{width:7px;height:7px;border-radius:50%;display:inline-block;corner-shape:round}
+  .filter-count{min-width:20px;height:20px;padding:0 .4rem;border-radius:var(--radius-full);display:inline-flex;align-items:center;justify-content:center;font-size:.68rem;font-weight:800;background:var(--color-border);color:var(--color-text-muted)}
+  .filter-chip.active .filter-count{background:rgba(255,255,255,.24);color:#fff}
+  .view-switch{display:flex;gap:2px;padding:3px;background:var(--color-bg-muted);border-radius:var(--radius-md)}
+  .view-btn{min-width:38px;min-height:38px;display:grid;place-items:center;border:0;border-radius:var(--radius-sm);background:transparent;color:var(--color-text-muted);cursor:pointer;transition:background-color .2s,color .2s,box-shadow .2s,transform .4s var(--sw-spring)}
+  .view-btn:active{transform:scale(.92)}
+  .view-btn.active{background:var(--color-surface);color:var(--tint-fg);box-shadow:var(--shadow-sm)}
+
+  /* کانبان */
+  .kanban-board{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:var(--sw-s2);align-items:start;margin-bottom:var(--sw-s3)}
+  .kanban-col{background:var(--color-bg-muted);border:1px solid var(--color-border);border-radius:var(--radius-lg);overflow:hidden;transition:background-color .25s var(--sw-ease),box-shadow .25s var(--sw-ease)}
+  .kanban-col.drop{background:var(--tint);box-shadow:inset 0 0 0 2px var(--main-400)}
+  .kanban-head{display:flex;align-items:center;justify-content:space-between;padding:.75rem 1rem;border-bottom:1px solid var(--color-border)}
+  .kanban-head-title{display:flex;align-items:center;gap:.5rem;font-size:var(--sw-t-sm);font-weight:700}
+  .kanban-dot{width:8px;height:8px;border-radius:50%;flex:none;corner-shape:round}
+  .kanban-count{min-width:22px;padding:.05rem .5rem;border-radius:var(--radius-full);background:var(--color-border);color:var(--color-text-muted);font-size:.7rem;font-weight:800;text-align:center}
+  .kanban-cards{display:flex;flex-direction:column;gap:.6rem;padding:.65rem;min-height:120px}
+  .kanban-empty{display:none;padding:1.5rem .5rem;text-align:center;font-size:var(--sw-t-xs);color:var(--color-text-light)}
+  .kanban-cards:not(:has(.kcard,.kcard-ph)) .kanban-empty{display:block}
+
+  .kcard{position:relative;overflow:hidden;padding:.85rem 1rem;background:var(--color-surface);border:1px solid var(--color-border);border-radius:var(--radius-md);cursor:grab;touch-action:pan-y;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none;
+    animation:sw-up .45s var(--sw-smooth) backwards;animation-delay:calc(var(--i,0) * 35ms);transition:transform .5s var(--sw-spring),box-shadow .25s var(--sw-ease),border-color .2s,opacity .2s}
+  .kcard::before{content:"";position:absolute;inset:0 0 auto 0;height:3px;background:var(--grad-main);opacity:0;transition:opacity .15s}
+  @media (hover:hover){.kcard:hover{transform:translateY(-2px);box-shadow:var(--shadow-md);border-color:var(--main-200)}.kcard:hover::before{opacity:1}}
+  .kcard:focus-visible{outline:2px solid var(--main-400);outline-offset:2px}
+  .kcard.is-done{opacity:.75}
+  .kcard.is-done .kcard-prog-fill{background:linear-gradient(135deg,#22c55e,#16a34a)}
+  .kcard.landed{animation:sw-land .5s var(--sw-spring)}
+  .kcard-ph{border:2px dashed var(--main-300);border-radius:var(--radius-md);background:var(--tint);animation:sw-pop-in .25s var(--sw-spring) both}
+  .kcard-float{position:fixed;z-index:3000;margin:0;pointer-events:none;cursor:grabbing;border-color:var(--main-300);box-shadow:var(--shadow-xl);will-change:transform;animation:none}
+  .kcard-float::before{opacity:1}
+  .kcard-top{display:flex;align-items:center;justify-content:space-between;gap:.5rem;margin-bottom:.4rem}
+  .kcard-cat{min-width:0;font-size:var(--sw-t-xs);color:var(--color-text-muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .kcard-actions{display:flex;gap:.3rem;flex:none}
+  .kcard-action-btn{width:28px;height:28px;display:grid;place-items:center;border:1px solid var(--color-border);border-radius:.55rem;background:var(--color-surface);color:var(--color-text-muted);font-size:.78rem;cursor:pointer;transition:background-color .15s,color .15s,border-color .15s,transform .4s var(--sw-spring)}
+  .kcard-action-btn:hover{background:var(--main-500);border-color:var(--main-500);color:#fff}
+  .kcard-action-btn:active{transform:scale(.9)}
+  @media (pointer:coarse){.kcard-action-btn{width:36px;height:36px}}
+  .kcard-title{margin:0 0 .5rem;font-size:var(--sw-t-sm);font-weight:700;line-height:1.5}
+  .kcard-prog{height:4px;margin:.6rem 0;border-radius:9999px;background:var(--color-border);overflow:hidden}
+  .kcard-prog-fill{height:100%;border-radius:inherit;background:var(--grad-main);transform-origin:right center;animation:sw-fill .9s var(--sw-smooth) backwards}
+  .kcard-meta{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:.5rem}
+  .kcard-due{display:inline-flex;align-items:center;gap:.25rem;font-size:.7rem;color:var(--color-text-muted)}
+  .kcard-due.danger{color:var(--danger);font-weight:700}
+  .kcard-foot{display:flex;align-items:center;justify-content:space-between;gap:.6rem;margin-top:.65rem}
+  .kcard-client{min-width:0;display:inline-flex;align-items:center;gap:.4rem;font-size:.72rem;color:var(--color-text-muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .kcard-av{width:22px;height:22px;flex:none;display:grid;place-items:center;border-radius:.45rem;background:var(--grad-main);color:#fff;font-size:.58rem;font-weight:800}
+  .kcard-tech{flex:none;font-size:.68rem;color:var(--color-text-light);direction:ltr}
+
+  /* فرم و مودال پروژه */
+  .sw-inline{display:flex;gap:.5rem;align-items:flex-start}
+  .sw-inline .grow{flex:1;min-width:0}
+  .sw-range-row{display:flex;align-items:center;gap:1rem}
+  .sw-range{flex:1;accent-color:var(--main-500);height:28px}
+  .sw-range-out{min-width:3rem;text-align:center;font-weight:800;font-variant-numeric:tabular-nums}
+  .tech-checklist{display:flex;flex-wrap:wrap;gap:.45rem;padding:.75rem;background:var(--color-bg-soft);border:1px solid var(--color-border);border-radius:var(--radius-md)}
+  .tech-check-item{position:relative;display:inline-flex;align-items:center;min-height:34px;padding:0 .85rem;border:1.5px solid var(--color-border);border-radius:var(--radius-full);background:var(--color-surface);color:var(--color-text-muted);font-size:var(--sw-t-xs);font-weight:700;cursor:pointer;-webkit-user-select:none;user-select:none;transition:background-color .15s,border-color .15s,color .15s,transform .4s var(--sw-spring)}
+  .tech-check-item input{position:absolute;inset:0;width:100%;height:100%;margin:0;opacity:0;cursor:pointer}
+  .tech-check-item:active{transform:scale(.95)}
+  .tech-check-item:has(input:checked){background:var(--tint);border-color:var(--main-400);color:var(--tint-fg)}
+  .tech-check-item:has(input:focus-visible){outline:2px solid var(--main-400);outline-offset:2px}
+  .tech-pill{display:inline-flex;align-items:center;padding:.25rem .75rem;border:1px solid var(--main-200);border-radius:var(--radius-full);background:var(--tint);color:var(--tint-fg);font-size:.74rem;font-weight:700}
+  .view-info-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:.85rem;margin-bottom:1.1rem}
+  .view-info-box{display:flex;flex-direction:column;gap:.35rem;padding:.7rem .9rem;background:var(--color-bg-soft);border:1px solid var(--color-border);border-radius:var(--radius-md)}
+  .view-info-lbl{display:flex;align-items:center;gap:.35rem;font-size:.7rem;font-weight:600;color:var(--color-text-muted)}
+  .view-info-val{font-size:var(--sw-t-sm);font-weight:700}
+  .view-block{margin-bottom:1.1rem}
+  .view-tech{display:flex;flex-wrap:wrap;gap:.4rem;margin-top:.55rem}
+  .view-none{font-size:.78rem;color:var(--color-text-light)}
+  .view-desc{margin:.55rem 0 0;padding:1rem;background:var(--color-bg-soft);border-radius:var(--radius-md);font-size:.86rem;line-height:1.9;color:var(--color-text-muted);white-space:pre-line}
+}
+@media (max-width:1400px){body.sw-ios .kanban-board{grid-template-columns:repeat(4,minmax(0,1fr))}}
+@media (max-width:1100px){body.sw-ios .kanban-board{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media (max-width:600px){
+  body.sw-ios .kanban-board{grid-template-columns:minmax(0,1fr)}
+  body.sw-ios .filter-bar .tools{width:100%;margin-inline-start:0}
+  body.sw-ios .filter-bar .tools .sw-search{flex:1 1 100%}
+  body.sw-ios .view-info-grid{grid-template-columns:minmax(0,1fr)}
 }

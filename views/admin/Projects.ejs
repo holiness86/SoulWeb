@@ -1,1524 +1,752 @@
-<%# views/sw-admin/projects.ejs %>
+<%# views/admin/Projects.ejs — مدیریت پروژه‌ها (کانبان + جدول)
+    ورودی‌ها از server.js: projects, clients, serviceCategories
+    روت‌ها: POST /sw-admin/projects/add · /:id/update · /:id/delete · /:id/status (JSON، برای درگ‌اند‌دراپ) · GET /export %>
+<%
+  const safeProjects   = Array.isArray(projects) ? projects : [];
+  const safeClients    = typeof clients !== 'undefined' && Array.isArray(clients) ? clients : [];
+  const safeCategories = typeof serviceCategories !== 'undefined' && Array.isArray(serviceCategories) ? serviceCategories : [];
+
+  const fa = (n) => String(n ?? 0).replace(/\d/g, (d) => '۰۱۲۳۴۵۶۷۸۹'[d]);
+
+  // وضعیت‌ها (کلیدها باید با enum مدل Project یکی باشند)
+  const statusMap = {
+    active   : { title: 'در حال انجام', badge: 'badge-inprog', dot: '#6447f4' },
+    review   : { title: 'در ریویو',     badge: 'badge-review', dot: '#f59e0b' },
+    done     : { title: 'تحویل‌شده',    badge: 'badge-done',   dot: '#22c55e' },
+    hold     : { title: 'متوقف',        badge: 'badge-hold',   dot: '#9899bc' },
+    cancelled: { title: 'لغوشده',       badge: 'badge-hold',   dot: '#dc2626' }
+  };
+  const columns = Object.keys(statusMap);
+
+  const defaultTechOptions = [
+    'PHP', 'Laravel', 'وردپرس', 'React', 'Vue.js', 'Next.js', 'Node.js', 'Angular',
+    'TypeScript', 'Tailwind CSS', 'Bootstrap', 'MySQL', 'MongoDB', 'jQuery'
+  ];
+
+  const counts = { all: safeProjects.length };
+  columns.forEach((k) => { counts[k] = safeProjects.filter((p) => p.status === k).length; });
+
+  const clientName   = (p) => !p.client ? 'بدون مشتری' : (typeof p.client === 'string' ? p.client : (p.client.company || p.client.name || 'بدون مشتری'));
+  const categoryName = (p) => !p.category ? 'بدون نوع' : (typeof p.category === 'string' ? p.category : (p.category.title || 'بدون نوع'));
+  const techArray    = (p) => Array.isArray(p.techStack) ? p.techStack : [];
+  const clientId     = (p) => !p.client ? '' : (typeof p.client === 'object' ? (p.client._id || '') : p.client);
+  const categoryId   = (p) => !p.category ? '' : (typeof p.category === 'object' ? (p.category._id || '') : p.category);
+  const progressOf   = (p) => Math.max(0, Math.min(100, Number(p.progress || 0)));
+  const initialsOf   = (p) => { const n = clientName(p).trim(); return n === 'بدون مشتری' ? '؟' : n.split(' ').filter(Boolean).slice(0, 2).map((w) => w[0]).join('‌'); };
+
+  const dueText = (p) => {
+    if (!p.deadline) return 'نامشخص';
+    const d = new Date(p.deadline);
+    return Number.isNaN(d.getTime()) ? 'نامشخص' : d.toLocaleDateString('fa-IR', { day: 'numeric', month: 'long' });
+  };
+  const isNear = (p) => {
+    if (!p.deadline || p.status === 'done' || p.status === 'cancelled') return false;
+    const d = new Date(p.deadline);
+    return !Number.isNaN(d.getTime()) && Math.ceil((d - new Date()) / 86400000) <= 1;
+  };
+  const jalaliInput = (date) => {
+    if (!date) return '';
+    const d = new Date(date);
+    if (Number.isNaN(d.getTime())) return '';
+    const m = {};
+    new Intl.DateTimeFormat('fa-IR-u-nu-latn', { year: 'numeric', month: '2-digit', day: '2-digit' }).formatToParts(d).forEach((x) => { m[x.type] = x.value; });
+    return m.year + '/' + m.month + '/' + m.day;
+  };
+
+  const payload = (p) => JSON.stringify({
+    id: p._id || '', title: p.title || '', client: clientId(p), clientName: clientName(p),
+    category: categoryId(p), categoryTitle: categoryName(p), status: p.status || 'active',
+    progress: progressOf(p), startDate: jalaliInput(p.startDate), deadline: jalaliInput(p.deadline),
+    tech: techArray(p), description: p.description || ''
+  });
+  const searchText = (p) => [p.title, clientName(p), categoryName(p), techArray(p).join(' ')].join(' ');
+  const attrs = (p) => ({
+    id: p._id, status: p.status, title: p.title || '', progress: progressOf(p),
+    deadline: p.deadline ? new Date(p.deadline).getTime() : 0,
+    created : p.createdAt ? new Date(p.createdAt).getTime() : 0
+  });
+%>
 <%- include('partials/_head', { title: 'مدیریت پروژه‌ها' }) %>
-<link rel="stylesheet" href="https://unpkg.com/jalalidatepicker/dist/jalaliDatepicker.min.css">
-<script src="https://unpkg.com/jalalidatepicker/dist/jalaliDatepicker.min.js"></script>
+
 <div class="sidebar-overlay" id="sidebarOverlay"></div>
+
 <div class="admin-shell">
 
+  <%- include('partials/_sidebar', { activePage: 'projects' }) %>
 
-<%- include('partials/_sidebar', { 
-  activePage: 'projects', 
-  adminUser: { 
-    name: 'علی مدیری', 
-    role: 'مدیر کل سیستم', 
-    initials: 'ادم' 
-  } 
-}) %>
+  <div class="main-content" id="mainContent">
 
-<div class="main-content" id="mainContent">
-<%- include('partials/_header', {
-  breadcrumbs: [{ label: 'داشبورد', href: '/sw-admin' }, { label: 'پروژه‌ها' }],
-  searchPlaceholder: 'جستجو در پروژه‌ها…'
-}) %>
+    <%- include('partials/_header', {
+      breadcrumbs: [{ label: 'داشبورد', href: '/sw-admin' }, { label: 'پروژه‌ها' }],
+      searchPlaceholder: 'جستجو در پنل…'
+    }) %>
 
-<main class="page-content">
+    <main class="page-content" id="projectsPage" data-status-map="<%= JSON.stringify(statusMap) %>">
 
-  <%
-    const safeProjects = Array.isArray(projects) ? projects : [];
-    const safeClients = typeof clients !== 'undefined' && Array.isArray(clients) ? clients : [];
-    const safeServiceCategories = typeof serviceCategories !== 'undefined' && Array.isArray(serviceCategories) ? serviceCategories : [];
-
-    const toFaDigits = (num) => {
-      return String(num ?? 0).replace(/\d/g, d => '۰۱۲۳۴۵۶۷۸۹'[d]);
-    };
-
-    const formatDateFa = (date) => {
-      if (!date) return 'نامشخص';
-
-      try {
-        const d = new Date(date);
-
-        if (Number.isNaN(d.getTime())) {
-          return 'نامشخص';
-        }
-
-        return d.toLocaleDateString('fa-IR', {
-          day: 'numeric',
-          month: 'long'
-        });
-      } catch (e) {
-        return 'نامشخص';
-      }
-    };
-
-    const statusMap = {
-      active: {
-        title: 'در حال انجام',
-        badge: 'badge-inprog',
-        dot: '#6447f4'
-      },
-      review: {
-        title: 'در ریویو',
-        badge: 'badge-review',
-        dot: '#f59e0b'
-      },
-      done: {
-        title: 'تحویل‌شده',
-        badge: 'badge-done',
-        dot: '#22c55e'
-      },
-      hold: {
-        title: 'متوقف',
-        badge: 'badge-hold',
-        dot: '#9899bc'
-      },
-      cancelled: {
-        title: 'لغوشده',
-        badge: 'badge-hold',
-        dot: '#dc2626'
-      }
-    };
-
-    const kanbanColumns = [
-      {
-        key: 'active',
-        title: 'در حال انجام',
-        dot: '#6447f4'
-      },
-      {
-        key: 'review',
-        title: 'در ریویو',
-        dot: '#f59e0b'
-      },
-      {
-        key: 'done',
-        title: 'تحویل‌شده',
-        dot: '#22c55e'
-      },
-      {
-        key: 'hold',
-        title: 'متوقف',
-        dot: '#9899bc'
-      },
-      {
-        key: 'cancelled',
-        title: 'لغوشده',
-        dot: '#dc2626'
-      }
-    ];
-
-    const stats = {
-      active: 0,
-      done: 0,
-      review: 0,
-      hold: 0,
-      cancelled: 0
-    };
-
-    safeProjects.forEach(project => {
-      if (project.status && stats[project.status] !== undefined) {
-        stats[project.status]++;
-      }
-    });
-
-    const getStatusTitle = (status) => {
-      return statusMap[status]?.title || 'نامشخص';
-    };
-
-    const getStatusBadge = (status) => {
-      return statusMap[status]?.badge || 'badge-new';
-    };
-
-    const getClientName = (project) => {
-      if (!project || !project.client) return 'بدون مشتری';
-
-      if (typeof project.client === 'string') {
-        return project.client;
-      }
-
-      return project.client.company || project.client.name || project.client.fullName || 'بدون مشتری';
-    };
-
-    const getCategoryTitle = (project) => {
-      if (!project || !project.category) return 'بدون نوع';
-
-      if (typeof project.category === 'string') {
-        return project.category;
-      }
-
-      return project.category.title || project.category.name || 'بدون نوع';
-    };
-
-    const getTechText = (project) => {
-      if (!project) return 'بدون تکنولوژی';
-
-      if (Array.isArray(project.techStack) && project.techStack.length) {
-        return project.techStack.join(' · ');
-      }
-
-      if (Array.isArray(project.technologies) && project.technologies.length) {
-        return project.technologies.join(' · ');
-      }
-
-      if (typeof project.technologies === 'string' && project.technologies.trim()) {
-        return project.technologies;
-      }
-
-      return 'بدون تکنولوژی';
-    };
-
-    const getDueText = (project) => {
-      return formatDateFa(project?.deadline);
-    };
-
-    const isDeadlineNear = (project) => {
-      if (!project || !project.deadline) return false;
-      if (project.status === 'done' || project.status === 'cancelled') return false;
-
-      const now = new Date();
-      const deadline = new Date(project.deadline);
-
-      if (Number.isNaN(deadline.getTime())) {
-        return false;
-      }
-
-      const diffDays = Math.ceil((deadline - now) / (1000 * 60 * 60 * 24));
-
-      return diffDays <= 1;
-    };
-
-    const getInitials = (project) => {
-      const name = getClientName(project).trim();
-
-      if (!name || name === 'بدون مشتری') {
-        return '؟';
-      }
-
-      return name
-        .split(' ')
-        .filter(Boolean)
-        .slice(0, 2)
-        .map(part => part[0])
-        .join('');
-    };
-
-    const toJalaliInputValue = (date) => {
-      if (!date) return '';
-
-      try {
-        const d = new Date(date);
-        if (Number.isNaN(d.getTime())) return '';
-
-        const parts = new Intl.DateTimeFormat('fa-IR-u-nu-latn', {
-          year: 'numeric',
-          month: '2-digit',
-          day: '2-digit'
-        }).formatToParts(d);
-
-        const map = {};
-        parts.forEach(p => { map[p.type] = p.value; });
-
-        return `${map.year}/${map.month}/${map.day}`;
-      } catch (e) {
-        return '';
-      }
-    };
-
-    const defaultTechOptions = [
-      'PHP', 'Laravel', 'وردپرس', 'React', 'Vue.js', 'Next.js',
-      'Node.js', 'Angular', 'TypeScript', 'Tailwind CSS', 'Bootstrap',
-      'MySQL', 'MongoDB', 'jQuery'
-    ];
-
-    const getTechArray = (project) => {
-      if (!project) return [];
-
-      if (Array.isArray(project.techStack) && project.techStack.length) {
-        return project.techStack;
-      }
-
-      if (Array.isArray(project.technologies) && project.technologies.length) {
-        return project.technologies;
-      }
-
-      if (typeof project.technologies === 'string' && project.technologies.trim()) {
-        return project.technologies.split(/[·,/]/).map(t => t.trim()).filter(Boolean);
-      }
-
-      return [];
-    };
-
-    const getClientId = (project) => {
-      if (!project || !project.client) return '';
-      return typeof project.client === 'object' ? (project.client._id || '') : project.client;
-    };
-
-    const getCategoryId = (project) => {
-      if (!project || !project.category) return '';
-      return typeof project.category === 'object' ? (project.category._id || '') : project.category;
-    };
-
-    const buildProjectPayload = (project) => JSON.stringify({
-      id: project._id || '',
-      title: project.title || '',
-      client: getClientId(project),
-      category: getCategoryId(project),
-      categoryTitle: getCategoryTitle(project),
-      status: project.status || 'active',
-      progress: Number(project.progress || 0),
-      startDate: toJalaliInputValue(project.startDate),
-      deadline: toJalaliInputValue(project.deadline),
-      tech: getTechArray(project),
-      description: project.description || '',
-      clientName: getClientName(project)
-    });
-
-    const totalProjects = safeProjects.length;
-  %>
-
-  <!-- Page Header -->
-  <div class="page-header fade-up fade-up-1">
-    <div>
-      <h1 class="page-title">مدیریت پروژه‌ها</h1>
-      <p class="page-subtitle">
-        <%= toFaDigits(stats.active) %> پروژه فعال ·
-        <%= toFaDigits(stats.review) %> در انتظار بررسی ·
-        <%= toFaDigits(stats.hold) %> متوقف
-      </p>
-    </div>
-
-    <div style="display:flex;gap:.6rem;">
-<a href="/sw-admin/projects/export" class="btn-ghost-sm">
-  <i class="bi bi-download"></i>
-  خروجی Excel
-</a>
-
-
-      <button class="btn-sol-sm" id="newProjectBtn" data-modal-open="projectModal">
-        <i class="bi bi-plus-lg"></i>
-        پروژه جدید
-      </button>
-    </div>
-  </div>
-
-  <!-- Stats -->
-  <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:1rem;margin-bottom:1.5rem;" class="fade-up fade-up-2">
-
-    <!-- پروژه فعال -->
-    <div class="pstat">
-      <div class="pstat-icon" style="background:rgba(100,71,244,.1);color:var(--main-500);">
-        <i class="bi bi-kanban-fill"></i>
-      </div>
-
-      <div>
-        <div class="pstat-val text-grad stat-value"
-             data-count="<%= stats.active %>"
-             data-suffix="">
-          <%= toFaDigits(stats.active) %>
+      <!-- Page Header -->
+      <div class="page-header fade-up fade-up-1">
+        <div>
+          <h1 class="page-title">مدیریت پروژه‌ها</h1>
+          <p class="page-subtitle">
+            <span data-stat="active"><%= fa(counts.active) %></span> پروژه فعال ·
+            <span data-stat="review"><%= fa(counts.review) %></span> در انتظار بررسی ·
+            <span data-stat="hold"><%= fa(counts.hold) %></span> متوقف
+          </p>
         </div>
-
-        <div class="pstat-lbl">
-          پروژه فعال
+        <div class="d-flex gap-2">
+          <a href="/sw-admin/projects/export" class="btn-ghost-sm"><i class="bi bi-download"></i> خروجی Excel</a>
+          <button type="button" class="btn-sol-sm" id="newProjectBtn" data-modal-open="projectModal"><i class="bi bi-plus-lg"></i> پروژه جدید</button>
         </div>
       </div>
-    </div>
 
-    <!-- تحویل شده -->
-    <div class="pstat">
-      <div class="pstat-icon" style="background:rgba(34,197,94,.1);color:#16a34a;">
-        <i class="bi bi-check-circle-fill"></i>
+      <!-- Stats -->
+      <div class="sw-g c4 fade-up fade-up-2">
+        <div class="pstat"><div class="pstat-icon"><i class="bi bi-kanban-fill"></i></div><div><div class="pstat-val text-grad" data-stat="active"><%= fa(counts.active) %></div><div class="pstat-lbl">پروژه فعال</div></div></div>
+        <div class="pstat"><div class="pstat-icon ok"><i class="bi bi-check-circle-fill"></i></div><div><div class="pstat-val text-grad" data-stat="done"><%= fa(counts.done) %></div><div class="pstat-lbl">تحویل‌داده‌شده</div></div></div>
+        <div class="pstat"><div class="pstat-icon warn"><i class="bi bi-clock-history"></i></div><div><div class="pstat-val text-grad" data-stat="review"><%= fa(counts.review) %></div><div class="pstat-lbl">در انتظار ریویو</div></div></div>
+        <div class="pstat"><div class="pstat-icon danger"><i class="bi bi-pause-circle-fill"></i></div><div><div class="pstat-val text-grad" data-stat="hold"><%= fa(counts.hold) %></div><div class="pstat-lbl">متوقف‌شده</div></div></div>
       </div>
 
-      <div>
-        <div class="pstat-val text-grad stat-value"
-             data-count="<%= stats.done %>"
-             data-suffix="">
-          <%= toFaDigits(stats.done) %>
-        </div>
+      <!-- Filter / Search / Sort / View -->
+      <div class="filter-bar fade-up fade-up-2" role="toolbar" aria-label="فیلتر پروژه‌ها">
+        <button type="button" class="filter-chip active" data-filter="all">همه <span class="filter-count"><%= fa(counts.all) %></span></button>
+        <% columns.forEach(function (key) { %>
+          <button type="button" class="filter-chip" data-filter="<%= key %>">
+            <span class="dot" style="background:<%= statusMap[key].dot %>;"></span><%= statusMap[key].title %>
+            <span class="filter-count"><%= fa(counts[key]) %></span>
+          </button>
+        <% }); %>
 
-        <div class="pstat-lbl">
-          تحویل‌داده‌شده
-        </div>
-      </div>
-    </div>
-
-    <!-- ریویو -->
-    <div class="pstat">
-      <div class="pstat-icon" style="background:rgba(245,158,11,.1);color:#d97706;">
-        <i class="bi bi-clock-history"></i>
-      </div>
-
-      <div>
-        <div class="pstat-val text-grad stat-value"
-             data-count="<%= stats.review %>"
-             data-suffix="">
-          <%= toFaDigits(stats.review) %>
-        </div>
-
-        <div class="pstat-lbl">
-          در انتظار ریویو
+        <div class="tools">
+          <label class="sw-search" aria-label="جستجو در پروژه‌ها">
+            <i class="bi bi-search" aria-hidden="true"></i>
+            <input type="search" id="projectSearch" placeholder="نام پروژه، مشتری، تکنولوژی…" autocomplete="off">
+          </label>
+          <select class="sol-select" id="projectSort" aria-label="مرتب‌سازی">
+            <option value="newest">مرتب: جدیدترین</option>
+            <option value="deadline">مرتب: ددلاین</option>
+            <option value="progress">مرتب: پیشرفت</option>
+            <option value="title">مرتب: نام پروژه</option>
+          </select>
+          <div class="view-switch" role="group" aria-label="نوع نمایش">
+            <button type="button" class="view-btn active" id="viewKanban" title="کانبان" aria-label="نمایش کانبان" aria-pressed="true"><i class="bi bi-grid-3x3-gap"></i></button>
+            <button type="button" class="view-btn" id="viewTable" title="جدول" aria-label="نمایش جدول" aria-pressed="false"><i class="bi bi-list-ul"></i></button>
+          </div>
         </div>
       </div>
-    </div>
 
-    <!-- متوقف -->
-    <div class="pstat">
-      <div class="pstat-icon" style="background:rgba(239,68,68,.1);color:#dc2626;">
-        <i class="bi bi-pause-circle-fill"></i>
+      <!-- Kanban -->
+      <div id="kanbanView">
+        <div class="kanban-board fade-up fade-up-3">
+          <% columns.forEach(function (key) { %>
+            <% const colProjects = safeProjects.filter((p) => p.status === key); %>
+            <section class="kanban-col" data-status-col="<%= key %>" aria-label="<%= statusMap[key].title %>">
+              <div class="kanban-head">
+                <div class="kanban-head-title"><span class="kanban-dot" style="background:<%= statusMap[key].dot %>;"></span><%= statusMap[key].title %></div>
+                <span class="kanban-count"><%= fa(colProjects.length) %></span>
+              </div>
+              <div class="kanban-cards">
+                <div class="kanban-empty">پروژه‌ای وجود ندارد</div>
+                <% colProjects.forEach(function (p) { const a = attrs(p), near = isNear(p); %>
+                  <article class="kcard <%= p.status === 'done' ? 'is-done' : '' %>" tabindex="0"
+                           data-id="<%= a.id %>" data-status="<%= a.status %>" data-title="<%= a.title %>"
+                           data-progress="<%= a.progress %>" data-deadline="<%= a.deadline %>" data-created="<%= a.created %>"
+                           data-q="<%= searchText(p) %>" data-project="<%= payload(p) %>">
+                    <div class="kcard-top">
+                      <span class="kcard-cat"><i class="bi bi-folder"></i> <%= categoryName(p) %></span>
+                      <div class="kcard-actions">
+                        <button type="button" class="kcard-action-btn" title="مشاهده" aria-label="مشاهده" data-modal-open="projectViewModal" data-project-view><i class="bi bi-eye"></i></button>
+                        <button type="button" class="kcard-action-btn" title="ویرایش" aria-label="ویرایش" data-modal-open="projectModal" data-project-edit><i class="bi bi-pencil"></i></button>
+                      </div>
+                    </div>
+                    <h3 class="kcard-title"><%= p.title || 'بدون عنوان' %></h3>
+                    <div class="kcard-prog"><div class="kcard-prog-fill" style="width:<%= a.progress %>%;"></div></div>
+                    <div class="kcard-meta">
+                      <span class="badge-status <%= statusMap[p.status] ? statusMap[p.status].badge : 'badge-new' %>"><%= statusMap[p.status] ? statusMap[p.status].title : 'نامشخص' %></span>
+                      <span class="kcard-due <%= near ? 'danger' : '' %>"><i class="bi <%= near ? 'bi-exclamation-triangle' : 'bi-calendar3' %>"></i> <%= dueText(p) %></span>
+                    </div>
+                    <div class="kcard-foot">
+                      <span class="kcard-client"><span class="kcard-av"><%= initialsOf(p) %></span><%= clientName(p) %></span>
+                      <span class="kcard-tech"><%= techArray(p).slice(0, 3).join(' · ') %> <%= techArray(p).length ? '·' : '' %> <%= fa(a.progress) %>٪</span>
+                    </div>
+                  </article>
+                <% }); %>
+              </div>
+            </section>
+          <% }); %>
+        </div>
       </div>
 
-      <div>
-        <div class="pstat-val text-grad stat-value"
-             data-count="<%= stats.hold %>"
-             data-suffix="">
-          <%= toFaDigits(stats.hold) %>
-        </div>
-
-        <div class="pstat-lbl">
-          متوقف‌شده
+      <!-- Table -->
+      <div id="tableView" hidden>
+        <div class="dash-panel fade-up fade-up-3">
+          <div class="sw-tw">
+            <table class="sol-table">
+              <thead>
+                <tr><th>#</th><th>نام پروژه</th><th>مشتری</th><th>نوع</th><th>وضعیت</th><th>پیشرفت</th><th>ددلاین</th><th>عملیات</th></tr>
+              </thead>
+              <tbody>
+                <% safeProjects.forEach(function (p, i) { const a = attrs(p), near = isNear(p); %>
+                  <tr data-id="<%= a.id %>" data-status="<%= a.status %>" data-title="<%= a.title %>"
+                      data-progress="<%= a.progress %>" data-deadline="<%= a.deadline %>" data-created="<%= a.created %>"
+                      data-q="<%= searchText(p) %>" data-project="<%= payload(p) %>">
+                    <td class="cell-sub">#<%= fa(i + 1) %></td>
+                    <td>
+                      <div class="cell-title"><%= p.title || 'بدون عنوان' %></div>
+                      <div class="cell-sub" dir="ltr" style="text-align:right;"><%= techArray(p).join(' · ') || 'بدون تکنولوژی' %></div>
+                    </td>
+                    <td><%= clientName(p) %></td>
+                    <td><%= categoryName(p) %></td>
+                    <td><span class="badge-status <%= statusMap[p.status] ? statusMap[p.status].badge : 'badge-new' %>"><%= statusMap[p.status] ? statusMap[p.status].title : 'نامشخص' %></span></td>
+                    <td>
+                      <div class="prog-wrap">
+                        <div class="prog-bar-mini"><div class="prog-fill" style="width:<%= a.progress %>%;"></div></div>
+                        <span class="<%= near ? 'urgent' : '' %>"><%= fa(a.progress) %>٪</span>
+                      </div>
+                    </td>
+                    <td class="<%= near ? 'urgent' : 'cell-sub' %>"><%= near ? '⚠️ ' : '' %><%= dueText(p) %></td>
+                    <td>
+                      <div class="row-actions">
+                        <button type="button" class="btn-icon" title="مشاهده" aria-label="مشاهده" data-modal-open="projectViewModal" data-project-view><i class="bi bi-eye"></i></button>
+                        <button type="button" class="btn-icon" title="ویرایش" aria-label="ویرایش" data-modal-open="projectModal" data-project-edit><i class="bi bi-pencil"></i></button>
+                        <form action="/sw-admin/projects/<%= p._id %>/delete" method="POST" data-sw-confirm="آیا از حذف پروژه «<%= p.title || 'بدون عنوان' %>» مطمئن هستید؟ این کار قابل بازگشت نیست.">
+                          <button type="submit" class="btn-icon danger" title="حذف" aria-label="حذف"><i class="bi bi-trash"></i></button>
+                        </form>
+                      </div>
+                    </td>
+                  </tr>
+                <% }); %>
+                <tr id="tableEmpty" <%= safeProjects.length ? 'hidden' : '' %>>
+                  <td colspan="8"><div class="sw-empty"><i class="bi bi-kanban"></i>هیچ پروژه‌ای پیدا نشد.</div></td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
         </div>
       </div>
-    </div>
 
-  </div>
-
-<!-- Filter Bar -->
-<div class="filter-bar fade-up fade-up-2" data-filter-group>
-
-  <button class="filter-chip active" data-filter="all">
-    همه
-    <span class="filter-count">
-      <%= toFaDigits(safeProjects.length) %>
-    </span>
-  </button>
-
-  <% kanbanColumns.forEach(column => { %>
-    <%
-      const statusCount = safeProjects.filter(project => project.status === column.key).length;
-    %>
-
-    <button class="filter-chip" data-filter="<%= column.key %>">
-      <span 
-        style="width:7px;height:7px;border-radius:50%;background:<%= column.dot %>;display:inline-block;"
-      ></span>
-
-      <%= column.title %>
-
-      <span class="filter-count">
-        <%= toFaDigits(statusCount) %>
-      </span>
-    </button>
-  <% }) %>
-
-  <div style="margin-right:auto;display:flex;gap:.5rem;align-items:center;">
-    <select 
-      class="sol-select" 
-      id="projectSort"
-      style="width:auto;font-size:.78rem;padding:.38rem .8rem;"
-    >
-      <option value="newest">مرتب: جدیدترین</option>
-      <option value="deadline">مرتب: ددلاین</option>
-      <option value="progress">مرتب: پیشرفت</option>
-      <option value="title">مرتب: نام پروژه</option>
-    </select>
-
-    <div style="display:flex;gap:.3rem;">
-      <button type="button" class="view-btn active" id="viewKanban" title="کانبان">
-        <i class="bi bi-grid-3x3-gap"></i>
-      </button>
-
-      <button type="button" class="view-btn" id="viewTable" title="جدول">
-        <i class="bi bi-list-ul"></i>
-      </button>
-    </div>
+    </main>
   </div>
 </div>
 
-
-  <!-- Kanban View -->
-  <div id="kanbanView">
-    <div class="kanban-board fade-up fade-up-3">
-
-      <% kanbanColumns.forEach(column => { %>
-        <%
-          const columnProjects = safeProjects.filter(project => project.status === column.key);
-        %>
-
-<div class="kanban-col" data-status-col="<%= column.key %>">
-          <div class="kanban-head">
-            <div class="kanban-head-title">
-              <div class="kanban-dot" style="background:<%= column.dot %>;"></div>
-              <%= column.title %>
-            </div>
-
-            <span class="kanban-count">
-              <%= toFaDigits(columnProjects.length) %>
-            </span>
-          </div>
-
-          <div class="kanban-cards">
-
-            <% if (columnProjects.length === 0) { %>
-              <div class="kcard" style="opacity:.65;text-align:center;">
-                <div class="kcard-title" style="font-size:.8rem;color:var(--color-text-muted);">
-                  پروژه‌ای وجود ندارد
-                </div>
-              </div>
-            <% } %>
-
-            <% columnProjects.forEach(project => { %>
-              <%
-                const progress = Number(project.progress || 0);
-                const progressWidth = Math.max(0, Math.min(100, progress));
-
-                const doneStyle = project.status === 'done'
-                  ? 'opacity:.7;'
-                  : '';
-
-                const progressFillStyle = project.status === 'done'
-                  ? `width:${progressWidth}%;background:linear-gradient(135deg,#22c55e,#16a34a)`
-                  : `width:${progressWidth}%`;
-
-                const deadlineDanger = isDeadlineNear(project);
-              %>
-
-              <div 
-                class="kcard" 
-                style="<%= doneStyle %>" 
-                data-status="<%= project.status %>"
-                data-title="<%= project.title || '' %>"
-                data-progress="<%= progressWidth %>"
-                data-deadline="<%= project.deadline ? new Date(project.deadline).getTime() : 0 %>"
-                data-created="<%= project.createdAt ? new Date(project.createdAt).getTime() : 0 %>"
-              >
-                <div style="display:flex;justify-content:flex-end;gap:.3rem;margin-bottom:.4rem;">
-                  <button
-                    type="button"
-                    class="kcard-action-btn"
-                    title="مشاهده توضیحات"
-                    data-modal-open="projectViewModal"
-                    data-project-view
-                    data-project="<%= buildProjectPayload(project) %>"
-                  >
-                    <i class="bi bi-eye"></i>
-                  </button>
-
-                  <button
-                    type="button"
-                    class="kcard-action-btn"
-                    title="ویرایش پروژه"
-                    data-modal-open="projectModal"
-                    data-project-edit
-                    data-project="<%= buildProjectPayload(project) %>"
-                  >
-                    <i class="bi bi-pencil"></i>
-                  </button>
-                </div>
-
-                <div class="kcard-title">
-                  <%= project.title || 'بدون عنوان' %>
-                </div>
-
-                <div class="kcard-prog">
-                  <div class="kcard-prog-fill" style="<%= progressFillStyle %>"></div>
-                </div>
-
-                <div class="kcard-meta">
-                  <span class="badge-status <%= getStatusBadge(project.status) %>">
-                    <%= getStatusTitle(project.status) %>
-                  </span>
-
-                  <span
-                    class="kcard-due"
-                    style="<%= deadlineDanger ? 'color:#dc2626;font-weight:700;' : '' %>"
-                  >
-                    <% if (deadlineDanger) { %>
-                      <i class="bi bi-exclamation-triangle"></i>
-                    <% } else { %>
-                      <i class="bi bi-calendar3"></i>
-                    <% } %>
-
-                    <%= getDueText(project) %>
-                  </span>
-                </div>
-
-                <div style="margin-top:.6rem;display:flex;justify-content:space-between;align-items:center;gap:.75rem;">
-                  <div class="kcard-avatars">
-                    <div class="kcard-av" style="background:var(--grad-main);">
-                      <%= getInitials(project) %>
-                    </div>
-                  </div>
-
-                  <span style="font-size:.68rem;color:var(--color-text-light);text-align:left;direction:ltr;">
-                    <%= getTechText(project) %> · <%= toFaDigits(progressWidth) %>٪
-                  </span>
-                </div>
-
-                <div style="margin-top:.55rem;font-size:.7rem;color:var(--color-text-muted);display:flex;justify-content:space-between;gap:.5rem;">
-                  <span>
-                    <i class="bi bi-person"></i>
-                    <%= getClientName(project) %>
-                  </span>
-
-                  <span>
-                    <i class="bi bi-folder"></i>
-                    <%= getCategoryTitle(project) %>
-                  </span>
-                </div>
-              </div>
-            <% }) %>
-
-          </div>
-        </div>
-      <% }) %>
-
-    </div>
-  </div>
-  <!-- /kanbanView -->
-
-  <!-- Table View -->
-  <div id="tableView" style="display:none;">
-    <div class="dash-panel fade-up fade-up-3">
-      <div style="overflow-x:auto;">
-        <table class="sol-table">
-          <thead>
-            <tr>
-              <th>#</th>
-              <th>نام پروژه</th>
-              <th>مشتری</th>
-              <th>نوع</th>
-              <th>وضعیت</th>
-              <th>پیشرفت</th>
-              <th>ددلاین</th>
-              <th>عملیات</th>
-            </tr>
-          </thead>
-
-          <tbody>
-            <% if (safeProjects.length === 0) { %>
-              <tr>
-                <td colspan="8" style="text-align:center;padding:2rem;color:var(--color-text-muted);">
-                  هیچ پروژه‌ای پیدا نشد.
-                </td>
-              </tr>
-            <% } %>
-
-            <% safeProjects.forEach((project, index) => { %>
-              <%
-                const progress = Number(project.progress || 0);
-                const progressWidth = Math.max(0, Math.min(100, progress));
-                const deadlineDanger = isDeadlineNear(project);
-              %>
-
-              <tr 
-                data-status="<%= project.status %>"
-                data-title="<%= project.title || '' %>"
-                data-progress="<%= progressWidth %>"
-                data-deadline="<%= project.deadline ? new Date(project.deadline).getTime() : 0 %>"
-                data-created="<%= project.createdAt ? new Date(project.createdAt).getTime() : 0 %>"
-              >
-                <td>
-                  <span style="font-size:.75rem;color:var(--color-text-light);">
-                    #<%= toFaDigits(index + 1) %>
-                  </span>
-                </td>
-
-                <td>
-                  <div style="font-weight:600;">
-                    <%= project.title || 'بدون عنوان' %>
-                  </div>
-
-                  <div style="font-size:.73rem;color:var(--color-text-muted);direction:ltr;text-align:right;">
-                    <%= getTechText(project) %>
-                  </div>
-                </td>
-
-                <td>
-                  <%= getClientName(project) %>
-                </td>
-
-                <td>
-                  <%= getCategoryTitle(project) %>
-                </td>
-
-                <td>
-                  <span class="badge-status <%= getStatusBadge(project.status) %>">
-                    <%= getStatusTitle(project.status) %>
-                  </span>
-                </td>
-
-                <td>
-                  <div style="display:flex;align-items:center;gap:.5rem;">
-                    <div class="prog-bar-mini">
-                      <div class="prog-fill" style="width:<%= progressWidth %>%"></div>
-                    </div>
-
-                    <span style="font-size:.73rem;color:<%= deadlineDanger ? '#dc2626' : 'var(--color-text-muted)' %>;font-weight:<%= deadlineDanger ? '700' : '400' %>;">
-                      <%= toFaDigits(progressWidth) %>٪
-                    </span>
-                  </div>
-                </td>
-
-                <td
-                  style="font-size:.78rem;<%= deadlineDanger ? 'color:#dc2626;font-weight:700;' : '' %>"
-                >
-                  <% if (deadlineDanger) { %>
-                    ⚠️
-                  <% } %>
-
-                  <%= getDueText(project) %>
-                </td>
-
-                <td>
-                  <div style="display:flex;gap:.4rem;">
-                    <button
-                      type="button"
-                      class="btn-ghost-sm"
-                      style="padding:.28rem .6rem;"
-                      title="مشاهده"
-                      data-modal-open="projectViewModal"
-                      data-project-view
-                      data-project="<%= buildProjectPayload(project) %>"
-                    >
-                      <i class="bi bi-eye"></i>
-                    </button>
-
-                    <button
-                      type="button"
-                      class="btn-ghost-sm"
-                      style="padding:.28rem .6rem;"
-                      title="ویرایش"
-                      data-modal-open="projectModal"
-                      data-project-edit
-                      data-project="<%= buildProjectPayload(project) %>"
-                    >
-                      <i class="bi bi-pencil"></i>
-                    </button>
-
-                    <form
-                      action="/sw-admin/projects/<%= project._id %>/delete"
-                      method="POST"
-                      style="display:inline;"
-                      onsubmit="return confirm('آیا از حذف این پروژه مطمئن هستید؟')"
-                    >
-                      <button
-                        type="submit"
-                        class="btn-danger-sm"
-                        style="padding:.28rem .6rem;"
-                        title="حذف"
-                      >
-                        <i class="bi bi-trash"></i>
-                      </button>
-                    </form>
-                  </div>
-                </td>
-              </tr>
-            <% }) %>
-          </tbody>
-        </table>
-      </div>
-
-      <div style="display:flex;align-items:center;justify-content:space-between;padding:1rem 1.25rem;border-top:1px solid var(--color-border);flex-wrap:wrap;gap:.75rem;">
-        <span style="font-size:.78rem;color:var(--color-text-muted);">
-          نمایش <%= toFaDigits(totalProjects) %> پروژه
-        </span>
-
-        <div style="display:flex;gap:.35rem;">
-          <button class="view-btn active">
-            <%= toFaDigits(1) %>
-          </button>
-        </div>
-      </div>
-    </div>
-  </div>
-  <!-- /tableView -->
-
-</main>
-</div><!-- /main-content -->
-</div><!-- /admin-shell -->
-
-<!-- دکمه نامرئی برای سوییچ از مدال مشاهده به مدال ویرایش -->
-<button type="button" id="projectModalProxyTrigger" data-modal-open="projectModal" style="display:none;"></button>
-
-<!-- Modal: پروژه جدید / ویرایش پروژه -->
+<!-- Modal: پروژه جدید / ویرایش -->
 <div class="modal-overlay" id="projectModal">
   <div class="modal-box">
-    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1.5rem;">
-      <div class="modal-title" style="margin:0;" id="projectModalTitle">پروژه جدید</div>
-
-      <button type="button" data-modal-close style="background:transparent;border:none;font-size:1.2rem;color:var(--color-text-muted);cursor:pointer;">
-        <i class="bi bi-x-lg"></i>
-      </button>
+    <div class="modal-head">
+      <h3 class="modal-title" id="projectModalTitle">پروژه جدید</h3>
+      <button type="button" class="btn-icon" data-modal-close aria-label="بستن"><i class="bi bi-x-lg"></i></button>
     </div>
 
-    <form action="/sw-admin/projects/add" method="POST" id="projectForm">
-      <input type="hidden" name="projectId" id="projectIdInput" value="">
+    <form action="/sw-admin/projects/add" method="POST" id="projectForm" data-validate novalidate>
 
-      <div class="form-row">
-        <label class="sol-label">نام پروژه</label>
-        <input 
-          class="sol-input" 
-          type="text" 
-          name="title" 
-          id="projectTitleInput"
-          placeholder="مثال: وب‌سایت شرکت آلفا" 
-          required
-        >
+      <div class="sw-field">
+        <label class="sol-label" for="projectTitleInput">نام پروژه</label>
+        <input class="sol-input" type="text" name="title" id="projectTitleInput" placeholder="مثال: وب‌سایت شرکت آلفا" data-rule="required" autocomplete="off">
       </div>
 
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;">
-        <div class="form-row">
-          <label class="sol-label">مشتری</label>
-
-          <select class="sol-select" name="client" id="projectClientSelect" style="width:100%" required>
+      <div class="form-row two">
+        <div class="sw-field">
+          <label class="sol-label" for="projectClientSelect">مشتری</label>
+          <select class="sol-select" name="client" id="projectClientSelect" data-rule="required">
             <option value="" selected disabled>انتخاب مشتری…</option>
-
-            <% safeClients.forEach(c => { %>
-              <option value="<%= c._id %>">
-                <%= c.name || 'مشتری بدون نام' %>
-              </option>
-            <% }) %>
+            <% safeClients.forEach(function (c) { %><option value="<%= c._id %>"><%= c.name || 'مشتری بدون نام' %></option><% }); %>
           </select>
         </div>
 
-        <div class="form-row">
-          <label class="sol-label">نوع پروژه</label>
-
-          <div style="display:flex;gap:.5rem;">
-            <select class="sol-select" name="category" id="projectCategorySelect" style="width:100%" required>
-              <option value="" selected disabled>انتخاب نوع پروژه…</option>
-              <% safeServiceCategories.forEach(cat => { %>
-                <option value="<%= cat._id %>">
-                  <%= cat.title || cat.name || 'دسته‌بندی بدون عنوان' %>
-                </option>
-              <% }) %>
-            </select>
-
-            <button type="button" class="btn-ghost-sm" id="addCategoryBtn" title="افزودن نوع جدید" style="flex-shrink:0;padding:.5rem .7rem;">
-              <i class="bi bi-plus-lg"></i>
-            </button>
+        <div class="sw-field">
+          <label class="sol-label" for="projectCategorySelect">نوع پروژه</label>
+          <div class="sw-inline">
+            <div class="grow">
+              <select class="sol-select" name="category" id="projectCategorySelect" data-rule="required">
+                <option value="" selected disabled>انتخاب نوع پروژه…</option>
+                <% safeCategories.forEach(function (cat) { %><option value="<%= cat._id %>"><%= cat.title || cat.name || 'دسته‌بندی بدون عنوان' %></option><% }); %>
+              </select>
+            </div>
+            <button type="button" class="btn-ghost-sm" id="addCategoryBtn" title="افزودن نوع جدید" aria-label="افزودن نوع پروژه جدید" aria-expanded="false"><i class="bi bi-plus-lg"></i></button>
           </div>
-
-          <div id="addCategoryBox" style="display:none;gap:.5rem;margin-top:.6rem;">
-            <input type="text" class="sol-input" id="newCategoryInput" placeholder="عنوان نوع پروژه جدید…" style="flex:1;">
+          <div class="sw-inline" id="addCategoryBox" hidden style="margin-top:.6rem;">
+            <div class="grow"><input type="text" class="sol-input" id="newCategoryInput" placeholder="عنوان نوع پروژه جدید…" aria-label="عنوان نوع پروژه جدید"></div>
             <button type="button" class="btn-sol-sm" id="confirmAddCategory">افزودن</button>
           </div>
         </div>
       </div>
 
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;">
-        <div class="form-row">
-          <label class="sol-label">تاریخ شروع</label>
-          <input 
-            class="sol-input" 
-            type="text" 
-            name="startDate" 
-            id="projectStartDate"
-            placeholder="۱۴۰۴/۰۳/۲۱"
-            autocomplete="off"
-            data-jdp
-            data-jdp-only-date
-          >
+      <div class="form-row two">
+        <div class="sw-field">
+          <label class="sol-label" for="projectStartDate">تاریخ شروع</label>
+          <input class="sol-input" type="text" name="startDate" id="projectStartDate" placeholder="۱۴۰۵/۰۱/۱۵" autocomplete="off" data-jdp data-jdp-only-date>
         </div>
-
-        <div class="form-row">
-          <label class="sol-label">ددلاین</label>
-          <input 
-            class="sol-input" 
-            type="text" 
-            name="deadline" 
-            id="projectDeadline"
-            placeholder="۱۴۰۴/۰۴/۱۵"
-            autocomplete="off"
-            data-jdp
-            data-jdp-only-date
-          >
+        <div class="sw-field">
+          <label class="sol-label" for="projectDeadline">ددلاین</label>
+          <input class="sol-input" type="text" name="deadline" id="projectDeadline" placeholder="۱۴۰۵/۰۲/۱۵" autocomplete="off" data-jdp data-jdp-only-date>
         </div>
       </div>
 
-      <div class="form-row">
-        <label class="sol-label">وضعیت پروژه</label>
-
-        <select class="sol-select" name="status" id="projectStatusSelect" style="width:100%">
-          <% kanbanColumns.forEach(column => { %>
-            <option value="<%= column.key %>"><%= column.title %></option>
-          <% }) %>
+      <!-- وضعیت فقط در حالت ویرایش؛ پروژه‌ی جدید همیشه «در حال انجام» ثبت می‌شود -->
+      <div class="sw-field" id="statusField" hidden>
+        <label class="sol-label" for="projectStatusSelect">وضعیت پروژه</label>
+        <select class="sol-select" name="status" id="projectStatusSelect">
+          <% columns.forEach(function (key) { %><option value="<%= key %>"><%= statusMap[key].title %></option><% }); %>
         </select>
       </div>
 
-      <div class="form-row">
-        <label class="sol-label">تکنولوژی‌ها</label>
-
+      <div class="sw-field">
+        <span class="sol-label">تکنولوژی‌ها</span>
         <div class="tech-checklist" id="techChecklist">
-          <% defaultTechOptions.forEach(tech => { %>
-            <label class="tech-check-item">
-              <input type="checkbox" name="techStack[]" value="<%= tech %>">
-              <span><%= tech %></span>
-            </label>
-          <% }) %>
+          <% defaultTechOptions.forEach(function (tech) { %>
+            <label class="tech-check-item"><input type="checkbox" name="techStack[]" value="<%= tech %>"><span><%= tech %></span></label>
+          <% }); %>
         </div>
-
-        <div style="display:flex;gap:.5rem;margin-top:.65rem;">
-          <input type="text" class="sol-input" id="newTechInput" placeholder="افزودن تکنولوژی جدید…" style="flex:1;">
-          <button type="button" class="btn-ghost-sm" id="addTechBtn">
-            <i class="bi bi-plus-lg"></i> افزودن
-          </button>
+        <div class="sw-inline" style="margin-top:.65rem;">
+          <div class="grow"><input type="text" class="sol-input" id="newTechInput" placeholder="افزودن تکنولوژی جدید…" aria-label="تکنولوژی جدید"></div>
+          <button type="button" class="btn-ghost-sm" id="addTechBtn"><i class="bi bi-plus-lg"></i> افزودن</button>
         </div>
       </div>
 
-<!--                                 -->
-      <div class="form-row">
-  <label class="sol-label">پیشرفت پروژه</label>
-  <input
-    class="sol-input"
-    type="number"
-    name="progress"
-    id="projectProgressInput"
-    min="0"
-    max="100"
-    placeholder="0 تا 100"
-  >
-</div>
-<!--                                 -->
-      <div class="form-row">
-        <label class="sol-label">توضیحات</label>
-        <textarea 
-          class="sol-input" 
-          name="description" 
-          id="projectDescriptionInput"
-          rows="3" 
-          placeholder="توضیح مختصر پروژه…" 
-          style="resize:vertical;"
-        ></textarea>
-      </div>
-      <div style="display:flex;gap:.75rem;justify-content:flex-end;margin-top:1.5rem;">
-        <button type="button" class="btn-ghost-sm" data-modal-close>
-          انصراف
-        </button>
-
-        <button type="submit" class="btn-sol-sm" id="projectSubmitBtn">
-          <i class="bi bi-check-lg"></i>
-          ثبت پروژه
-        </button>
+      <div class="sw-field">
+        <label class="sol-label" for="projectProgressInput">پیشرفت پروژه</label>
+        <div class="sw-range-row">
+          <input class="sw-range" type="range" name="progress" id="projectProgressInput" min="0" max="100" step="1" value="0">
+          <output class="sw-range-out" id="projectProgressOut" for="projectProgressInput">۰٪</output>
+        </div>
       </div>
 
+      <div class="sw-field">
+        <label class="sol-label" for="projectDescriptionInput">توضیحات</label>
+        <textarea class="sol-input" name="description" id="projectDescriptionInput" rows="3" placeholder="توضیح مختصر پروژه…"></textarea>
+      </div>
+
+      <div class="modal-foot">
+        <button type="button" class="btn-ghost-sm" data-modal-close>انصراف</button>
+        <button type="submit" class="btn-sol-sm" id="projectSubmitBtn"><i class="bi bi-check-lg"></i> ثبت پروژه</button>
+      </div>
     </form>
   </div>
 </div>
 
-<!-- Modal: مشاهده توضیحات پروژه -->
+<!-- Modal: مشاهده جزئیات -->
 <div class="modal-overlay" id="projectViewModal">
-  <div class="modal-box" style="width:min(560px,92vw);">
-    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1.5rem;">
-      <div class="modal-title" style="margin:0;" id="projectViewTitle">جزئیات پروژه</div>
-
-      <button type="button" data-modal-close style="background:transparent;border:none;font-size:1.2rem;color:var(--color-text-muted);cursor:pointer;">
-        <i class="bi bi-x-lg"></i>
-      </button>
+  <div class="modal-box">
+    <div class="modal-head">
+      <h3 class="modal-title" id="projectViewTitle">جزئیات پروژه</h3>
+      <button type="button" class="btn-icon" data-modal-close aria-label="بستن"><i class="bi bi-x-lg"></i></button>
     </div>
 
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:.85rem;margin-bottom:1.1rem;">
-      <div class="view-info-box">
-        <span class="view-info-lbl"><i class="bi bi-person"></i> مشتری</span>
-        <span class="view-info-val" id="projectViewClient">—</span>
-      </div>
-
-      <div class="view-info-box">
-        <span class="view-info-lbl"><i class="bi bi-folder"></i> نوع پروژه</span>
-        <span class="view-info-val" id="projectViewCategory">—</span>
-      </div>
-
-      <div class="view-info-box">
-        <span class="view-info-lbl"><i class="bi bi-calendar-event"></i> تاریخ شروع</span>
-        <span class="view-info-val" id="projectViewStart">—</span>
-      </div>
-
-      <div class="view-info-box">
-        <span class="view-info-lbl"><i class="bi bi-calendar-x"></i> ددلاین</span>
-        <span class="view-info-val" id="projectViewDeadline">—</span>
-      </div>
+    <div class="view-info-grid">
+      <div class="view-info-box"><span class="view-info-lbl"><i class="bi bi-person"></i> مشتری</span><span class="view-info-val" id="projectViewClient">—</span></div>
+      <div class="view-info-box"><span class="view-info-lbl"><i class="bi bi-folder"></i> نوع پروژه</span><span class="view-info-val" id="projectViewCategory">—</span></div>
+      <div class="view-info-box"><span class="view-info-lbl"><i class="bi bi-calendar-event"></i> تاریخ شروع</span><span class="view-info-val" id="projectViewStart">—</span></div>
+      <div class="view-info-box"><span class="view-info-lbl"><i class="bi bi-calendar-x"></i> ددلاین</span><span class="view-info-val" id="projectViewDeadline">—</span></div>
     </div>
 
-    <div style="margin-bottom:1.1rem;">
+    <div class="view-block">
       <span class="view-info-lbl"><i class="bi bi-cpu"></i> تکنولوژی‌ها</span>
-      <div id="projectViewTech" style="display:flex;flex-wrap:wrap;gap:.4rem;margin-top:.55rem;"></div>
+      <div class="view-tech" id="projectViewTech"></div>
     </div>
-
-    <div>
+    <div class="view-block">
       <span class="view-info-lbl"><i class="bi bi-card-text"></i> توضیحات</span>
-      <p id="projectViewDescription" style="font-size:.86rem;line-height:1.9;color:var(--color-text-muted);margin-top:.55rem;background:var(--color-bg);border-radius:var(--radius-md);padding:1rem;">
-        توضیحی ثبت نشده است.
-      </p>
+      <p class="view-desc" id="projectViewDescription">توضیحی ثبت نشده است.</p>
     </div>
 
-    <div style="display:flex;gap:.75rem;justify-content:flex-end;margin-top:1.5rem;">
-      <button type="button" class="btn-ghost-sm" data-modal-close>
-        بستن
-      </button>
-
-      <button type="button" class="btn-sol-sm" id="projectViewEditBtn">
-        <i class="bi bi-pencil"></i>
-        ویرایش پروژه
-      </button>
+    <div class="modal-foot">
+      <button type="button" class="btn-ghost-sm" data-modal-close>بستن</button>
+      <button type="button" class="btn-sol-sm" id="projectViewEditBtn"><i class="bi bi-pencil"></i> ویرایش پروژه</button>
     </div>
   </div>
 </div>
 
-<%- include('partials/_scripts', { extraScripts: `
-<style>
-.pstat{background:var(--color-surface);border:1px solid var(--color-border);border-radius:var(--radius-lg);padding:1.1rem 1.25rem;display:flex;align-items:center;gap:.85rem;transition:all var(--dur-normal) var(--ease-spring)}
-.pstat:hover{transform:translateY(-2px);box-shadow:var(--shadow-sm);border-color:var(--main-200)}
-.pstat-icon{width:40px;height:40px;border-radius:var(--radius-sm);display:flex;align-items:center;justify-content:center;font-size:1.1rem;flex-shrink:0}
-.pstat-val{font-size:1.5rem;font-weight:900;line-height:1}
-.pstat-lbl{font-size:.73rem;color:var(--color-text-muted);margin-top:.15rem}
-
-.filter-bar{display:flex;align-items:center;gap:.6rem;flex-wrap:wrap;margin-bottom:1.25rem}
-.filter-chip{display:inline-flex;align-items:center;gap:.35rem;font-family:var(--font-primary);font-size:.78rem;font-weight:600;padding:.38rem .9rem;border-radius:var(--radius-full);border:1.5px solid var(--color-border);background:var(--color-surface);color:var(--color-text-muted);cursor:pointer;transition:all var(--dur-fast)}
-.filter-chip:hover,.filter-chip.active{background:var(--main-500);border-color:var(--main-500);color:#fff}
-
-.view-btn{width:32px;height:32px;border-radius:var(--radius-sm);border:1.5px solid var(--color-border);background:var(--color-surface);color:var(--color-text-muted);display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:.9rem;transition:all var(--dur-fast)}
-.view-btn:disabled{opacity:.4;cursor:not-allowed}
-.view-btn.active,.view-btn:not(:disabled):hover{background:var(--main-500);border-color:var(--main-500);color:#fff}
-
-.kanban-board{display:grid;grid-template-columns:repeat(5,1fr);gap:1rem;margin-bottom:1.5rem}
-@media(max-width:1400px){.kanban-board{grid-template-columns:repeat(4,1fr)}}
-@media(max-width:1100px){.kanban-board{grid-template-columns:repeat(2,1fr)}}
-@media(max-width:600px){.kanban-board{grid-template-columns:1fr}}
-
-.kanban-col{background:var(--color-bg);border:1px solid var(--color-border);border-radius:var(--radius-lg);overflow:hidden}
-[data-bs-theme="dark"] .kanban-col{background:var(--color-surface-alt)}
-
-.kanban-head{padding:.75rem 1rem;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid var(--color-border)}
-.kanban-head-title{font-size:.8rem;font-weight:700;display:flex;align-items:center;gap:.45rem}
-.kanban-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
-.kanban-count{font-size:.68rem;font-weight:700;background:var(--color-border);color:var(--color-text-muted);padding:.1rem .4rem;border-radius:99px}
-
-.kanban-cards{padding:.65rem;display:flex;flex-direction:column;gap:.6rem;min-height:120px}
-
-.kcard{background:var(--color-surface);border:1px solid var(--color-border);border-radius:var(--radius-md);padding:.85rem 1rem;cursor:pointer;transition:all var(--dur-normal) var(--ease-spring);position:relative;overflow:hidden}
-.kcard:hover{transform:translateY(-2px);box-shadow:var(--shadow-md);border-color:var(--main-200)}
-[data-bs-theme="dark"] .kcard:hover{border-color:rgba(100,71,244,.25)}
-
-.kcard::before{content:'';position:absolute;top:0;right:0;left:0;height:3px;background:var(--grad-main);opacity:0;transition:opacity var(--dur-fast)}
-.kcard:hover::before{opacity:1}
-
-.kcard-title{font-size:.83rem;font-weight:700;margin-bottom:.5rem;line-height:1.4}
-.kcard-meta{display:flex;align-items:center;justify-content:space-between;gap:.5rem;flex-wrap:wrap}
-.kcard-due{font-size:.68rem;color:var(--color-text-muted);display:flex;align-items:center;gap:.2rem}
-
-.kcard-prog{height:3px;border-radius:99px;background:var(--color-border);margin:.6rem 0;overflow:hidden}
-.kcard-prog-fill{height:100%;border-radius:99px;background:var(--grad-main)}
-
-.kcard-avatars{display:flex;gap:.25rem;align-items:center}
-.kcard-av{width:20px;height:20px;border-radius:5px;font-size:.55rem;font-weight:800;color:#fff;display:flex;align-items:center;justify-content:center;flex-shrink:0}
-
-.filter-count{
-  font-size:.65rem;
-  font-weight:800;
-  min-width:18px;
-  height:18px;
-  padding:0 .35rem;
-  border-radius:99px;
-  display:inline-flex;
-  align-items:center;
-  justify-content:center;
-  background:rgba(255,255,255,.22);
-}
-
-.filter-chip:not(.active) .filter-count{
-  background:var(--color-border);
-  color:var(--color-text-muted);
-}
-
-.tech-checklist{display:flex;flex-wrap:wrap;gap:.5rem .65rem;background:var(--color-bg);border:1px solid var(--color-border);border-radius:var(--radius-md);padding:.85rem 1rem}
-.tech-check-item{display:flex;align-items:center;gap:.4rem;font-size:.8rem;font-weight:600;color:var(--color-text-primary);cursor:pointer;-webkit-user-select:none;user-select:none}
-.tech-check-item input[type="checkbox"]{width:15px;height:15px;accent-color:var(--main-500);cursor:pointer}
-
-.tech-pill{display:inline-flex;align-items:center;font-size:.74rem;font-weight:700;color:var(--main-600);background:var(--main-50);border:1px solid var(--main-200);border-radius:var(--radius-full);padding:.25rem .75rem}
-[data-bs-theme="dark"] .tech-pill{background:rgba(100,71,244,.15);border-color:rgba(100,71,244,.3);color:var(--main-300)}
-
-.view-info-box{background:var(--color-bg);border:1px solid var(--color-border);border-radius:var(--radius-md);padding:.7rem .9rem;display:flex;flex-direction:column;gap:.35rem}
-.view-info-lbl{font-size:.7rem;color:var(--color-text-muted);display:flex;align-items:center;gap:.35rem;font-weight:600}
-.view-info-val{font-size:.86rem;font-weight:700;color:var(--color-text-primary)}
-
-.kcard-action-btn{width:24px;height:24px;border-radius:6px;border:1px solid var(--color-border);background:var(--color-surface);color:var(--color-text-muted);display:flex;align-items:center;justify-content:center;font-size:.72rem;cursor:pointer;transition:all var(--dur-fast)}
-.kcard-action-btn:hover{background:var(--main-500);border-color:var(--main-500);color:#fff}
-
-</style>
-
 <script>
 document.addEventListener('DOMContentLoaded', function () {
-  const viewKanbanBtn = document.getElementById('viewKanban');
-  const viewTableBtn = document.getElementById('viewTable');
-  const kanbanView = document.getElementById('kanbanView');
-  const tableView = document.getElementById('tableView');
+  var page = document.getElementById('projectsPage');
+  var STATUS = JSON.parse(page.dataset.statusMap || '{}');
 
-  const filterChips = document.querySelectorAll('.filter-chip[data-filter]');
-  const kanbanColumns = document.querySelectorAll('.kanban-col[data-status-col]');
-  const tableRows = document.querySelectorAll('#tableView tbody tr[data-status]');
-  const projectSort = document.getElementById('projectSort');
+  function $(s, c) { return (c || document).querySelector(s); }
+  function $$(s, c) { return Array.prototype.slice.call((c || document).querySelectorAll(s)); }
+  function fa(v) { return String(v == null ? '' : v).replace(/[0-9]/g, function (d) { return '۰۱۲۳۴۵۶۷۸۹'[d]; }); }
+  function norm(s) { return String(s || '').replace(/ي/g, 'ی').replace(/ك/g, 'ک').toLowerCase(); }
+  function toast(msg, o) { if (window.SW) SW.island(msg, o); }
 
-  let activeFilter = 'all';
+  var state = { filter: 'all', q: '', sort: 'newest' };
+  var kanbanView = $('#kanbanView'), tableView = $('#tableView');
+  var viewKanban = $('#viewKanban'), viewTable = $('#viewTable');
 
-  // -----------------------------
-  // View Switch: Kanban / Table
-  // -----------------------------
-  if (viewKanbanBtn && viewTableBtn && kanbanView && tableView) {
-    viewKanbanBtn.addEventListener('click', function () {
-      kanbanView.style.display = '';
-      tableView.style.display = 'none';
+  /* ───────── نمایش: کانبان / جدول (ماندگار) ───────── */
+  function setView(v) {
+    var k = v !== 'table';
+    kanbanView.hidden = !k; tableView.hidden = k;
+    viewKanban.classList.toggle('active', k); viewTable.classList.toggle('active', !k);
+    viewKanban.setAttribute('aria-pressed', String(k)); viewTable.setAttribute('aria-pressed', String(!k));
+    try { localStorage.setItem('sw-projects-view', v); } catch (e) {}
+  }
+  viewKanban.addEventListener('click', function () { setView('kanban'); });
+  viewTable.addEventListener('click', function () { setView('table'); });
+  try { setView(localStorage.getItem('sw-projects-view') || 'kanban'); } catch (e) { setView('kanban'); }
 
-      viewKanbanBtn.classList.add('active');
-      viewTableBtn.classList.remove('active');
+  /* ───────── فیلتر + جستجو + مرتب‌سازی (بدون ریلود) ───────── */
+  function items() { return $$('.kanban-board .kcard').concat($$('#tableView tbody tr[data-id]')); }
+
+  function apply() {
+    var qn = norm(state.q), shownRows = 0;
+    items().forEach(function (el) {
+      var ok = (state.filter === 'all' || el.dataset.status === state.filter) && (!qn || norm(el.dataset.q).indexOf(qn) > -1);
+      el.hidden = !ok;
+      if (ok && el.tagName === 'TR') shownRows++;
     });
-
-    viewTableBtn.addEventListener('click', function () {
-      kanbanView.style.display = 'none';
-      tableView.style.display = '';
-
-      viewTableBtn.classList.add('active');
-      viewKanbanBtn.classList.remove('active');
-    });
+    $$('.kanban-col').forEach(function (col) { col.hidden = state.filter !== 'all' && col.dataset.statusCol !== state.filter; });
+    $('#tableEmpty').hidden = shownRows > 0;
   }
 
-  // -----------------------------
-  // Filter Function
-  // -----------------------------
-  function applyFilter(filter) {
-    activeFilter = filter;
-
-    // Kanban columns
-    kanbanColumns.forEach(function (column) {
-      const colStatus = column.dataset.statusCol;
-
-      if (filter === 'all' || colStatus === filter) {
-        column.style.display = '';
-      } else {
-        column.style.display = 'none';
-      }
+  function sortVal(el, t) {
+    if (t === 'progress') return Number(el.dataset.progress || 0);
+    if (t === 'deadline') return Number(el.dataset.deadline || 0) || 9e15;   // بدون ددلاین = آخر
+    return Number(el.dataset.created || 0);
+  }
+  function sortIn(container, selector) {
+    var t = state.sort;
+    var list = $$(selector, container).sort(function (a, b) {
+      if (t === 'title') return String(a.dataset.title).localeCompare(String(b.dataset.title), 'fa');
+      return t === 'deadline' ? sortVal(a, t) - sortVal(b, t) : sortVal(b, t) - sortVal(a, t);
     });
-
-    // Table rows
-    tableRows.forEach(function (row) {
-      const rowStatus = row.dataset.status;
-
-      if (filter === 'all' || rowStatus === filter) {
-        row.style.display = '';
-      } else {
-        row.style.display = 'none';
-      }
-    });
+    list.forEach(function (el) { container.appendChild(el); });
+  }
+  function applySort() {
+    $$('.kanban-cards').forEach(function (c) { sortIn(c, '.kcard'); });
+    sortIn($('#tableView tbody'), 'tr[data-id]');
+    var empty = $('#tableEmpty'); empty.parentNode.appendChild(empty);
   }
 
-  // -----------------------------
-  // Filter Buttons Events
-  // -----------------------------
-  filterChips.forEach(function (chip) {
+  $$('.filter-chip[data-filter]').forEach(function (chip) {
     chip.addEventListener('click', function () {
-      const filter = chip.dataset.filter;
-
-      filterChips.forEach(function (item) {
-        item.classList.remove('active');
-      });
-
-      chip.classList.add('active');
-
-      applyFilter(filter);
+      $$('.filter-chip[data-filter]').forEach(function (c) { c.classList.remove('active'); });
+      chip.classList.add('active'); state.filter = chip.dataset.filter; apply();
     });
   });
+  var searchTimer = 0;
+  $('#projectSearch').addEventListener('input', function (e) {
+    clearTimeout(searchTimer);
+    searchTimer = setTimeout(function () { state.q = e.target.value.trim(); apply(); }, 90);
+  });
+  $('#projectSort').addEventListener('change', function (e) { state.sort = e.target.value; applySort(); apply(); });
 
-  // -----------------------------
-  // Sort Helpers
-  // -----------------------------
-  function getSortableValue(element, sortType) {
-    if (sortType === 'progress') {
-      return Number(element.dataset.progress || 0);
-    }
+  // ورود نرم کارت‌ها: --i برای تاخیر پلکانی
+  $$('.kanban-cards').forEach(function (c) { $$('.kcard', c).forEach(function (k, i) { k.style.setProperty('--i', Math.min(i, 12)); }); });
 
-    if (sortType === 'deadline') {
-      return Number(element.dataset.deadline || 0);
-    }
-
-    if (sortType === 'newest') {
-      return Number(element.dataset.created || 0);
-    }
-
-    if (sortType === 'title') {
-      return String(element.dataset.title || '').trim();
-    }
-
-    return 0;
+  /* ───────── شمارنده‌ها (چیپ‌ها، ستون‌ها، آمار) ───────── */
+  function recount() {
+    var c = { all: 0 };
+    Object.keys(STATUS).forEach(function (k) { c[k] = 0; });
+    $$('.kanban-board .kcard').forEach(function (card) { c.all++; if (c[card.dataset.status] !== undefined) c[card.dataset.status]++; });
+    $$('.filter-chip[data-filter]').forEach(function (ch) { var n = $('.filter-count', ch); if (n) n.textContent = fa(c[ch.dataset.filter]); });
+    $$('.kanban-col').forEach(function (col) { $('.kanban-count', col).textContent = fa(c[col.dataset.statusCol]); });
+    $$('[data-stat]').forEach(function (el) { el.textContent = fa(c[el.dataset.stat]); });
   }
 
-  function sortElements(container, selector, sortType) {
-    if (!container) return;
-
-    const items = Array.from(container.querySelectorAll(selector));
-
-    items.sort(function (a, b) {
-      const aValue = getSortableValue(a, sortType);
-      const bValue = getSortableValue(b, sortType);
-
-      if (sortType === 'title') {
-        return String(aValue).localeCompare(String(bValue), 'fa');
-      }
-
-      // newest/progress/deadline descending/ascending logic
-      if (sortType === 'deadline') {
-        // ددلاین نزدیک‌تر اول
-        return aValue - bValue;
-      }
-
-      // جدیدترین و پیشرفت بیشتر اول
-      return bValue - aValue;
-    });
-
-    items.forEach(function (item) {
-      container.appendChild(item);
-    });
+  /* ───────── اعمال وضعیت جدید روی کارت و ردیف جدول ───────── */
+  function paint(el, to) {
+    el.dataset.status = to;
+    try { var d = JSON.parse(el.dataset.project || '{}'); d.status = to; el.dataset.project = JSON.stringify(d); } catch (e) {}
+    var b = $('.badge-status', el);
+    if (b && STATUS[to]) { b.className = 'badge-status ' + STATUS[to].badge; b.textContent = STATUS[to].title; }
+  }
+  function applyStatus(card, to) {
+    paint(card, to); card.classList.toggle('is-done', to === 'done');
+    var row = $('#tableView tbody tr[data-id="' + card.dataset.id + '"]');
+    if (row) paint(row, to);
+  }
+  function moveCard(card, to) {
+    var cards = $('.kanban-col[data-status-col="' + to + '"] .kanban-cards');
+    if (!cards) return;
+    cards.appendChild(card); applyStatus(card, to); recount();
+    card.classList.remove('landed'); void card.offsetWidth; card.classList.add('landed');
+    apply();
   }
 
-  function applySort(sortType) {
-    // Sort Kanban cards inside each column
-    document.querySelectorAll('.kanban-cards').forEach(function (cardsContainer) {
-      sortElements(cardsContainer, '.kcard[data-status]', sortType);
-    });
-
-    // Sort Table rows
-    const tableBody = document.querySelector('#tableView tbody');
-
-    if (tableBody) {
-      sortElements(tableBody, 'tr[data-status]', sortType);
-    }
-
-    // بعد از sort، فیلتر فعلی دوباره اعمال شود
-    applyFilter(activeFilter);
-  }
-
-  // -----------------------------
-  // Sort Event
-  // -----------------------------
-  if (projectSort) {
-    projectSort.addEventListener('change', function () {
-      applySort(projectSort.value);
-    });
-  }
-
-  // -----------------------------
-  // Jalali Datepicker
-  // -----------------------------
-  if (window.jalaliDatepicker) {
-    jalaliDatepicker.startWatch();
-  }
-
-  // -----------------------------
-  // Modal پروژه: المان‌های مشترک فرم
-  // -----------------------------
-  const projectModal          = document.getElementById('projectModal');
-  const projectForm           = document.getElementById('projectForm');
-  const projectModalTitle     = document.getElementById('projectModalTitle');
-  const projectSubmitBtn      = document.getElementById('projectSubmitBtn');
-  const projectIdInput        = document.getElementById('projectIdInput');
-  const projectTitleInput     = document.getElementById('projectTitleInput');
-  const projectClientSelect   = document.getElementById('projectClientSelect');
-  const projectCategorySelect = document.getElementById('projectCategorySelect');
-  const projectStatusSelect   = document.getElementById('projectStatusSelect');
-  const projectStartDate      = document.getElementById('projectStartDate');
-  const projectDeadline       = document.getElementById('projectDeadline');
-  const projectDescription    = document.getElementById('projectDescriptionInput');
-  const techChecklist         = document.getElementById('techChecklist');
-  const newProjectBtn         = document.getElementById('newProjectBtn');
-  const projectModalProxy     = document.getElementById('projectModalProxyTrigger');
-
-  function resetTechChecklist() {
-    if (!techChecklist) return;
-
-    techChecklist.querySelectorAll('input[type="checkbox"]').forEach(function (cb) {
-      cb.checked = false;
-    });
-  }
-
-  function ensureTechCheckbox(value, checked) {
-    if (!techChecklist || !value) return;
-
-    let existing = Array.from(techChecklist.querySelectorAll('input[type="checkbox"]'))
-      .find(function (cb) { return cb.value === value; });
-
-    if (!existing) {
-      const label = document.createElement('label');
-      label.className = 'tech-check-item';
-
-      const checkbox = document.createElement('input');
-      checkbox.type = 'checkbox';
-      checkbox.name = 'techStack[]';
-      checkbox.value = value;
-
-      const span = document.createElement('span');
-      span.textContent = value;
-
-      label.appendChild(checkbox);
-      label.appendChild(span);
-      techChecklist.appendChild(label);
-
-      existing = checkbox;
-    }
-
-    existing.checked = !!checked;
-  }
-
-  function ensureCategoryOption(id, title) {
-    if (!projectCategorySelect || !id) return;
-
-    let option = Array.from(projectCategorySelect.options).find(function (o) {
-      return o.value === id;
-    });
-
-    if (!option) {
-      option = document.createElement('option');
-      option.value = id;
-      option.textContent = title || id;
-      projectCategorySelect.appendChild(option);
-    }
-
-    projectCategorySelect.value = id;
-  }
-
-  function setProjectFormMode(mode, data) {
-    data = data || {};
-
-if (mode === 'edit') {
-  projectModalTitle.textContent = 'ویرایش پروژه';
-  projectSubmitBtn.innerHTML = '<i class="bi bi-check-lg"></i> ذخیره تغییرات';
-  projectForm.action = '/sw-admin/projects/' + data.id + '/update';
-  projectIdInput.value = data.id || '';
-
-  projectTitleInput.value = data.title || '';
-  projectDescription.value = data.description || '';
-  projectStartDate.value = data.startDate || '';
-  projectDeadline.value = data.deadline || '';
-  projectProgressInput.value = data.progress != null ? data.progress : 0;   // ← این خط اضافه شد
-
-  if (projectStatusSelect) {
-    projectStatusSelect.value = data.status || 'active';
-  }
-
-      if (projectClientSelect && data.client) {
-        projectClientSelect.value = data.client;
-      }
-
-      resetTechChecklist();
-
-      if (data.category) {
-        ensureCategoryOption(data.category, data.categoryTitle);
-      }
-
-      (data.tech || []).forEach(function (tech) {
-        ensureTechCheckbox(tech, true);
+  /* ───────── API وضعیت ───────── */
+  function saveStatus(id, to) {
+    return fetch('/sw-admin/projects/' + id + '/status', {
+      method: 'POST', credentials: 'same-origin',
+      headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+      body: JSON.stringify({ status: to })
+    }).then(function (r) {
+      return r.json().catch(function () { return {}; }).then(function (j) {
+        if (!r.ok || !j.success) throw new Error(j.message || 'تغییر وضعیت انجام نشد');
+        return j;
       });
-
-    } else {
-      projectModalTitle.textContent = 'پروژه جدید';
-      projectSubmitBtn.innerHTML = '<i class="bi bi-check-lg"></i> ثبت پروژه';
-      projectForm.action = '/sw-admin/projects/add';
-      projectIdInput.value = '';
-      projectForm.reset();
-      resetTechChecklist();
-    }
+    });
   }
-
-  if (newProjectBtn) {
-    newProjectBtn.addEventListener('click', function () {
-      setProjectFormMode('create');
+  function persist(card, from, to, undoable) {
+    return saveStatus(card.dataset.id, to).then(function () {
+      if (!undoable) return;
+      toast('به «' + STATUS[to].title + '» منتقل شد', {
+        type: 'success', detail: card.dataset.title, ms: 5000,
+        actions: [{ label: 'بازگردانی', fn: function () { moveCard(card, from); persist(card, to, from, false); } }]
+      });
+    }).catch(function (err) {
+      moveCard(card, from);
+      toast(err.message || 'تغییر وضعیت انجام نشد', { type: 'error' });
     });
   }
 
-  document.addEventListener('click', function (e) {
-    const editBtn = e.target.closest('[data-project-edit]');
-    if (!editBtn) return;
+  /* ───────── درگ‌اند‌دراپ کانبان (Pointer Events: ماوس + لمس) ─────────
+     ماوس: بعد از ۵ پیکسل حرکت · لمس: نگه‌داشتن ۲۶۰ms (تا اسکرول عادی خراب نشود)
+     کارت شناور با transform حرکت می‌کند؛ رها کردن = فرود فنری روی جای خالی */
+  var board = $('.kanban-board'), drag = null, noClickUntil = 0;
 
-    try {
-      const data = JSON.parse(editBtn.dataset.project || '{}');
-      setProjectFormMode('edit', data);
-    } catch (err) {
-      console.error('خطا در خواندن اطلاعات پروژه برای ویرایش', err);
-    }
+  board.addEventListener('pointerdown', function (e) {
+    if (e.pointerType === 'mouse' && e.button !== 0) return;
+    var card = e.target.closest('.kcard');
+    if (!card || e.target.closest('button,a,input,select,textarea')) return;
+    drag = { card: card, pid: e.pointerId, sx: e.clientX, sy: e.clientY, x: e.clientX, y: e.clientY, active: false, touch: e.pointerType !== 'mouse', raf: 0, timer: 0 };
+    if (drag.touch) drag.timer = setTimeout(function () { if (drag && !drag.active) begin(); }, 260);
   });
 
-  // -----------------------------
-  // افزودن «نوع پروژه» جدید به آپشن‌ها
-  // -----------------------------
-  const addCategoryBtn     = document.getElementById('addCategoryBtn');
-  const addCategoryBox     = document.getElementById('addCategoryBox');
-  const newCategoryInput   = document.getElementById('newCategoryInput');
-  const confirmAddCategory = document.getElementById('confirmAddCategory');
+  document.addEventListener('pointermove', function (e) {
+    if (!drag || e.pointerId !== drag.pid) return;
+    drag.x = e.clientX; drag.y = e.clientY;
+    if (!drag.active) {
+      var dist = Math.hypot(drag.x - drag.sx, drag.y - drag.sy);
+      if (drag.touch) { if (dist > 8) { clearTimeout(drag.timer); drag = null; } return; }   // لمس: قبل از long-press = اسکرول
+      if (dist < 5) return;
+      begin();
+    }
+    if (!drag.raf) drag.raf = requestAnimationFrame(tick);
+  });
+  // وقتی درگ فعال است اسکرول لمسی را مسدود کن
+  document.addEventListener('touchmove', function (e) { if (drag && drag.active) e.preventDefault(); }, { passive: false });
 
-  if (addCategoryBtn && addCategoryBox) {
-    addCategoryBtn.addEventListener('click', function () {
-      const isHidden = !addCategoryBox.style.display || addCategoryBox.style.display === 'none';
-      addCategoryBox.style.display = isHidden ? 'flex' : 'none';
+  function begin() {
+    var card = drag.card, r = card.getBoundingClientRect();
+    drag.active = true; drag.from = card.dataset.status;
+    drag.offX = drag.sx - r.left; drag.offY = drag.sy - r.top; drag.ox = r.left; drag.oy = r.top;
+    drag.parent = card.parentNode; drag.next = card.nextSibling;
 
-      if (isHidden && newCategoryInput) {
-        newCategoryInput.focus();
-      }
-    });
+    var clone = card.cloneNode(true);
+    clone.classList.add('kcard-float'); clone.removeAttribute('data-project'); clone.removeAttribute('tabindex');
+    clone.style.width = r.width + 'px'; clone.style.left = r.left + 'px'; clone.style.top = r.top + 'px';
+    document.body.appendChild(clone); drag.clone = clone;
+
+    var ph = document.createElement('div'); ph.className = 'kcard-ph'; ph.style.height = r.height + 'px'; drag.ph = ph;
+    card.parentNode.insertBefore(ph, card); card.hidden = true;
+    document.body.classList.add('is-card-dragging');
+    if (navigator.vibrate) navigator.vibrate(8);
+    tick();
   }
 
-async function addNewCategory() {
-  if (!newCategoryInput || !projectCategorySelect) return;
+  function setOver(col) {
+    if (drag.over === col) return;
+    if (drag.over) drag.over.classList.remove('drop');
+    drag.over = col; if (col) col.classList.add('drop');
+  }
+  function place(cards, y) {
+    var list = $$('.kcard:not([hidden])', cards), before = null;
+    for (var i = 0; i < list.length; i++) {
+      var b = list[i].getBoundingClientRect();
+      if (y < b.top + b.height / 2) { before = list[i]; break; }
+    }
+    if (before) { if (before.previousElementSibling !== drag.ph) cards.insertBefore(drag.ph, before); }
+    else if (cards.lastElementChild !== drag.ph) cards.appendChild(drag.ph);
+  }
+  function tick() {
+    if (!drag || !drag.active) return;
+    drag.raf = 0;
+    drag.clone.style.transform = 'translate3d(' + (drag.x - drag.offX - drag.ox) + 'px,' + (drag.y - drag.offY - drag.oy) + 'px,0) scale(1.03) rotate(1.2deg)';
+    var el = document.elementFromPoint(drag.x, drag.y), col = el && el.closest('.kanban-col');
+    setOver(col);
+    if (col) place($('.kanban-cards', col), drag.y);
+    // اسکرول خودکار نزدیک لبه‌ی صفحه
+    var m = 70, vy = 0;
+    if (drag.y < m) vy = -Math.ceil((m - drag.y) / 6);
+    else if (window.innerHeight - drag.y < m) vy = Math.ceil((m - (window.innerHeight - drag.y)) / 6);
+    if (vy) { window.scrollBy(0, vy); drag.raf = requestAnimationFrame(tick); }
+  }
 
-  const value = (newCategoryInput.value || '').trim();
-  if (!value) return;
+  function land(d, target, done) {
+    var r = target.getBoundingClientRect(), clone = d.clone, fin = false;
+    clone.style.transition = 'transform .42s var(--sw-spring), opacity .25s';
+    clone.style.transform = 'translate3d(' + (r.left - d.ox) + 'px,' + (r.top - d.oy) + 'px,0) scale(1) rotate(0deg)';
+    function end() { if (fin) return; fin = true; clone.remove(); done(); }
+    clone.addEventListener('transitionend', end, { once: true });
+    setTimeout(end, 520);
+  }
 
-  confirmAddCategory.disabled = true;
-  confirmAddCategory.textContent = 'در حال ثبت…';
+  function finish(cancel) {
+    var d = drag; drag = null;
+    if (!d) return;
+    clearTimeout(d.timer);
+    if (!d.active) return;
+    cancelAnimationFrame(d.raf);
+    noClickUntil = Date.now() + 120;
+    document.body.classList.remove('is-card-dragging');
+    var col = d.ph.closest('.kanban-col'), to = col && col.dataset.statusCol, card = d.card;
+    if (d.over) d.over.classList.remove('drop');
 
-  try {
-    const res = await fetch('/sw-admin/service-categories/add', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ title: value })
-    });
-
-    const data = await res.json();
-
-    if (!res.ok || !data.ok) {
-      alert(data.message || 'خطا در ثبت نوع پروژه');
+    if (cancel || !col || to === d.from) {            // برگشت به جای اول
+      d.ph.remove(); d.parent.insertBefore(card, d.next); card.hidden = false; card.style.visibility = 'hidden';
+      land(d, card, function () { card.style.visibility = ''; });
       return;
     }
-
-    const option = document.createElement('option');
-    option.value = data.category._id;
-    option.textContent = data.category.title;
-    projectCategorySelect.appendChild(option);
-    projectCategorySelect.value = data.category._id;
-
-    newCategoryInput.value = '';
-    addCategoryBox.style.display = 'none';
-  } catch (err) {
-    console.error('خطا در ارتباط با سرور', err);
-    alert('خطا در ارتباط با سرور');
-  } finally {
-    confirmAddCategory.disabled = false;
-    confirmAddCategory.textContent = 'افزودن';
+    d.ph.replaceWith(card); card.hidden = false; card.style.visibility = 'hidden';   // جابه‌جایی خوش‌بینانه
+    applyStatus(card, to); recount(); apply();
+    land(d, card, function () { card.style.visibility = ''; card.classList.add('landed'); });
+    persist(card, d.from, to, true);
   }
-}
+  document.addEventListener('pointerup', function (e) { if (drag && e.pointerId === drag.pid) finish(false); });
+  document.addEventListener('pointercancel', function () { finish(true); });
+  window.addEventListener('blur', function () { finish(true); });
+  document.addEventListener('keydown', function (e) { if (e.key === 'Escape' && drag && drag.active) finish(true); });
 
-  if (confirmAddCategory) {
-    confirmAddCategory.addEventListener('click', addNewCategory);
-  }
-
-  if (newCategoryInput) {
-    newCategoryInput.addEventListener('keydown', function (e) {
-      if (e.key === 'Enter') {
-        e.preventDefault();
-        addNewCategory();
-      }
-    });
-  }
-
-  // -----------------------------
-  // افزودن «تکنولوژی» جدید به چک‌باکس‌ها
-  // -----------------------------
-  const newTechInput = document.getElementById('newTechInput');
-  const addTechBtn   = document.getElementById('addTechBtn');
-
-  function addNewTech() {
-    if (!newTechInput) return;
-
-    const value = (newTechInput.value || '').trim();
-    if (!value) return;
-
-    ensureTechCheckbox(value, true);
-    newTechInput.value = '';
-  }
-
-  if (addTechBtn) {
-    addTechBtn.addEventListener('click', addNewTech);
-  }
-
-  if (newTechInput) {
-    newTechInput.addEventListener('keydown', function (e) {
-      if (e.key === 'Enter') {
-        e.preventDefault();
-        addNewTech();
-      }
-    });
-  }
-
-  // -----------------------------
-  // Modal مشاهده توضیحات پروژه
-  // -----------------------------
-  const projectViewTitle       = document.getElementById('projectViewTitle');
-  const projectViewClient      = document.getElementById('projectViewClient');
-  const projectViewCategory    = document.getElementById('projectViewCategory');
-  const projectViewStart       = document.getElementById('projectViewStart');
-  const projectViewDeadline    = document.getElementById('projectViewDeadline');
-  const projectViewTech        = document.getElementById('projectViewTech');
-  const projectViewDescription = document.getElementById('projectViewDescription');
-  const projectViewEditBtn     = document.getElementById('projectViewEditBtn');
-
-  let currentViewedProject = null;
-
-  document.addEventListener('click', function (e) {
-    const viewBtn = e.target.closest('[data-project-view]');
-    if (!viewBtn) return;
-
-    try {
-      const data = JSON.parse(viewBtn.dataset.project || '{}');
-      currentViewedProject = data;
-
-      projectViewTitle.textContent = data.title || 'جزئیات پروژه';
-      projectViewClient.textContent = data.clientName || 'بدون مشتری';
-      projectViewCategory.textContent = data.categoryTitle || 'بدون نوع';
-      projectViewStart.textContent = data.startDate || 'ثبت‌نشده';
-      projectViewDeadline.textContent = data.deadline || 'ثبت‌نشده';
-
-      projectViewTech.innerHTML = '';
-
-      if (data.tech && data.tech.length) {
-        data.tech.forEach(function (tech) {
-          const pill = document.createElement('span');
-          pill.className = 'tech-pill';
-          pill.textContent = tech;
-          projectViewTech.appendChild(pill);
-        });
-      } else {
-        projectViewTech.innerHTML = '<span style="font-size:.78rem;color:var(--color-text-light);">تکنولوژی ثبت نشده است.</span>';
-      }
-
-      projectViewDescription.textContent = (data.description && data.description.trim())
-        ? data.description
-        : 'توضیحی ثبت نشده است.';
-    } catch (err) {
-      console.error('خطا در خواندن اطلاعات پروژه برای مشاهده', err);
-    }
+  // کلیک روی کارت = مشاهده (بعد از درگ نادیده گرفته می‌شود)
+  board.addEventListener('click', function (e) {
+    if (Date.now() < noClickUntil || e.target.closest('button,a')) return;
+    var card = e.target.closest('.kcard'); if (card) $('[data-project-view]', card).click();
+  });
+  board.addEventListener('keydown', function (e) {
+    if (e.key === 'Enter' && e.target.classList.contains('kcard')) $('[data-project-view]', e.target).click();
   });
 
-  if (projectViewEditBtn) {
-    projectViewEditBtn.addEventListener('click', function () {
-      if (!currentViewedProject) return;
+  /* ───────── مودال پروژه: افزودن / ویرایش ───────── */
+  var form = $('#projectForm'), modalTitle = $('#projectModalTitle'), submitBtn = $('#projectSubmitBtn');
+  var fTitle = $('#projectTitleInput'), fClient = $('#projectClientSelect'), fCategory = $('#projectCategorySelect');
+  var fStatus = $('#projectStatusSelect'), fStart = $('#projectStartDate'), fDeadline = $('#projectDeadline');
+  var fDesc = $('#projectDescriptionInput'), fProg = $('#projectProgressInput'), fProgOut = $('#projectProgressOut');
+  var techBox = $('#techChecklist'), statusField = $('#statusField');
 
-      setProjectFormMode('edit', currentViewedProject);
+  function syncProgress() { fProgOut.textContent = fa(fProg.value) + '٪'; }
+  fProg.addEventListener('input', syncProgress);
 
-      const viewModal = document.getElementById('projectViewModal');
-      if (viewModal) viewModal.classList.remove('show', 'active');
-
-      if (projectModalProxy) projectModalProxy.click();
-    });
+  function clearErrors() {
+    $$('.sw-err', form).forEach(function (n) { n.remove(); });
+    $$('.is-invalid', form).forEach(function (n) { n.classList.remove('is-invalid'); n.removeAttribute('aria-invalid'); });
   }
-    if (window.jalaliDatepicker) {
-    jalaliDatepicker.startWatch({
-      time: false,
-      persianDigits: true,
-      autoHide: true,
-      topSpace: 4,
-      zIndex: 99999
-    });
+  function resetTech() { $$('input[type="checkbox"]', techBox).forEach(function (cb) { cb.checked = false; }); }
+  function ensureTech(value, checked) {
+    if (!value) return;
+    var cb = $$('input[type="checkbox"]', techBox).filter(function (x) { return x.value === value; })[0];
+    if (!cb) {
+      var label = document.createElement('label'); label.className = 'tech-check-item';
+      cb = document.createElement('input'); cb.type = 'checkbox'; cb.name = 'techStack[]'; cb.value = value;
+      var span = document.createElement('span'); span.textContent = value;
+      label.appendChild(cb); label.appendChild(span); techBox.appendChild(label);
     }
+    cb.checked = !!checked;
+  }
+  function ensureCategory(id, title) {
+    if (!id) return;
+    var opt = Array.prototype.slice.call(fCategory.options).filter(function (o) { return o.value === id; })[0];
+    if (!opt) { opt = document.createElement('option'); opt.value = id; opt.textContent = title || id; fCategory.appendChild(opt); }
+    fCategory.value = id;
+  }
+
+  function setMode(mode, data) {
+    data = data || {}; clearErrors();
+    if (mode === 'edit') {
+      modalTitle.textContent = 'ویرایش پروژه';
+      submitBtn.innerHTML = '<i class="bi bi-check-lg"></i> ذخیره تغییرات';
+      form.action = '/sw-admin/projects/' + data.id + '/update';
+      statusField.hidden = false;
+      fTitle.value = data.title || ''; fDesc.value = data.description || '';
+      fStart.value = fa(data.startDate || ''); fDeadline.value = fa(data.deadline || '');
+      fProg.value = data.progress != null ? data.progress : 0;
+      fStatus.value = data.status || 'active';
+      fClient.value = data.client || '';
+      resetTech(); ensureCategory(data.category, data.categoryTitle);
+      (data.tech || []).forEach(function (t) { ensureTech(t, true); });
+    } else {
+      modalTitle.textContent = 'پروژه جدید';
+      submitBtn.innerHTML = '<i class="bi bi-check-lg"></i> ثبت پروژه';
+      form.action = '/sw-admin/projects/add';
+      statusField.hidden = true;
+      form.reset(); resetTech();
+    }
+    syncProgress();
+  }
+
+  $('#newProjectBtn').addEventListener('click', function () { setMode('create'); });
+
+  function dataOf(btn) {
+    var holder = btn.closest('[data-project]');
+    try { return JSON.parse(holder.dataset.project || '{}'); } catch (e) { return null; }
+  }
+  document.addEventListener('click', function (e) {
+    var edit = e.target.closest('[data-project-edit]');
+    if (edit) { var d = dataOf(edit); if (d) setMode('edit', d); return; }
+    var view = e.target.closest('[data-project-view]');
+    if (view) { var v = dataOf(view); if (v) fillView(v); }
+  });
+
+  /* ───────── افزودن «نوع پروژه» (AJAX) و «تکنولوژی» ───────── */
+  var addCatBtn = $('#addCategoryBtn'), addCatBox = $('#addCategoryBox'), newCat = $('#newCategoryInput'), confirmCat = $('#confirmAddCategory');
+
+  addCatBtn.addEventListener('click', function () {
+    var open = addCatBox.hidden; addCatBox.hidden = !open;
+    addCatBtn.setAttribute('aria-expanded', String(open));
+    if (open) newCat.focus();
+  });
+  function addCategory() {
+    var title = (newCat.value || '').trim();
+    if (!title) return;
+    confirmCat.classList.add('sw-loading'); confirmCat.disabled = true;
+    fetch('/sw-admin/service-categories/add', {
+      method: 'POST', credentials: 'same-origin',
+      headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+      body: JSON.stringify({ title: title })
+    }).then(function (r) {
+      return r.json().catch(function () { return {}; }).then(function (j) {
+        if (!r.ok || !j.ok) throw new Error(j.message || 'خطا در ثبت نوع پروژه');
+        return j;
+      });
+    }).then(function (j) {
+      var opt = document.createElement('option'); opt.value = j.category._id; opt.textContent = j.category.title;
+      fCategory.appendChild(opt); fCategory.value = j.category._id;
+      newCat.value = ''; addCatBox.hidden = true; addCatBtn.setAttribute('aria-expanded', 'false');
+      toast('نوع پروژه اضافه شد', { type: 'success', detail: j.category.title });
+    }).catch(function (err) {
+      toast(err.message || 'خطا در ارتباط با سرور', { type: 'error' });
+    }).then(function () { confirmCat.classList.remove('sw-loading'); confirmCat.disabled = false; });
+  }
+  confirmCat.addEventListener('click', addCategory);
+  newCat.addEventListener('keydown', function (e) { if (e.key === 'Enter') { e.preventDefault(); addCategory(); } });
+
+  var newTech = $('#newTechInput');
+  function addTech() {
+    var v = (newTech.value || '').trim();
+    if (!v) return;
+    ensureTech(v, true); newTech.value = '';
+  }
+  $('#addTechBtn').addEventListener('click', addTech);
+  newTech.addEventListener('keydown', function (e) { if (e.key === 'Enter') { e.preventDefault(); addTech(); } });
+
+  /* ───────── مودال مشاهده ───────── */
+  var current = null;
+  function fillView(data) {
+    current = data;
+    $('#projectViewTitle').textContent = data.title || 'جزئیات پروژه';
+    $('#projectViewClient').textContent = data.clientName || 'بدون مشتری';
+    $('#projectViewCategory').textContent = data.categoryTitle || 'بدون نوع';
+    $('#projectViewStart').textContent = data.startDate ? fa(data.startDate) : 'ثبت‌نشده';
+    $('#projectViewDeadline').textContent = data.deadline ? fa(data.deadline) : 'ثبت‌نشده';
+    var techEl = $('#projectViewTech'); techEl.textContent = '';
+    if (data.tech && data.tech.length) {
+      data.tech.forEach(function (t) { var p = document.createElement('span'); p.className = 'tech-pill'; p.textContent = t; techEl.appendChild(p); });
+    } else {
+      var none = document.createElement('span'); none.className = 'view-none'; none.textContent = 'تکنولوژی ثبت نشده است.'; techEl.appendChild(none);
+    }
+    $('#projectViewDescription').textContent = (data.description && data.description.trim()) ? data.description : 'توضیحی ثبت نشده است.';
+  }
+  $('#projectViewEditBtn').addEventListener('click', function () {
+    if (!current) return;
+    setMode('edit', current);
+    window.closeModal('projectViewModal');
+    window.openModal('projectModal');
+  });
+
+  /* ───────── تقویم شمسی (فایل لوکال از پارشیال‌ها) ───────── */
+  if (window.jalaliDatepicker) {
+    jalaliDatepicker.startWatch({ time: false, persianDigits: true, autoHide: true, topSpace: 4, zIndex: 99999 });
+  }
+
+  syncProgress();
 });
-
-
-  jalaliDatepicker.startWatch();
-
 </script>
-` }) %>
+
+<%- include('partials/_scripts') %>

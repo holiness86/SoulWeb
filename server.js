@@ -637,84 +637,70 @@ app.post('/sw-admin/projects/:id/status', requireAdminAuth, async (req, res) => 
 //  ADMIN — CLIENTS
 // ─────────────────────────────────────────
 
-app.get('/sw-admin/clients', requireAdminAuth , async (req, res) => {
+app.get('/sw-admin/clients', requireAdminAuth, async (req, res) => {
   try {
     const page = Math.max(parseInt(req.query.page) || 1, 1)
     const limit = 6
     const skip = (page - 1) * limit
 
+    const q = typeof req.query.q === 'string' ? req.query.q.trim() : ''
+    const status = ['active', 'inactive'].includes(req.query.status) ? req.query.status : 'all'
+
+    const filter = {}
+    if (status === 'active') filter.isActive = true
+    if (status === 'inactive') filter.isActive = false
+    if (q) {
+      const rx = new RegExp(q.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'i')
+      filter.$or = [{ name: rx }, { company: rx }, { email: rx }, { phone: rx }]
+    }
+
     const sevenDaysAgo = new Date()
     sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7)
 
     const [
-      clientsCount,
-      activeClientsCount,
-      newClientsThisWeekCount,
-      clients,
-      categories
+      clientsCount, activeClientsCount, newClientsThisWeekCount,
+      filteredCount, clients, categories
     ] = await Promise.all([
       Client.countDocuments(),
-
       Client.countDocuments({ isActive: true }),
-
-      Client.countDocuments({
-        createdAt: { $gte: sevenDaysAgo }
-      }),
-
-      Client.find()
+      Client.countDocuments({ createdAt: { $gte: sevenDaysAgo } }),
+      Client.countDocuments(filter),
+      Client.find(filter)
         .populate('category', 'title slug icon color gradient')
         .sort({ createdAt: -1 })
         .skip(skip)
         .limit(limit)
         .lean(),
-
-      Category.find({
-        type: 'service',
-        isActive: true
-      })
-        .sort({ order: 1 })
-        .lean()
+      Category.find({ type: 'service', isActive: true }).sort({ order: 1 }).lean()
     ])
 
     const clientsWithProjects = await Promise.all(
       clients.map(async (client) => {
-        const projectsCount = await Portfolio.countDocuments({
-          client: client._id
-        })
-
-        const lastProject = await Portfolio.findOne({
-          client: client._id
-        })
+        const projectsCount = await Project.countDocuments({ client: client._id })
+        const lastProject = await Project.findOne({ client: client._id })
           .sort({ createdAt: -1 })
           .select('title')
           .lean()
 
-        return {
-          ...client,
-          projectsCount,
-          projectTitle: lastProject ? lastProject.title : '---'
-        }
+        return { ...client, projectsCount, projectTitle: lastProject ? lastProject.title : '---' }
       })
     )
 
-    const totalPages = Math.ceil(clientsCount / limit)
-
-    const startItem = clientsCount === 0 ? 0 : skip + 1
-    const endItem = Math.min(skip + limit, clientsCount)
+    const totalPages = Math.ceil(filteredCount / limit)
 
     res.render('admin/Clients', {
       clients: clientsWithProjects,
       categories,
-
       clientsCount,
       activeClientsCount,
       newClientsThisWeekCount,
-
+      filteredCount,
+      filters: { q, status },
       currentPage: page,
       totalPages,
       limit,
-      startItem,
-      endItem
+      startItem: filteredCount === 0 ? 0 : skip + 1,
+      endItem: Math.min(skip + limit, filteredCount)
     })
   } catch (err) {
     console.error(err)
@@ -781,6 +767,49 @@ app.get('/sw-admin/clients/export' , requireAdminAuth , async (req, res) => {
   }
 })
 
+app.post('/sw-admin/clients/:id/update', requireAdminAuth, async (req, res) => {
+  try {
+    const { name, company, email, phone, address, notes, category, isActive } = req.body;
+
+    if (!name || !name.trim()) {
+      return res.redirect('/sw-admin/clients?error=نام مشتری الزامی است');
+    }
+
+    const updateData = {
+      name: name.trim(),
+      company: company ? company.trim() : '',
+      phone: phone ? phone.trim() : '',
+      address: address ? address.trim() : '',
+      notes: notes ? notes.trim() : '',
+      category: category || null,
+      isActive: isActive === 'on'
+    };
+
+    // ایمیل خالی را حذف می‌کنیم تا unique index خراب نشود
+    const mail = email ? email.trim().toLowerCase() : '';
+    if (mail) updateData.email = mail;
+    else updateData.$unset = { email: 1 };
+
+    const client = await Client.findByIdAndUpdate(req.params.id, updateData, {
+      new: true,
+      runValidators: true
+    });
+
+    if (!client) {
+      return res.redirect('/sw-admin/clients?error=مشتری پیدا نشد');
+    }
+
+    res.redirect('/sw-admin/clients?success=اطلاعات مشتری با موفقیت به‌روزرسانی شد');
+  } catch (err) {
+    console.error('Edit client error:', err);
+
+    if (err.code === 11000) {
+      return res.redirect('/sw-admin/clients?error=این ایمیل قبلاً برای مشتری دیگری ثبت شده');
+    }
+
+    res.redirect('/sw-admin/clients?error=خطا در به‌روزرسانی اطلاعات مشتری');
+  }
+});
 
 // ─────────────────────────────────────────
 //  ADMIN — TICKETS

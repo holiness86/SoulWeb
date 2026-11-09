@@ -1,847 +1,430 @@
-<%# views/sw-admin/clients.ejs %>
+<%# views/admin/Clients.ejs — مدیریت مشتریان
+    ورودی‌ها از server.js: clients (با projectsCount و projectTitle)، categories، clientsCount، activeClientsCount،
+    newClientsThisWeekCount، currentPage، totalPages، startItem، endItem  — اختیاری: filters {q,status}، filteredCount
+    روت‌ها: POST /sw-admin/clients (ثبت) · POST /sw-admin/clients/:id/update (ویرایش) · POST /sw-admin/clients/:id/delete
+            GET /sw-admin/clients/:clientId/projects (JSON) · GET /sw-admin/clients/export · پیام‌ها: ?success= / ?error= %>
+<%
+  const fa = (n) => String(n ?? 0).replace(/\d/g, (d) => '۰۱۲۳۴۵۶۷۸۹'[d]);
+  const list       = Array.isArray(clients) ? clients : [];
+  const cats       = typeof categories !== 'undefined' && Array.isArray(categories) ? categories : [];
+  const f          = (typeof filters !== 'undefined' && filters) ? filters : { q: '', status: 'all' };
+  const shownTotal = typeof filteredCount !== 'undefined' ? filteredCount : clientsCount;
+  const inactiveCount = Math.max(0, clientsCount - activeClientsCount);
+
+  const avClass   = (c) => 'av-' + ((parseInt(String(c._id).slice(-2), 16) || 0) % 6 + 1);
+  const initials  = (c) => c.avatar || ((c.name || '؟').trim().split(/\s+/).slice(0, 2).map((w) => w[0]).join('‌'));
+  const catId     = (c) => !c.category ? '' : (typeof c.category === 'object' ? (c.category._id || '') : c.category);
+  const catTitle  = (c) => !c.category ? '' : (typeof c.category === 'object' ? (c.category.title || '') : '');
+  const payload   = (c) => JSON.stringify({
+    id: c._id, name: c.name || '', company: c.company || '', email: c.email || '', phone: c.phone || '',
+    address: c.address || '', notes: c.notes || '', active: !!c.isActive,
+    createdAt: c.createdAt ? new Date(c.createdAt).toISOString() : '', category: catId(c), categoryTitle: catTitle(c)
+  });
+  const searchText = (c) => [c.name, c.company, c.email, c.phone, catTitle(c)].join(' ');
+%>
 <%- include('partials/_head', { title: 'مدیریت مشتریان' }) %>
+
 <div class="sidebar-overlay" id="sidebarOverlay"></div>
+
 <div class="admin-shell">
 
-<%- include('partials/_sidebar', { activePage: 'clients', adminUser: { name: 'علی مدیری', role: 'مدیر کل سیستم', initials: 'ادم' } }) %>
+  <%- include('partials/_sidebar', { activePage: 'clients' }) %>
 
-<div class="main-content" id="mainContent">
-<%- include('partials/_header', {
-  breadcrumbs: [{ label: 'داشبورد', href: '/sw-admin' }, { label: 'مشتریان' }],
-  searchPlaceholder: 'جستجو در مشتریان…'
-}) %>
+  <div class="main-content" id="mainContent">
 
-<main class="page-content">
+    <%- include('partials/_header', {
+      breadcrumbs: [{ label: 'داشبورد', href: '/sw-admin' }, { label: 'مشتریان' }],
+      searchPlaceholder: 'جستجو در پنل…'
+    }) %>
 
-  <div class="page-header fade-up fade-up-1">
-    <div>
-      <h1 class="page-title">مدیریت مشتریان</h1>
-      <p class="page-subtitle">۸۶ مشتری ثبت‌شده · ۳ مشتری جدید این هفته</p>
-    </div>
-    <div style="display:flex;gap:.6rem;">
-      <a href="/sw-admin/clients/export" class="btn-ghost-sm"><i class="bi bi-download"></i> خروجی CSV</a>
-      <button class="btn-sol-sm" data-modal-open="clientModal"><i class="bi bi-person-plus-fill"></i> مشتری جدید</button>
-    </div>
-  </div>
+    <main class="page-content" id="clientsPage">
 
-  <!-- Stats -->
-  <div class="stat-grid fade-up fade-up-2" style="display:grid;grid-template-columns:repeat(4,1fr);gap:1rem;margin-bottom:1.5rem;">
-    <div class="pstat">
-      <div class="pstat-icon" style="background:rgba(100,71,244,.1);color:var(--main-500);"><i class="bi bi-people-fill"></i></div>
-      <div><div class="pstat-val text-grad stat-value" data-count="<%= clientsCount %>" data-suffix=""><%= clientsCount %></div><div class="pstat-lbl">کل مشتریان</div></div>
-    </div>
-    <div class="pstat">
-      <div class="pstat-icon" style="background:rgba(34,197,94,.1);color:#16a34a;"><i class="bi bi-person-check-fill"></i></div>
-      <div><div class="pstat-val text-grad stat-value" data-count="<%= activeClientsCount %>" data-suffix=""><%= activeClientsCount %></div><div class="pstat-lbl">مشتری فعال</div></div>
-    </div>
-    <div class="pstat">
-      <div class="pstat-icon" style="background:rgba(0,144,232,.1);color:var(--accent-500);"><i class="bi bi-person-plus-fill"></i></div>
-      <div><div class="pstat-val text-grad stat-value" data-count="<%= newClientsThisWeekCount %>" data-suffix=""><%= newClientsThisWeekCount %></div><div class="pstat-lbl">جدید این هفته</div></div>
-    </div>
-    <div class="pstat">
-      <div class="pstat-icon" style="background:rgba(245,158,11,.1);color:#d97706;"><i class="bi bi-star-fill"></i></div>
-      <div><div class="pstat-val text-grad">۴.۹</div><div class="pstat-lbl">میانگین رضایت</div></div>
-    </div>
-  </div>
+      <!-- Page Header -->
+      <div class="page-header fade-up fade-up-1">
+        <div>
+          <h1 class="page-title">مدیریت مشتریان</h1>
+          <p class="page-subtitle"><%= fa(clientsCount) %> مشتری ثبت‌شده · <%= fa(newClientsThisWeekCount) %> مشتری جدید این هفته</p>
+        </div>
+        <div class="d-flex gap-2">
+          <a href="/sw-admin/clients/export" class="btn-ghost-sm"><i class="bi bi-download"></i> خروجی CSV</a>
+          <button type="button" class="btn-sol-sm" id="newClientBtn" data-modal-open="clientModal"><i class="bi bi-person-plus-fill"></i> مشتری جدید</button>
+        </div>
+      </div>
 
-  <!-- Search + Filter -->
-  <div style="display:flex;gap:.75rem;align-items:center;flex-wrap:wrap;margin-bottom:1.25rem;" class="fade-up fade-up-2">
-    <div style="flex:1;min-width:200px;display:flex;align-items:center;gap:.5rem;background:var(--color-surface);border:1.5px solid var(--color-border);border-radius:var(--radius-md);padding:.45rem 1rem;">
-      <i class="bi bi-search" style="color:var(--color-text-light);font-size:.85rem;"></i>
-      <input type="text" placeholder="نام، ایمیل یا شرکت…" style="border:none;background:transparent;outline:none;font-family:var(--font-primary);font-size:.85rem;color:var(--color-text-primary);width:100%;" id="clientSearch">
-    </div>
-<select class="sol-select" style="width:auto;" id="statusFilter">
-  <option value="all">همه وضعیت‌ها</option>
-  <option value="active">فعال</option>
-  <option value="inactive">غیرفعال</option>
-</select>
+      <!-- Stats -->
+      <div class="sw-g c4 fade-up fade-up-2">
+        <div class="pstat"><div class="pstat-icon"><i class="bi bi-people-fill"></i></div><div><div class="pstat-val text-grad"><%= fa(clientsCount) %></div><div class="pstat-lbl">کل مشتریان</div></div></div>
+        <div class="pstat"><div class="pstat-icon ok"><i class="bi bi-person-check-fill"></i></div><div><div class="pstat-val text-grad"><%= fa(activeClientsCount) %></div><div class="pstat-lbl">مشتری فعال</div></div></div>
+        <div class="pstat"><div class="pstat-icon accent"><i class="bi bi-person-plus-fill"></i></div><div><div class="pstat-val text-grad"><%= fa(newClientsThisWeekCount) %></div><div class="pstat-lbl">جدید این هفته</div></div></div>
+        <div class="pstat"><div class="pstat-icon warn"><i class="bi bi-person-dash-fill"></i></div><div><div class="pstat-val text-grad"><%= fa(inactiveCount) %></div><div class="pstat-lbl">غیرفعال</div></div></div>
+      </div>
 
-  </div>
+      <!-- Search + Filter -->
+      <div class="sw-toolbar fade-up fade-up-2">
+        <label class="sw-search" aria-label="جستجوی مشتری">
+          <i class="bi bi-search" aria-hidden="true"></i>
+          <input type="search" id="clientSearch" placeholder="نام، ایمیل، شرکت یا تلفن…" autocomplete="off" value="<%= f.q %>">
+        </label>
+        <select class="sol-select" id="statusFilter" aria-label="فیلتر وضعیت">
+          <option value="all" <%= f.status === 'all' ? 'selected' : '' %>>همه وضعیت‌ها</option>
+          <option value="active" <%= f.status === 'active' ? 'selected' : '' %>>فعال</option>
+          <option value="inactive" <%= f.status === 'inactive' ? 'selected' : '' %>>غیرفعال</option>
+        </select>
+      </div>
 
-  <!-- Clients Table -->
-<div class="dash-panel fade-up fade-up-3">
-  <div style="overflow-x:auto;">
-    <table class="sol-table" id="clientsTable">
-      <thead>
-        <tr>
-          <th>مشتری</th>
-          <th>ایمیل / تلفن</th>
-          <th>پروژه‌ها</th>
-          <th>آخرین پروژه</th>
-          <th>وضعیت</th>
-          <th>رضایت</th>
-          <th>عملیات</th>
-        </tr>
-      </thead>
-
-      <tbody>
-        <% if (clients && clients.length > 0) { %>
-
-          <% clients.forEach((client, index) => { %>
-
-            <%
-              const gradients = [
-                'var(--grad-main)',
-                'linear-gradient(135deg,#0090e8,#4dc3ff)',
-                'linear-gradient(135deg,#a394fb,#6447f4)',
-                'linear-gradient(135deg,#22c55e,#0090e8)',
-                'linear-gradient(135deg,#f59e0b,#ef4444)',
-                'linear-gradient(135deg,#6447f4,#1e1274)'
-              ];
-
-              const avatarText = client.avatar
-                ? client.avatar
-                : (client.name || '؟')
-                    .split(' ')
-                    .map(part => part[0])
-                    .join('')
-                    .substring(0, 3);
-
-              const bg = gradients[index % gradients.length];
-            %>
-
-<tr 
-  data-status="<%= client.isActive ? 'active' : 'inactive' %>"
->
-              <td>
-                <div style="display:flex;align-items:center;gap:.75rem;">
-                  <div class="cl-av" style="background:<%= bg %>;">
-                    <%= avatarText %>
-                  </div>
-
-                  <div>
-                    <div style="font-weight:700;font-size:.85rem;">
-                      <%= client.name || '-' %>
+      <!-- Clients Table -->
+      <div class="dash-panel fade-up fade-up-3" id="clientsPanel">
+        <div class="sw-tw">
+          <table class="sol-table" id="clientsTable">
+            <thead>
+              <tr><th>مشتری</th><th>تماس</th><th>دسته</th><th>پروژه‌ها</th><th>وضعیت</th><th>عملیات</th></tr>
+            </thead>
+            <tbody id="clientsBody">
+              <% if (list.length) { %>
+                <% list.forEach(function (c) { %>
+                  <tr class="is-clickable" data-status="<%= c.isActive ? 'active' : 'inactive' %>" data-q="<%= searchText(c) %>" data-client="<%= payload(c) %>">
+                    <td>
+                      <div class="cell-person">
+                        <div class="cl-av <%= avClass(c) %>"><%= initials(c) %></div>
+                        <div>
+                          <div class="cell-title"><%= c.name || '—' %></div>
+                          <div class="cell-sub"><%= c.company || '—' %></div>
+                        </div>
+                      </div>
+                    </td>
+                    <td>
+                      <div class="cell-email" dir="ltr"><%= c.email || '—' %></div>
+                      <div class="cell-sub"><%= c.phone ? fa(c.phone) : '—' %></div>
+                    </td>
+                    <td><% if (catTitle(c)) { %><span class="cat-chip"><%= catTitle(c) %></span><% } else { %><span class="cell-sub">—</span><% } %></td>
+                    <td>
+                      <div class="cell-title"><%= fa(c.projectsCount || 0) %></div>
+                      <div class="cell-sub"><%= c.projectTitle && c.projectTitle !== '---' ? c.projectTitle : '—' %></div>
+                    </td>
+                    <td><span class="badge-status <%= c.isActive ? 'badge-done' : 'badge-hold' %>"><%= c.isActive ? 'فعال' : 'غیرفعال' %></span></td>
+                    <td>
+                      <div class="row-actions">
+                        <button type="button" class="btn-icon" title="مشاهده پروفایل" aria-label="مشاهده پروفایل" data-modal-open="clientDetail" data-client-view><i class="bi bi-eye"></i></button>
+                        <button type="button" class="btn-icon" title="ویرایش" aria-label="ویرایش" data-modal-open="clientModal" data-client-edit><i class="bi bi-pencil"></i></button>
+                        <form action="/sw-admin/clients/<%= c._id %>/delete" method="POST" data-sw-confirm="آیا از حذف «<%= c.name || 'این مشتری' %>» مطمئن هستید؟ این کار قابل بازگشت نیست.">
+                          <button type="submit" class="btn-icon danger" title="حذف" aria-label="حذف"><i class="bi bi-trash"></i></button>
+                        </form>
+                      </div>
+                    </td>
+                  </tr>
+                <% }); %>
+              <% } else { %>
+                <tr data-empty>
+                  <td colspan="6">
+                    <div class="sw-empty">
+                      <i class="bi bi-people"></i>
+                      <%= (f.q || f.status !== 'all') ? 'مشتری‌ای با این فیلتر پیدا نشد.' : 'هنوز هیچ مشتری‌ای ثبت نشده است.' %>
                     </div>
+                  </td>
+                </tr>
+              <% } %>
+              <tr id="clientsNoMatch" hidden>
+                <td colspan="6"><div class="sw-empty"><i class="bi bi-search"></i>مشتری‌ای با این فیلتر پیدا نشد.</div></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
 
-                    <div style="font-size:.72rem;color:var(--color-text-muted);">
-                      <%= client.company || '-' %>
-                    </div>
-                  </div>
-                </div>
-              </td>
+        <!-- Footer / Pagination (با AJAX جایگزین می‌شود) -->
+        <div class="tbl-foot" id="clientsFooter">
+          <span>نمایش <%= fa(startItem) %>–<%= fa(endItem) %> از <%= fa(shownTotal) %> مشتری</span>
+          <% if (totalPages > 1) { %>
+            <div class="sw-pager">
+              <% if (currentPage > 1) { %><a class="pg-btn" href="/sw-admin/clients?page=<%= currentPage - 1 %>" aria-label="قبلی"><i class="bi bi-chevron-right"></i></a>
+              <% } else { %><button type="button" class="pg-btn" disabled aria-label="قبلی"><i class="bi bi-chevron-right"></i></button><% } %>
+              <% for (let i = 1; i <= totalPages; i++) { %>
+                <a class="pg-btn <%= currentPage === i ? 'active' : '' %>" href="/sw-admin/clients?page=<%= i %>" <%= currentPage === i ? 'aria-current=page' : '' %>><%= fa(i) %></a>
+              <% } %>
+              <% if (currentPage < totalPages) { %><a class="pg-btn" href="/sw-admin/clients?page=<%= currentPage + 1 %>" aria-label="بعدی"><i class="bi bi-chevron-left"></i></a>
+              <% } else { %><button type="button" class="pg-btn" disabled aria-label="بعدی"><i class="bi bi-chevron-left"></i></button><% } %>
+            </div>
+          <% } %>
+        </div>
+      </div>
 
-              <td>
-                <div style="font-size:.8rem;">
-                  <%= client.email || '-' %>
-                </div>
-
-                <div style="font-size:.73rem;color:var(--color-text-muted);">
-                  <%= client.phone || '-' %>
-                </div>
-              </td>
-
-              <td>
-                <span style="font-size:.85rem;font-weight:700;">
-                  <%= client.projectsCount || 0 %>
-                </span>
-              </td>
-
-              <td>
-                <span style="font-size:.8rem;">
-                  <%= client.lastProject || '—' %>
-                </span>
-              </td>
-
-              <td>
-                <% if (client.isActive) { %>
-                  <span class="badge-status badge-done">فعال</span>
-                <% } else { %>
-                  <span class="badge-status badge-inprog">غیرفعال</span>
-                <% } %>
-              </td>
-
-              <td>
-                <span style="color:#f59e0b;letter-spacing:.1em;">
-                  <%= client.rating || '★★★★★' %>
-                </span>
-              </td>
-
-              <td>
-                <div style="display:flex;gap:.4rem;">
-<button
-  class="btn-ghost-sm btn-view-client"
-  type="button"
-  style="padding:.28rem .6rem;"
-  data-modal-open="clientDetail"
-
-  data-id="<%= client._id %>"
-  data-name="<%= client.name || '' %>"
-  data-company="<%= client.company || '' %>"
-  data-email="<%= client.email || '' %>"
-  data-phone="<%= client.phone || '' %>"
-  data-address="<%= client.address || '' %>"
-  data-notes="<%= client.notes || '' %>"
-  data-active="<%= client.isActive ? 'true' : 'false' %>"
-  data-created-at="<%= client.createdAt ? client.createdAt.toISOString() : '' %>"
-  data-projects-count="<%= client.projectsCount || 0 %>"
-  data-rating="<%= client.rating || '★★★★★' %>"
-  data-project="<%= client.projectTitle || '---' %>"
->
-  <i class="bi bi-eye"></i>
-</button>
-
-
-
-
-                  <button
-                    class="btn-ghost-sm btn-edit-client"
-                    type="button"
-                    style="padding:.28rem .6rem;"
-                    data-id="<%= client._id %>"
-                    data-name="<%= client.name || '' %>"
-                    data-company="<%= client.company || '' %>"
-                    data-email="<%= client.email || '' %>"
-                    data-phone="<%= client.phone || '' %>"
-                    data-address="<%= client.address || '' %>"
-                    data-notes="<%= client.notes || '' %>"
-                    data-active="<%= client.isActive ? 'true' : 'false' %>"
-                  >
-                    <i class="bi bi-pencil"></i>
-                  </button>
-
-                  <form
-                    action="/sw-admin/clients/<%= client._id %>/delete"
-                    method="POST"
-                    onsubmit="return confirm('مطمئنی می‌خوای این مشتری حذف بشه؟')"
-                    style="margin:0;"
-                  >
-                    <button class="btn-danger-sm" style="padding:.28rem .6rem;" type="submit">
-                      <i class="bi bi-trash"></i>
-                    </button>
-                  </form>
-                </div>
-              </td>
-            </tr>
-
-          <% }) %>
-
-        <% } else { %>
-
-          <tr>
-            <td colspan="7" style="text-align:center;padding:2rem;color:var(--color-text-muted);">
-              هنوز هیچ مشتری‌ای ثبت نشده است.
-            </td>
-          </tr>
-
-        <% } %>
-      </tbody>
-    </table>
+    </main>
   </div>
 </div>
 
-
-    <!-- Pagination -->
-<div style="display:flex;align-items:center;justify-content:space-between;padding:1rem 1.25rem;border-top:1px solid var(--color-border);flex-wrap:wrap;gap:.75rem;">
-
-  <span style="font-size:.78rem;color:var(--color-text-muted);">
-    نمایش 
-    <%= startItem.toLocaleString('fa-IR') %>–<%= endItem.toLocaleString('fa-IR') %>
-    از
-    <%= clientsCount.toLocaleString('fa-IR') %>
-    مشتری
-  </span>
-
-  <% if (totalPages > 1) { %>
-    <div style="display:flex;gap:.35rem;align-items:center;">
-
-      <% if (currentPage > 1) { %>
-        <a class="pg-btn" href="/sw-admin/clients?page=<%= currentPage - 1 %>">
-          <i class="bi bi-chevron-right"></i>
-        </a>
-      <% } else { %>
-        <button class="pg-btn" disabled>
-          <i class="bi bi-chevron-right"></i>
-        </button>
-      <% } %>
-
-      <% for (let i = 1; i <= totalPages; i++) { %>
-        <a
-          class="pg-btn <%= currentPage === i ? 'active' : '' %>"
-          href="/sw-admin/clients?page=<%= i %>"
-        >
-          <%= i.toLocaleString('fa-IR') %>
-        </a>
-      <% } %>
-
-      <% if (currentPage < totalPages) { %>
-        <a class="pg-btn" href="/sw-admin/clients?page=<%= currentPage + 1 %>">
-          <i class="bi bi-chevron-left"></i>
-        </a>
-      <% } else { %>
-        <button class="pg-btn" disabled>
-          <i class="bi bi-chevron-left"></i>
-        </button>
-      <% } %>
-
+<!-- Modal: مشتری جدید / ویرایش -->
+<div class="modal-overlay" id="clientModal">
+  <div class="modal-box">
+    <div class="modal-head">
+      <h3 class="modal-title" id="clientModalTitle">مشتری جدید</h3>
+      <button type="button" class="btn-icon" data-modal-close aria-label="بستن"><i class="bi bi-x-lg"></i></button>
     </div>
-  <% } %>
 
-</div>
-
-  </div>
-
-</main>
-</div>
-</div>
-
-<!-- Modal: مشتری جدید -->
-<form method="post" action="/sw-admin/clients">
-  <div class="modal-overlay" id="clientModal">
-    <div class="modal-box">
-      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1.5rem;">
-        <div class="modal-title" style="margin:0;">مشتری جدید</div>
-        <button data-modal-close style="background:transparent;border:none;font-size:1.2rem;color:var(--color-text-muted);cursor:pointer;"><i class="bi bi-x-lg"></i></button>
-      </div>
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;">
-        <div class="form-row">
-          <label class="sol-label">نام</label>
-          <input class="sol-input" type="text" placeholder="نام مشتری" name="name">
+    <form action="/sw-admin/clients" method="POST" id="clientForm" data-validate novalidate>
+      <div class="form-row two">
+        <div class="sw-field">
+          <label class="sol-label" for="clientName">نام</label>
+          <input class="sol-input" type="text" name="name" id="clientName" placeholder="نام مشتری" data-rule="required" autocomplete="off">
         </div>
-        <div class="form-row">
-          <label class="sol-label">نام شرکت</label>
-          <input class="sol-input" type="text" placeholder="نام شرکت یا برند" name="company">
+        <div class="sw-field">
+          <label class="sol-label" for="clientCompany">نام شرکت</label>
+          <input class="sol-input" type="text" name="company" id="clientCompany" placeholder="نام شرکت یا برند" autocomplete="off">
         </div>
       </div>
-      <div class="form-row">
-        <label class="sol-label">ایمیل</label>
-        <input class="sol-input" type="email" placeholder="example@domain.com" name="email">
-      </div>
-      <div class="form-row">
-        <label class="sol-label">شماره تماس</label>
-        <input class="sol-input" type="tel" placeholder="۰۹۱۲۱۲۳۴۵۶۷" name="phone">
-      </div>
-      <div class="form-row">
-        <label class="sol-label">آدرس</label>
-        <input class="sol-input" type="text" placeholder="آدرس مشتری" name="address">
-      </div>
-      <div class="form-row">
-        <label class="sol-label">یادداشت</label>
-        <textarea class="sol-input" rows="2" placeholder="یادداشت اختیاری…" style="resize:vertical;" name="notes"></textarea>
-      </div>
-      <div style="display:flex;gap:.75rem;justify-content:flex-end;margin-top:1.5rem;">
-        <button class="btn-ghost-sm" data-modal-close>انصراف</button>
-        <button class="btn-sol-sm"><i class="bi bi-check-lg"></i> ثبت مشتری</button>
-      </div>
-    </div>
-  </div>
-</form>
 
-<!-- Modal: ویرایش اطلاعات مشتری -->
-<form method="post" action="/sw-admin/clients/EDIT_CLIENT_ID?_method=PUT" id="editClientForm">
-  <div class="modal-overlay" id="editClientModal">
-    <div class="modal-box">
-      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1.5rem;">
-        <div class="modal-title" style="margin:0;">ویرایش اطلاعات مشتری</div>
-        <button type="button" data-modal-close style="background:transparent;border:none;font-size:1.2rem;color:var(--color-text-muted);cursor:pointer;"><i class="bi bi-x-lg"></i></button>
-      </div>
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;">
-        <div class="form-row">
-          <label class="sol-label">نام</label>
-          <input class="sol-input" type="text" placeholder="نام مشتری" name="name" id="editClientName">
+      <div class="form-row two">
+        <div class="sw-field">
+          <label class="sol-label" for="clientEmail">ایمیل</label>
+          <input class="sol-input" type="email" name="email" id="clientEmail" dir="ltr" placeholder="example@domain.com" data-rule="email" autocomplete="off">
         </div>
-        <div class="form-row">
-          <label class="sol-label">نام شرکت</label>
-          <input class="sol-input" type="text" placeholder="نام شرکت یا برند" name="company" id="editClientCompany">
+        <div class="sw-field">
+          <label class="sol-label" for="clientPhone">شماره تماس</label>
+          <input class="sol-input" type="tel" name="phone" id="clientPhone" dir="ltr" inputmode="tel" placeholder="09121234567" data-rule="phone" autocomplete="off">
         </div>
       </div>
-      <div class="form-row">
-        <label class="sol-label">ایمیل</label>
-        <input class="sol-input" type="email" placeholder="example@domain.com" name="email" id="editClientEmail">
+
+      <% if (cats.length) { %>
+      <div class="sw-field">
+        <label class="sol-label" for="clientCategory">دسته‌بندی</label>
+        <select class="sol-select" name="category" id="clientCategory">
+          <option value="">بدون دسته</option>
+          <% cats.forEach(function (cat) { %><option value="<%= cat._id %>"><%= cat.title %></option><% }); %>
+        </select>
       </div>
-      <div class="form-row">
-        <label class="sol-label">شماره تماس</label>
-        <input class="sol-input" type="tel" placeholder="۰۹۱۲۱۲۳۴۵۶۷" name="phone" id="editClientPhone">
+      <% } %>
+
+      <div class="sw-field">
+        <label class="sol-label" for="clientAddress">آدرس</label>
+        <input class="sol-input" type="text" name="address" id="clientAddress" placeholder="آدرس مشتری" autocomplete="off">
       </div>
-      <div class="form-row">
-        <label class="sol-label">آدرس</label>
-        <input class="sol-input" type="text" placeholder="آدرس مشتری" name="address" id="editClientAddress">
+      <div class="sw-field">
+        <label class="sol-label" for="clientNotes">یادداشت</label>
+        <textarea class="sol-input" name="notes" id="clientNotes" rows="2" placeholder="یادداشت اختیاری…"></textarea>
       </div>
-      <div class="form-row">
-        <label class="sol-label">یادداشت</label>
-        <textarea class="sol-input" rows="2" placeholder="یادداشت اختیاری…" style="resize:vertical;" name="notes" id="editClientNotes"></textarea>
+
+      <!-- فقط در ویرایش: روت ثبت مشتری جدید همیشه فعال می‌سازد -->
+      <div class="sw-field" id="activeField" hidden>
+        <label class="sw-switch-row">
+          <span class="sw-toggle"><input type="checkbox" name="isActive" id="clientActive" checked><span class="sw-slider"></span></span>
+          <span>مشتری فعال است</span>
+        </label>
       </div>
-      <div style="display:flex;gap:.75rem;justify-content:flex-end;margin-top:1.5rem;">
+
+      <div class="modal-foot">
         <button type="button" class="btn-ghost-sm" data-modal-close>انصراف</button>
-        <button class="btn-sol-sm" type="submit"><i class="bi bi-check-lg"></i> ذخیره تغییرات</button>
+        <button type="submit" class="btn-sol-sm" id="clientSubmitBtn"><i class="bi bi-check-lg"></i> ثبت مشتری</button>
       </div>
-    </div>
+    </form>
   </div>
-</form>
+</div>
 
-<!-- Modal: جزئیات مشتری -->
+<!-- Modal: پروفایل مشتری -->
 <div class="modal-overlay" id="clientDetail">
-  <div class="modal-box" style="width:min(620px,92vw);">
-
-    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1.5rem;">
-      <div class="modal-title" style="margin:0;">پروفایل مشتری</div>
-
-      <button
-        data-modal-close
-        type="button"
-        style="background:transparent;border:none;font-size:1.2rem;color:var(--color-text-muted);cursor:pointer;"
-      >
-        <i class="bi bi-x-lg"></i>
-      </button>
+  <div class="modal-box">
+    <div class="modal-head">
+      <h3 class="modal-title">پروفایل مشتری</h3>
+      <button type="button" class="btn-icon" data-modal-close aria-label="بستن"><i class="bi bi-x-lg"></i></button>
     </div>
 
-    <div style="display:flex;align-items:center;gap:1rem;padding:1.25rem;background:var(--color-bg);border-radius:var(--radius-lg);margin-bottom:1.5rem;">
-
-      <div
-        id="detailAvatar"
-        style="width:56px;height:56px;border-radius:var(--radius-md);background:var(--grad-main);display:flex;align-items:center;justify-content:center;font-size:.9rem;font-weight:800;color:#fff;flex-shrink:0;"
-      >
-        -
+    <div class="detail-hero">
+      <div class="cl-av cl-av-lg" id="detailAvatar">—</div>
+      <div class="grow">
+        <div class="detail-name" id="detailName">—</div>
+        <div class="detail-meta" id="detailMeta">—</div>
       </div>
-
-      <div style="flex:1;">
-        <div
-          id="detailName"
-          style="font-size:1rem;font-weight:800;margin-bottom:.2rem;"
-        >
-          -
-        </div>
-
-        <div
-          id="detailMeta"
-          style="font-size:.8rem;color:var(--color-text-muted);"
-        >
-          -
-        </div>
-      </div>
-
       <span id="detailStatus" class="badge-status badge-done">فعال</span>
     </div>
 
-    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:1rem;margin-bottom:1.5rem;">
-
-      <div style="text-align:center;padding:.85rem;background:var(--color-bg);border-radius:var(--radius-md);">
-        <div
-          id="detailProjectsCount"
-          style="font-size:1.4rem;font-weight:900;"
-          class="text-grad"
-        >
-          ۰
-        </div>
-        <div style="font-size:.75rem;color:var(--color-text-muted);">پروژه</div>
-      </div>
-
-      <div style="text-align:center;padding:.85rem;background:var(--color-bg);border-radius:var(--radius-md);">
-        <div
-          id="detailSatisfaction"
-          style="font-size:1.4rem;font-weight:900;"
-          class="text-grad"
-        >
-          ۵★
-        </div>
-        <div style="font-size:.75rem;color:var(--color-text-muted);">رضایت</div>
-      </div>
-
-      <div style="text-align:center;padding:.85rem;background:var(--color-bg);border-radius:var(--radius-md);">
-        <div
-          id="detailCooperationTime"
-          style="font-size:1.4rem;font-weight:900;"
-          class="text-grad"
-       >
-          -
-        </div>
-        <div style="font-size:.75rem;color:var(--color-text-muted);">همکاری</div>
-      </div>
-
+    <div class="detail-stats">
+      <div><b id="detailProjectsCount">—</b><span>پروژه</span></div>
+      <div><b id="detailActiveCount">—</b><span>پروژه فعال</span></div>
+      <div><b id="detailCooperationTime">—</b><span>همکاری</span></div>
     </div>
 
-    <div style="font-size:.82rem;font-weight:700;margin-bottom:.75rem;color:var(--color-text-muted);">
-      اطلاعات تکمیلی مشتری
+    <div class="detail-sub">پروژه‌ها</div>
+    <div class="cl-projects" id="detailProjects" aria-live="polite"></div>
+
+    <div class="detail-sub">اطلاعات تکمیلی</div>
+    <div class="detail-row"><span>دسته</span><span id="detailCategory">—</span></div>
+    <div class="detail-row"><span>عضویت از</span><span id="detailCreated">—</span></div>
+    <div class="detail-row"><span>آدرس</span><span id="detailAddress">—</span></div>
+    <div class="detail-row"><span>یادداشت</span><span id="detailNotes" class="pre">—</span></div>
+
+    <div class="modal-foot">
+      <button type="button" class="btn-ghost-sm" data-modal-close>بستن</button>
+      <button type="button" class="btn-sol-sm" id="editClientFromDetail"><i class="bi bi-pencil"></i> ویرایش اطلاعات</button>
     </div>
-
-    <div style="display:flex;flex-direction:column;gap:.5rem;">
-
-      <div style="display:flex;align-items:center;justify-content:space-between;padding:.7rem .9rem;background:var(--color-bg);border-radius:var(--radius-md);gap:1rem;">
-        <span style="font-size:.83rem;font-weight:600;">آدرس</span>
-        <span id="detailAddress" style="font-size:.8rem;color:var(--color-text-muted);text-align:left;direction:rtl;">-</span>
-      </div>
-
-      <div style="display:flex;align-items:flex-start;justify-content:space-between;padding:.7rem .9rem;background:var(--color-bg);border-radius:var(--radius-md);gap:1rem;">
-        <span style="font-size:.83rem;font-weight:600;white-space:nowrap;">یادداشت</span>
-        <span id="detailNotes" style="font-size:.8rem;color:var(--color-text-muted);line-height:1.8;text-align:right;">-</span>
-      </div>
-
-    </div>
-
-    <div style="display:flex;gap:.75rem;justify-content:flex-end;margin-top:1.5rem;">
-      <button class="btn-ghost-sm" type="button" data-modal-close>
-        بستن
-      </button>
-
-      <button class="btn-sol-sm" type="button" id="editClientFromDetail">
-        <i class="bi bi-pencil"></i> ویرایش اطلاعات
-      </button>
-    </div>
-
   </div>
 </div>
 
-
-<%- include('partials/_scripts', { extraScripts: `
-<style>
-  
-.pstat{
-  background:var(--color-surface);
-  border:1px solid var(--color-border);
-  border-radius:var(--radius-lg);
-  padding:1.1rem 1.25rem;
-  display:flex;
-  align-items:center;
-  gap:.85rem;
-  transition:all var(--dur-normal) var(--ease-spring)
-}
-
-.pstat:hover{
-  transform:translateY(-2px);
-  box-shadow:var(--shadow-sm);
-  border-color:var(--main-200)
-}
-
-.pstat-icon{
-  width:40px;
-  height:40px;
-  border-radius:var(--radius-sm);
-  display:flex;
-  align-items:center;
-  justify-content:center;
-  font-size:1.1rem;
-  flex-shrink:0
-}
-
-.pstat-val{
-  font-size:1.5rem;
-  font-weight:900;
-  line-height:1
-}
-
-.pstat-lbl{
-  font-size:.73rem;
-  color:var(--color-text-muted);
-  margin-top:.15rem
-}
-
-.cl-av{
-  width:36px;
-  height:36px;
-  border-radius:var(--radius-sm);
-  display:flex;
-  align-items:center;
-  justify-content:center;
-  font-size:.72rem;
-  font-weight:800;
-  color:#fff;
-  flex-shrink:0
-}
-
-.pg-btn{
-  width:32px;
-  height:32px;
-  border-radius:var(--radius-sm);
-  border:1.5px solid var(--color-border);
-  background:var(--color-surface);
-  color:var(--color-text-muted);
-  display:flex;
-  align-items:center;
-  justify-content:center;
-  cursor:pointer;
-  font-size:.8rem;
-  transition:all var(--dur-fast);
-  font-family:var(--font-primary)
-}
-
-.pg-btn:disabled{
-  opacity:.4;
-  cursor:not-allowed
-}
-
-.pg-btn.active,
-.pg-btn:not(:disabled):hover{
-  background:var(--main-500);
-  border-color:var(--main-500);
-  color:#fff
-}
-</style>
-
 <script>
-/* =========================
-   Persian Helpers
-========================= */
+document.addEventListener('DOMContentLoaded', function () {
+  function $(s, c) { return (c || document).querySelector(s); }
+  function $$(s, c) { return Array.prototype.slice.call((c || document).querySelectorAll(s)); }
+  function fa(v) { return String(v == null ? '' : v).replace(/[0-9]/g, function (d) { return '۰۱۲۳۴۵۶۷۸۹'[d]; }); }
+  function en(v) { return String(v == null ? '' : v).replace(/[۰-۹]/g, function (d) { return '۰۱۲۳۴۵۶۷۸۹'.indexOf(d); }).replace(/[٠-٩]/g, function (d) { return '٠١٢٣٤٥٦٧٨٩'.indexOf(d); }); }
+  function norm(s) { return String(s || '').replace(/ي/g, 'ی').replace(/ك/g, 'ک').toLowerCase(); }
+  function toast(msg, o) { if (window.SW) SW.island(msg, o); }
 
-function toPersianDigits(value) {
-  if (value === null || value === undefined || value === '') return '-';
+  var body = $('#clientsBody'), footer = $('#clientsFooter'), panel = $('#clientsPanel');
+  var searchEl = $('#clientSearch'), statusEl = $('#statusFilter');
 
-  return String(value).replace(/[0-9]/g, function(digit) {
-    return '۰۱۲۳۴۵۶۷۸۹'[Number(digit)];
-  });
-}
-
-function normalizeText(value) {
-  return String(value || '')
-    .trim()
-    .toLowerCase()
-    .replace(/ي/g, 'ی')
-    .replace(/ك/g, 'ک')
-    .replace(/‌/g, ' ');
-}
-
-function getClientInitials(name) {
-  if (!name || name === '-') return '-';
-
-  const parts = name.trim().split(/\\s+/);
-
-  if (parts.length === 1) {
-    return parts[0].charAt(0);
-  }
-
-  return parts[0].charAt(0) + parts[1].charAt(0);
-}
-
-function calculateCooperationTime(createdAt) {
-  if (!createdAt) return '-';
-
-  const createdDate = new Date(createdAt);
-
-  if (Number.isNaN(createdDate.getTime())) return '-';
-
-  const now = new Date();
-  const diffMs = now - createdDate;
-  const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
-
-  if (diffDays < 1) return 'امروز';
-  if (diffDays < 30) return toPersianDigits(diffDays) + ' روز';
-
-  const diffMonths = Math.floor(diffDays / 30);
-  if (diffMonths < 12) return toPersianDigits(diffMonths) + ' ماه';
-
-  const diffYears = Math.floor(diffDays / 365);
-  return toPersianDigits(diffYears) + ' سال';
-}
-
-function getRatingNumber(rating) {
-  if (!rating) return '۵';
-
-  const starsCount = String(rating).split('★').length - 1;
-
-  if (starsCount > 0) {
-    return toPersianDigits(starsCount);
-  }
-
-  return toPersianDigits(rating);
-}
-
-/* =========================
-   Clients Table Filter
-========================= */
-
-const clientSearch = document.getElementById('clientSearch');
-const statusFilter = document.getElementById('statusFilter');
-const clientRows = document.querySelectorAll('#clientsTable tbody tr');
-
-function filterClientsTable() {
-  const searchValue = normalizeText(clientSearch ? clientSearch.value : '');
-  const statusValue = statusFilter ? statusFilter.value : 'all';
-
-  clientRows.forEach(function(row) {
-    const rowText = normalizeText(row.textContent);
-    const rowStatus = row.dataset.status || '';
-
-    const matchesSearch = rowText.includes(searchValue);
-    const matchesStatus = statusValue === 'all' || rowStatus === statusValue;
-
-    row.style.display = matchesSearch && matchesStatus ? '' : 'none';
-  });
-}
-
-if (clientSearch) {
-  clientSearch.addEventListener('input', filterClientsTable);
-}
-
-if (statusFilter) {
-  statusFilter.addEventListener('change', filterClientsTable);
-}
-
-/* =========================
-   Client Detail Modal
-========================= */
-
-const viewClientButtons = document.querySelectorAll('.btn-view-client');
-
-viewClientButtons.forEach(function(button) {
-  button.addEventListener('click', function() {
-    const name = this.dataset.name || '-';
-    const company = this.dataset.company || '-';
-    const email = this.dataset.email || '-';
-    const phone = this.dataset.phone || '-';
-    const address = this.dataset.address || '-';
-    const notes = this.dataset.notes || '-';
-    const isActive = this.dataset.active === 'true';
-    const createdAt = this.dataset.createdAt || '';
-    const projectsCount = this.dataset.projectsCount || '0';
-    const rating = this.dataset.rating || '★★★★★';
-    const clientId = this.dataset.id || '';
-
-    const detailAvatar = document.getElementById('detailAvatar');
-    const detailName = document.getElementById('detailName');
-    const detailMeta = document.getElementById('detailMeta');
-    const detailStatus = document.getElementById('detailStatus');
-    const detailProjectsCount = document.getElementById('detailProjectsCount');
-    const detailSatisfaction = document.getElementById('detailSatisfaction');
-    const detailCooperationTime = document.getElementById('detailCooperationTime');
-    const detailAddress = document.getElementById('detailAddress');
-    const detailNotes = document.getElementById('detailNotes');
-    const editClientFromDetail = document.getElementById('editClientFromDetail');
-
-    if (detailAvatar) {
-      detailAvatar.textContent = getClientInitials(name);
-    }
-
-    if (detailName) {
-      detailName.textContent = name;
-    }
-
-    if (detailMeta) {
-      detailMeta.textContent = company + ' · ' + email + ' · ' + toPersianDigits(phone);
-    }
-
-    if (detailStatus) {
-      detailStatus.textContent = isActive ? 'فعال' : 'غیرفعال';
-      detailStatus.className = isActive
-        ? 'badge-status badge-done'
-        : 'badge-status badge-inprog';
-    }
-
-    if (detailProjectsCount) {
-      detailProjectsCount.textContent = toPersianDigits(projectsCount);
-    }
-
-    if (detailSatisfaction) {
-      detailSatisfaction.textContent = getRatingNumber(rating) + '★';
-    }
-
-    if (detailCooperationTime) {
-      detailCooperationTime.textContent = calculateCooperationTime(createdAt);
-    }
-
-    if (detailAddress) {
-      detailAddress.textContent = address;
-    }
-
-    if (detailNotes) {
-      detailNotes.textContent = notes;
-    }
-
-    if (editClientFromDetail) {
-      editClientFromDetail.dataset.clientId = clientId;
-      editClientFromDetail.dataset.name = name;
-      editClientFromDetail.dataset.company = company;
-      editClientFromDetail.dataset.email = email;
-      editClientFromDetail.dataset.phone = phone;
-      editClientFromDetail.dataset.address = address;
-      editClientFromDetail.dataset.notes = notes;
-    }
-  });
-});
-
-/* =========================
-   Edit Client Modal
-========================= */
-
-function fillEditClientModal(data) {
-  const editClientForm = document.getElementById('editClientForm');
-  const editClientName = document.getElementById('editClientName');
-  const editClientCompany = document.getElementById('editClientCompany');
-  const editClientEmail = document.getElementById('editClientEmail');
-  const editClientPhone = document.getElementById('editClientPhone');
-  const editClientAddress = document.getElementById('editClientAddress');
-  const editClientNotes = document.getElementById('editClientNotes');
-
-  if (editClientForm && data.id) {
-    editClientForm.setAttribute('action', '/sw-admin/clients/' + data.id + '?_method=PUT');
-  }
-
-  if (editClientName) editClientName.value = data.name === '-' ? '' : (data.name || '');
-  if (editClientCompany) editClientCompany.value = data.company === '-' ? '' : (data.company || '');
-  if (editClientEmail) editClientEmail.value = data.email === '-' ? '' : (data.email || '');
-  if (editClientPhone) editClientPhone.value = data.phone === '-' ? '' : (data.phone || '');
-  if (editClientAddress) editClientAddress.value = data.address === '-' ? '' : (data.address || '');
-  if (editClientNotes) editClientNotes.value = data.notes === '-' ? '' : (data.notes || '');
-}
-
-function openModalById(modalId) {
-  const modalEl = document.getElementById(modalId);
-  if (!modalEl) return;
-
-  if (typeof window.openModal === 'function') {
-    window.openModal(modalId);
-    return;
-  }
-
-  const trigger = document.createElement('button');
-  trigger.setAttribute('data-modal-open', modalId);
-  trigger.style.display = 'none';
-  document.body.appendChild(trigger);
-  trigger.click();
-  trigger.remove();
-}
-
-function closeModalById(modalId) {
-  const modalEl = document.getElementById(modalId);
-  if (!modalEl) return;
-
-  if (typeof window.closeModal === 'function') {
-    window.closeModal(modalId);
-    return;
-  }
-
-  const closer = modalEl.querySelector('[data-modal-close]');
-  if (closer) {
-    closer.click();
-  } else {
-    modalEl.classList.remove('active', 'show', 'open');
-  }
-}
-
-const editClientButtons = document.querySelectorAll('.btn-edit-client');
-
-editClientButtons.forEach(function(button) {
-  button.addEventListener('click', function() {
-    fillEditClientModal({
-      id: this.dataset.id || '',
-      name: this.dataset.name || '',
-      company: this.dataset.company || '',
-      email: this.dataset.email || '',
-      phone: this.dataset.phone || '',
-      address: this.dataset.address || '',
-      notes: this.dataset.notes || ''
+  /* ───────── فیلتر فوری روی ردیف‌های همین صفحه ───────── */
+  function localFilter() {
+    var q = norm(en(searchEl.value.trim())), st = statusEl.value, shown = 0, rows = $$('tr[data-client]', body);
+    rows.forEach(function (tr) {
+      var ok = (st === 'all' || tr.dataset.status === st) && (!q || norm(en(tr.dataset.q)).indexOf(q) > -1);
+      tr.hidden = !ok; if (ok) shown++;
     });
+    $('#clientsNoMatch').hidden = !(rows.length && !shown);
+  }
 
-    openModalById('editClientModal');
+  /* ───────── جستجو/فیلتر کل لیست: همان صفحه‌ی سرور را می‌گیرد و فقط جدول را عوض می‌کند ───────── */
+  var ctrl = null;
+  function query(page) {
+    var u = new URLSearchParams(), q = en(searchEl.value.trim());
+    if (q) u.set('q', q);
+    if (statusEl.value !== 'all') u.set('status', statusEl.value);
+    if (page > 1) u.set('page', page);
+    var s = u.toString(); return s ? '?' + s : '';
+  }
+  function load(page) {
+    if (ctrl) ctrl.abort();
+    ctrl = new AbortController();
+    panel.classList.add('is-loading'); body.setAttribute('aria-busy', 'true');
+    var qs = query(page || 1);
+    return fetch('/sw-admin/clients' + qs, { credentials: 'same-origin', signal: ctrl.signal, headers: { Accept: 'text/html' } })
+      .then(function (r) {
+        if (r.redirected && r.url.indexOf('/login') > -1) { location.href = '/sw-admin/login'; throw null; }
+        if (!r.ok) throw new Error('fail');
+        return r.text();
+      })
+      .then(function (html) {
+        var doc = new DOMParser().parseFromString(html, 'text/html'), nb = doc.getElementById('clientsBody'), nf = doc.getElementById('clientsFooter');
+        if (!nb || !nf) throw new Error('bad');
+        body.innerHTML = nb.innerHTML; footer.innerHTML = nf.innerHTML;
+        history.replaceState(null, '', '/sw-admin/clients' + qs);
+        localFilter();
+      })
+      .catch(function (e) { if (e && e.name !== 'AbortError') toast('دریافت لیست مشتریان انجام نشد', { type: 'error' }); })
+      .then(function () { panel.classList.remove('is-loading'); body.removeAttribute('aria-busy'); });
+  }
+  var timer = 0;
+  function onFilter() { localFilter(); clearTimeout(timer); timer = setTimeout(function () { load(1); }, 350); }
+  searchEl.addEventListener('input', onFilter);
+  statusEl.addEventListener('change', onFilter);
+  footer.addEventListener('click', function (e) {
+    var a = e.target.closest('a.pg-btn'); if (!a) return;
+    e.preventDefault();
+    load(Number(new URL(a.href, location.href).searchParams.get('page')) || 1).then(function () { panel.scrollIntoView({ behavior: 'smooth', block: 'start' }); });
+  });
+
+  /* ───────── مودال ثبت / ویرایش ───────── */
+  var form = $('#clientForm'), title = $('#clientModalTitle'), submitBtn = $('#clientSubmitBtn'), activeField = $('#activeField');
+  var f = { name: $('#clientName'), company: $('#clientCompany'), email: $('#clientEmail'), phone: $('#clientPhone'),
+            address: $('#clientAddress'), notes: $('#clientNotes'), category: $('#clientCategory'), active: $('#clientActive') };
+
+  function clearErrors() {
+    $$('.sw-err', form).forEach(function (n) { n.remove(); });
+    $$('.is-invalid', form).forEach(function (n) { n.classList.remove('is-invalid'); n.removeAttribute('aria-invalid'); });
+  }
+  function setMode(mode, d) {
+    d = d || {}; clearErrors();
+    if (mode === 'edit') {
+      title.textContent = 'ویرایش اطلاعات مشتری';
+      submitBtn.innerHTML = '<i class="bi bi-check-lg"></i> ذخیره تغییرات';
+      form.action = '/sw-admin/clients/' + d.id + '/update';
+      activeField.hidden = false;
+      f.name.value = d.name || ''; f.company.value = d.company || ''; f.email.value = d.email || ''; f.phone.value = d.phone || '';
+      f.address.value = d.address || ''; f.notes.value = d.notes || ''; f.active.checked = d.active !== false;
+      if (f.category) f.category.value = d.category || '';
+    } else {
+      title.textContent = 'مشتری جدید';
+      submitBtn.innerHTML = '<i class="bi bi-check-lg"></i> ثبت مشتری';
+      form.action = '/sw-admin/clients';
+      activeField.hidden = true; form.reset();
+    }
+  }
+  $('#newClientBtn').addEventListener('click', function () { setMode('create'); });
+
+  // ارقام فارسی/عربی تلفن هنگام تایپ به انگلیسی تبدیل می‌شوند (برای اعتبارسنجی و ذخیره)
+  f.phone.addEventListener('input', function () { var p = f.phone.selectionStart; f.phone.value = en(f.phone.value); try { f.phone.setSelectionRange(p, p); } catch (e) {} });
+
+  function dataOf(el) { try { return JSON.parse(el.closest('[data-client]').dataset.client || '{}'); } catch (e) { return null; } }
+
+  /* ───────── پروفایل مشتری + پروژه‌های واقعی او ───────── */
+  var PSTATUS = { active: ['badge-inprog', 'در حال انجام'], review: ['badge-review', 'در ریویو'], done: ['badge-done', 'تحویل‌شده'], hold: ['badge-hold', 'متوقف'], cancelled: ['badge-hold', 'لغوشده'] };
+  var cache = {}, current = null, viewToken = 0;
+  var projBox = $('#detailProjects');
+
+  function coop(createdAt) {
+    var d = new Date(createdAt); if (!createdAt || isNaN(d.getTime())) return '—';
+    var days = Math.floor((Date.now() - d.getTime()) / 86400000);
+    if (days < 1) return 'امروز'; if (days < 30) return fa(days) + ' روز';
+    var m = Math.floor(days / 30); if (m < 12) return fa(m) + ' ماه';
+    return fa(Math.floor(days / 365)) + ' سال';
+  }
+  function note(text, cls) { projBox.textContent = ''; var d = document.createElement('div'); d.className = cls || 'cl-proj-note'; d.textContent = text; projBox.appendChild(d); }
+  function renderProjects(list) {
+    $('#detailProjectsCount').textContent = fa(list.length);
+    $('#detailActiveCount').textContent = fa(list.filter(function (p) { return p.status === 'active'; }).length);
+    if (!list.length) return note('هنوز پروژه‌ای برای این مشتری ثبت نشده است.');
+    projBox.textContent = '';
+    list.slice(0, 6).forEach(function (p) {
+      var st = PSTATUS[p.status] || ['badge-hold', 'نامشخص'], prog = Math.max(0, Math.min(100, Number(p.progress) || 0));
+      var row = document.createElement('div'); row.className = 'cl-proj';
+      var main = document.createElement('div'); main.className = 'cl-proj-main';
+      var t = document.createElement('b'); t.textContent = p.title || 'بدون عنوان'; main.appendChild(t);
+      var bar = document.createElement('div'); bar.className = 'prog-wrap';
+      var track = document.createElement('div'); track.className = 'prog-bar-mini';
+      var fill = document.createElement('div'); fill.className = 'prog-fill'; fill.style.width = prog + '%'; track.appendChild(fill);
+      var pct = document.createElement('span'); pct.textContent = fa(prog) + '٪'; bar.appendChild(track); bar.appendChild(pct); main.appendChild(bar);
+      var badge = document.createElement('span'); badge.className = 'badge-status ' + st[0]; badge.textContent = st[1];
+      row.appendChild(main); row.appendChild(badge); projBox.appendChild(row);
+    });
+    if (list.length > 6) { var more = document.createElement('a'); more.className = 'cl-proj-more'; more.href = '/sw-admin/projects'; more.textContent = 'و ' + fa(list.length - 6) + ' پروژه دیگر…'; projBox.appendChild(more); }
+  }
+  function loadProjects(id) {
+    var token = ++viewToken;
+    if (cache[id]) return renderProjects(cache[id]);
+    $('#detailProjectsCount').textContent = '…'; $('#detailActiveCount').textContent = '…';
+    note('در حال دریافت پروژه‌ها…');
+    fetch('/sw-admin/clients/' + id + '/projects', { credentials: 'same-origin', headers: { Accept: 'application/json' } })
+      .then(function (r) { if (!r.ok) throw new Error('fail'); return r.json(); })
+      .then(function (list) { cache[id] = Array.isArray(list) ? list : []; if (token === viewToken) renderProjects(cache[id]); })
+      .catch(function () {
+        if (token !== viewToken) return;
+        $('#detailProjectsCount').textContent = '—'; $('#detailActiveCount').textContent = '—';
+        note('دریافت پروژه‌ها انجام نشد.', 'cl-proj-note error');
+      });
+  }
+  function fillView(d) {
+    current = d;
+    var av = $('#detailAvatar'); av.textContent = (d.name || '؟').trim().split(/\s+/).slice(0, 2).map(function (w) { return w[0]; }).join('‌');
+    $('#detailName').textContent = d.name || '—';
+    $('#detailMeta').textContent = [d.company, d.email, d.phone ? fa(d.phone) : ''].filter(Boolean).join(' · ') || '—';
+    var st = $('#detailStatus'); st.textContent = d.active ? 'فعال' : 'غیرفعال'; st.className = 'badge-status ' + (d.active ? 'badge-done' : 'badge-hold');
+    $('#detailCooperationTime').textContent = coop(d.createdAt);
+    $('#detailCategory').textContent = d.categoryTitle || '—';
+    var cd = new Date(d.createdAt); $('#detailCreated').textContent = d.createdAt && !isNaN(cd.getTime()) ? new Intl.DateTimeFormat('fa-IR', { dateStyle: 'medium' }).format(cd) : '—';
+    $('#detailAddress').textContent = d.address || '—';
+    $('#detailNotes').textContent = d.notes || '—';
+    loadProjects(d.id);
+  }
+
+  document.addEventListener('click', function (e) {
+    var ed = e.target.closest('[data-client-edit]');
+    if (ed) { var d = dataOf(ed); if (d) setMode('edit', d); return; }
+    var vw = e.target.closest('[data-client-view]');
+    if (vw) { var v = dataOf(vw); if (v) fillView(v); return; }
+    // کلیک روی ردیف = مشاهده پروفایل
+    var row = e.target.closest('#clientsBody tr[data-client]');
+    if (row && !e.target.closest('button,a,form,input,select')) $('[data-client-view]', row).click();
+  });
+  $('#editClientFromDetail').addEventListener('click', function () {
+    if (!current) return;
+    setMode('edit', current); window.closeModal('clientDetail'); window.openModal('clientModal');
   });
 });
+</script>
 
-const editClientFromDetailBtn = document.getElementById('editClientFromDetail');
-
-if (editClientFromDetailBtn) {
-  editClientFromDetailBtn.addEventListener('click', function() {
-    const data = {
-      id: this.dataset.clientId || '',
-      name: this.dataset.name || '',
-      company: this.dataset.company || '',
-      email: this.dataset.email || '',
-      phone: this.dataset.phone || '',
-      address: this.dataset.address || '',
-      notes: this.dataset.notes || ''
-    };
-
-    closeModalById('clientDetail');
-    fillEditClientModal(data);
-    openModalById('editClientModal');
-  });
-}
-<\/script>
-` }) %>
+<%- include('partials/_scripts') %>

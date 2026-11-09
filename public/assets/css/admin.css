@@ -274,6 +274,7 @@ body.sw-ios{
   :is(.sol-input,.sol-select):disabled{opacity:.55}
   :is(.sol-input,.sol-select):user-invalid,.is-invalid{border-color:var(--danger)!important}
   .sw-err{color:var(--danger);font-size:var(--sw-t-xs);margin-top:.3rem;animation:sw-shake .4s var(--sw-smooth)}
+  .sw-err:empty{display:none}
   .form-row{gap:var(--sw-s2)}
   .sw-field{margin-bottom:var(--sw-s2)}
 
@@ -290,7 +291,8 @@ body.sw-ios{
   .badge-status{border-radius:var(--radius-full);font-size:var(--sw-t-xs);font-weight:700;padding:.2rem .7rem}
   :is(.filter-chip,.stab){min-height:var(--sw-hit);display:inline-flex;align-items:center;border-radius:var(--radius-md);font-family:inherit;font-size:var(--sw-t-sm);font-weight:700;cursor:pointer;transition:background-color .15s,color .15s,transform .4s var(--sw-spring)}
   :is(.filter-chip,.stab):active{transform:scale(.96);transition-duration:.08s}
-  .pg-btn{min-width:32px;min-height:32px;border-radius:var(--radius-md);font-family:inherit;transition:transform .4s var(--sw-spring),background-color .15s}
+  .pg-btn{display:inline-flex;align-items:center;justify-content:center;min-width:32px;min-height:32px;padding:0 .5rem;border:1.5px solid var(--color-border);border-radius:var(--radius-md);background:var(--color-surface);color:var(--color-text-muted);font-family:inherit;font-size:var(--sw-t-sm);font-weight:700;cursor:pointer;transition:transform .4s var(--sw-spring),background-color .15s,border-color .15s,color .15s}
+  .pg-btn:hover:not(:disabled):not(.active){background:var(--tint);border-color:var(--main-300);color:var(--tint-fg)}
   .pg-btn:active{transform:scale(.92)}
   .pg-btn.active{background:var(--main-500);border-color:var(--main-500);color:#fff}.pg-btn:disabled{opacity:.4}
   a.pg-btn{text-decoration:none}
@@ -718,4 +720,24 @@ body.sw-ios{
   body.sw-ios .filter-bar .tools{width:100%;margin-inline-start:0}
   body.sw-ios .filter-bar .tools .sw-search{flex:1 1 100%}
   body.sw-ios .view-info-grid{grid-template-columns:minmax(0,1fr)}
+}
+
+/* ═══════════════ ۱۱) مشتریان (Clients.ejs) ═══════════════ */
+body.sw-ios{
+  #clientsBody tr.is-clickable{cursor:pointer}
+  .dash-panel.is-loading #clientsBody{opacity:.45;transition:opacity .2s}
+  #clientsBody{transition:opacity .2s}
+  .cell-email{font-size:var(--sw-t-sm);text-align:right;overflow-wrap:anywhere}
+  .cat-chip{display:inline-flex;align-items:center;padding:.15rem .7rem;border-radius:var(--radius-full);background:var(--tint-accent);color:var(--note-fg);font-size:var(--sw-t-xs);font-weight:700;white-space:nowrap}
+  .cl-av-lg{width:3.5rem;height:3.5rem;font-size:.95rem}
+  .sw-switch-row{display:flex;align-items:center;gap:.75rem;min-height:var(--sw-hit);font-size:var(--sw-t-sm);font-weight:600;cursor:pointer}
+  .detail-row .pre{white-space:pre-line;text-align:right}
+  .cl-projects{display:flex;flex-direction:column;gap:.5rem;margin-bottom:var(--sw-s3)}
+  .cl-proj{display:flex;align-items:center;justify-content:space-between;gap:var(--sw-s2);padding:.7rem .9rem;background:var(--color-bg-soft);border:1px solid var(--color-border);border-radius:var(--radius-md);animation:sw-up .35s var(--sw-smooth) backwards}
+  .cl-proj-main{min-width:0;flex:1;display:flex;flex-direction:column;gap:.35rem;font-size:var(--sw-t-sm)}
+  .cl-proj-main b{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .cl-proj .prog-wrap{min-width:0}
+  .cl-proj-note{padding:1rem;text-align:center;font-size:var(--sw-t-sm);color:var(--color-text-muted);background:var(--color-bg-soft);border-radius:var(--radius-md)}
+  .cl-proj-note.error{color:var(--danger);background:var(--danger-bg)}
+  .cl-proj-more{display:block;text-align:center;font-size:var(--sw-t-xs);font-weight:700;color:var(--tint-fg);text-decoration:none;padding:.35rem}
 }

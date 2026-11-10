@@ -816,35 +816,113 @@ app.post('/sw-admin/clients/:id/update', requireAdminAuth, async (req, res) => {
 // ─────────────────────────────────────────
 app.get('/sw-admin/tickets', requireAdminAuth, async (req, res) => {
   try {
-    const tickets = await Ticket.find()
-      .populate('client', 'name')
-      .sort({ createdAt: -1 })
-    res.render('admin/Tickets', { tickets })
+    const [tickets, clients] = await Promise.all([
+      Ticket.find().populate('client', 'name').sort({ createdAt: -1 }),
+      Client.find({ isActive: true }).select('name company').sort({ name: 1 }).lean()
+    ])
+    res.render('admin/Tickets', { tickets, clients })
   } catch (err) {
     res.status(500).send('خطا در بارگذاری تیکت‌ها')
   }
 })
 
-app.post('/sw-admin/tickets/:id/status', requireAdminAuth, async (req, res) => {
+const patchTicket = (field, allowed, errMsg) => async (req, res) => {
+  const wantsJson = (req.get('Accept') || '').includes('application/json')
   try {
-    // req.body.status باید یکی از مقادیر 'open' | 'pending' | 'closed' باشد
-    await Ticket.findByIdAndUpdate(req.params.id, { status: req.body.status })
+    const value = req.body[field]
+    if (!allowed.includes(value)) {
+      return wantsJson
+        ? res.status(400).json({ success: false, message: 'مقدار نامعتبر است' })
+        : res.status(400).send('مقدار نامعتبر است')
+    }
+    const ticket = await Ticket.findByIdAndUpdate(req.params.id, { [field]: value }, { new: true })
+    if (!ticket) {
+      return wantsJson
+        ? res.status(404).json({ success: false, message: 'تیکت پیدا نشد' })
+        : res.status(404).send('تیکت پیدا نشد')
+    }
+    if (wantsJson) return res.json({ success: true, [field]: value })
     res.redirect('/sw-admin/tickets')
   } catch (err) {
-    res.status(500).send('خطا در تغییر وضعیت تیکت')
+    console.error(err)
+    wantsJson ? res.status(500).json({ success: false, message: errMsg }) : res.status(500).send(errMsg)
   }
-})
+}
 
-app.post('/sw-admin/tickets/:id/priority', requireAdminAuth, async (req, res) => {
+app.post('/sw-admin/tickets/:id/status', requireAdminAuth, patchTicket('status', ['open', 'pending', 'closed'], 'خطا در تغییر وضعیت تیکت'))
+app.post('/sw-admin/tickets/:id/priority', requireAdminAuth, patchTicket('priority', ['urgent', 'medium', 'low'], 'خطا در تغییر اولویت تیکت'))
+
+
+app.post('/sw-admin/tickets/:id/reply', requireAdminAuth, async (req, res) => {
   try {
-    // req.body.priority باید یکی از مقادیر 'urgent' | 'medium' | 'low' باشد
-    await Ticket.findByIdAndUpdate(req.params.id, { priority: req.body.priority })
-    res.redirect('/sw-admin/tickets')
+    const body = typeof req.body.body === 'string' ? req.body.body.trim() : ''
+    if (!body) return res.status(400).json({ success: false, message: 'متن پاسخ نمی‌تواند خالی باشد' })
+
+    const ticket = await Ticket.findById(req.params.id)
+    if (!ticket) return res.status(404).json({ success: false, message: 'تیکت پیدا نشد' })
+
+    ticket.messages.push({ sender: 'admin', body })
+    if (ticket.status === 'open') ticket.status = 'pending'   // پاسخ داده شد = در حال بررسی
+    await ticket.save()
+
+    const msg = ticket.messages[ticket.messages.length - 1]
+    res.json({
+      success: true,
+      status: ticket.status,
+      message: { sender: msg.sender, body: msg.body, createdAt: msg.createdAt || new Date() }
+    })
   } catch (err) {
-    res.status(500).send('خطا در تغییر اولویت تیکت')
+    console.error('Ticket reply error:', err)
+    res.status(500).json({ success: false, message: 'خطا در ارسال پاسخ' })
   }
 })
+app.post('/sw-admin/tickets', requireAdminAuth, async (req, res) => {
+  try {
+    const { client, name, email, subject, body, department, priority } = req.body
 
+    if (!subject || !subject.trim() || !body || !body.trim()) {
+      return res.redirect('/sw-admin/tickets?error=موضوع و متن تیکت الزامی است')
+    }
+
+    let requester = { requesterName: name, requesterEmail: email, requesterPhone: '' }
+    let clientId = null
+
+    if (client) {
+      const c = await Client.findById(client).lean()
+      if (c) {
+        clientId = c._id
+        requester = { requesterName: c.name, requesterEmail: c.email || '', requesterPhone: c.phone || '' }
+      }
+    }
+
+    if (!requester.requesterName) {
+      return res.redirect('/sw-admin/tickets?error=مشتری یا نام درخواست‌دهنده را مشخص کنید')
+    }
+
+    const ticket = await Ticket.create({
+      ...requester,
+      client: clientId,
+      subject: subject.trim(),
+      department: department || 'general',
+      priority: ['urgent', 'medium', 'low'].includes(priority) ? priority : 'medium',
+      status: 'open',
+      source: 'admin',
+      messages: [{ sender: 'admin', body: body.trim() }]
+    })
+
+    await Activity.create({
+      type: 'ticket_created',
+      title: `تیکت جدید برای ${requester.requesterName}`,
+      icon: 'bi-ticket-detailed-fill',
+      colorVariant: 'warning'
+    })
+
+    res.redirect('/sw-admin/tickets?success=تیکت با موفقیت ایجاد شد#' + ticket._id)
+  } catch (err) {
+    console.error('Ticket create error:', err)
+    res.redirect('/sw-admin/tickets?error=خطا در ایجاد تیکت')
+  }
+})
 app.post('/sw-admin/tickets/:id/delete', requireAdminAuth, async (req, res) => {
   try {
     await Ticket.findByIdAndDelete(req.params.id)

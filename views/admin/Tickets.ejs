@@ -1,404 +1,402 @@
+<%# views/admin/Tickets.ejs — تیکت‌های پشتیبانی (لیست + گفتگو)
+    ورودی‌ها از server.js: tickets (با populate('client','name'))، clients (اختیاری؛ برای ثبت تیکت از طرف مدیریت)
+    روت‌ها: POST /sw-admin/tickets (ثبت) · /:id/reply (JSON) · /:id/status (JSON) · /:id/priority (JSON) · /:id/delete
+    لینک مستقیم به یک تیکت: /sw-admin/tickets#<id> · پیام‌ها: ?success= / ?error= %>
+<%
+  const fa = (n) => String(n ?? 0).replace(/\d/g, (d) => '۰۱۲۳۴۵۶۷۸۹'[d]);
+  const plain = (t) => (t && typeof t.toObject === 'function') ? t.toObject() : t;
+
+  const STATUS = { open: 'باز', pending: 'در حال بررسی', closed: 'بسته شده' };
+  const PRIO   = { urgent: 'فوری', medium: 'متوسط', low: 'کم' };
+  const DEPT   = { general: 'عمومی', technical: 'فنی', tech: 'فنی', financial: 'مالی', finance: 'مالی', sales: 'فروش', sale: 'فروش', support: 'پشتیبانی' };
+  const SOURCE = { contact_form: 'فرم تماس سایت', admin: 'ثبت توسط مدیریت' };
+
+  const ago = (v) => {
+    const s = Math.round((Date.now() - new Date(v).getTime()) / 1000);
+    if (!isFinite(s)) return '';
+    if (s < 60) return 'الان';
+    const m = Math.round(s / 60); if (m < 60) return fa(m) + ' د';
+    const h = Math.round(m / 60); if (h < 24) return fa(h) + ' س';
+    const d = Math.round(h / 24); return d === 1 ? 'دیروز' : fa(d) + ' روز';
+  };
+
+  const rows = (Array.isArray(tickets) ? tickets : []).map(plain).map((t) => {
+    const id    = String(t._id);
+    const name  = t.requesterName || (t.client && t.client.name) || 'ناشناس';
+    const msgs  = (Array.isArray(t.messages) ? t.messages : []).map((m) => ({
+      sender: m.sender || 'client', body: m.body || '',
+      at: m.createdAt ? new Date(m.createdAt).toISOString() : (t.createdAt ? new Date(t.createdAt).toISOString() : '')
+    }));
+    const last  = msgs.length ? msgs[msgs.length - 1] : null;
+    return {
+      id, name,
+      no      : t.ticketNo || t.ticketNumber || ('TCK-' + id.slice(-5).toUpperCase()),
+      email   : t.requesterEmail || '', phone: t.requesterPhone || '',
+      subject : t.subject || 'بدون موضوع',
+      dept    : DEPT[t.department] || t.department || 'عمومی',
+      priority: PRIO[t.priority] ? t.priority : 'medium',
+      status  : STATUS[t.status] ? t.status : 'open',
+      source  : SOURCE[t.source] || '',
+      createdAt: t.createdAt ? new Date(t.createdAt).toISOString() : '',
+      last    : (last && last.at) || (t.createdAt ? new Date(t.createdAt).toISOString() : ''),
+      preview : last ? String(last.body).replace(/\s+/g, ' ').slice(0, 90) : '',
+      initials: name.trim().split(/\s+/).slice(0, 2).map((w) => w[0]).join('‌'),
+      av      : 'av-' + ((parseInt(id.slice(-2), 16) || 0) % 6 + 1),
+      messages: msgs
+    };
+  });
+
+  const counts = { all: rows.length, open: 0, pending: 0, closed: 0 };
+  rows.forEach((r) => { counts[r.status]++; });
+
+  const clientsList = (typeof clients !== 'undefined' && Array.isArray(clients)) ? clients : [];
+  const dataMap = {};
+  rows.forEach((r) => { dataMap[r.id] = r; });
+%>
 <%- include('partials/_head', { title: 'تیکت‌های پشتیبانی' }) %>
 
 <div class="sidebar-overlay" id="sidebarOverlay"></div>
+
 <div class="admin-shell">
 
-<%- include('partials/_sidebar', {
-  activePage: 'tickets',
-  adminUser: { name: 'علی مدیری', role: 'مدیر کل سیستم', initials: 'ادم' }
-}) %>
+  <%- include('partials/_sidebar', { activePage: 'tickets' }) %>
 
-<div class="main-content" id="mainContent">
-<%- include('partials/_header', {
-  breadcrumbs: [{ label: 'داشبورد', href: '/sw-admin' }, { label: 'تیکت‌های پشتیبانی' }],
-  searchPlaceholder: 'جستجو در تیکت‌ها…'
-}) %>
+  <div class="main-content" id="mainContent">
 
-<main class="page-content">
+    <%- include('partials/_header', {
+      breadcrumbs: [{ label: 'داشبورد', href: '/sw-admin' }, { label: 'تیکت‌های پشتیبانی' }],
+      searchPlaceholder: 'جستجو در پنل…'
+    }) %>
 
-  <div class="page-header fade-up fade-up-1">
-    <div>
-      <h1 class="page-title">تیکت‌های پشتیبانی</h1>
-      <p class="page-subtitle">۵ تیکت باز · ۱۲ تیکت در حال بررسی · ۲۳ تیکت کل</p>
-    </div>
-    <button class="btn-sol-sm" data-modal-open="composeModal">
-      <i class="bi bi-plus-lg"></i> ایجاد تیکت جدید
-    </button>
+    <main class="page-content">
+
+      <div class="page-header fade-up fade-up-1">
+        <div>
+          <h1 class="page-title">تیکت‌های پشتیبانی</h1>
+          <p class="page-subtitle"><span id="subOpen"><%= fa(counts.open) %></span> تیکت باز · <span id="subPending"><%= fa(counts.pending) %></span> در حال بررسی · <span id="subAll"><%= fa(counts.all) %></span> تیکت کل</p>
+        </div>
+        <button type="button" class="btn-sol-sm" data-modal-open="composeModal"><i class="bi bi-plus-lg"></i> ایجاد تیکت جدید</button>
+      </div>
+
+      <script type="application/json" id="ticketsData"><%- JSON.stringify(dataMap).replace(/</g, '\\u003c') %></script>
+
+      <div class="tk-layout fade-up fade-up-2" id="tkLayout">
+
+        <!-- لیست تیکت‌ها -->
+        <section class="tk-side dash-panel" aria-label="لیست تیکت‌ها">
+          <div class="tk-side-head">
+            <label class="sw-search" aria-label="جستجو در تیکت‌ها">
+              <i class="bi bi-search" aria-hidden="true"></i>
+              <input type="search" id="tkSearch" placeholder="موضوع، نام یا شماره تیکت…" autocomplete="off">
+            </label>
+            <div class="tk-tabs" role="tablist">
+              <button type="button" class="tk-tab active" data-tab="all" role="tab" aria-selected="true">همه <span class="tk-count" data-count="all"><%= fa(counts.all) %></span></button>
+              <button type="button" class="tk-tab" data-tab="open" role="tab" aria-selected="false">باز <span class="tk-count" data-count="open"><%= fa(counts.open) %></span></button>
+              <button type="button" class="tk-tab" data-tab="pending" role="tab" aria-selected="false">بررسی <span class="tk-count" data-count="pending"><%= fa(counts.pending) %></span></button>
+              <button type="button" class="tk-tab" data-tab="closed" role="tab" aria-selected="false">بسته <span class="tk-count" data-count="closed"><%= fa(counts.closed) %></span></button>
+            </div>
+          </div>
+
+          <div class="tk-list" id="tkList">
+            <% rows.forEach(function (r) { %>
+              <button type="button" class="tk-item <%= r.status === 'open' ? 'unread' : '' %>" data-id="<%= r.id %>" data-status="<%= r.status %>"
+                      data-q="<%= [r.name, r.subject, r.no, r.email, r.preview].join(' ') %>">
+                <span class="tk-av <%= r.av %>"><%= r.initials %></span>
+                <span class="tk-item-body">
+                  <span class="tk-item-top"><span class="tk-item-name"><%= r.name %></span><span class="tk-item-time"><%= ago(r.last) %></span></span>
+                  <span class="tk-item-meta"><span class="tk-no"><%= r.no %></span><span class="tk-tag"><%= r.dept %></span></span>
+                  <span class="tk-item-sub"><%= r.subject %></span>
+                  <span class="tk-item-prev"><%= r.preview %></span>
+                  <span class="tk-item-badges">
+                    <span class="tk-badge tk-s-<%= r.status %>"><%= STATUS[r.status] %></span>
+                    <span class="tk-prio tk-p-<%= r.priority %>"><i class="bi bi-flag-fill"></i> <%= PRIO[r.priority] %></span>
+                  </span>
+                </span>
+              </button>
+            <% }); %>
+            <div class="sw-empty" id="tkNoMatch" hidden><i class="bi bi-inbox"></i>تیکتی با این فیلتر پیدا نشد.</div>
+            <% if (!rows.length) { %>
+              <div class="sw-empty"><i class="bi bi-ticket-detailed"></i>هنوز تیکتی ثبت نشده است.</div>
+            <% } %>
+          </div>
+        </section>
+
+        <!-- گفتگو -->
+        <section class="tk-chat dash-panel" aria-label="گفتگوی تیکت">
+          <div class="tk-chat-empty" id="tkEmpty"<%= rows.length ? ' hidden' : '' %>>
+            <i class="bi bi-chat-square-text"></i>
+            <p><%= rows.length ? 'یک تیکت را انتخاب کنید' : 'وقتی تیکتی ثبت شود، اینجا نمایش داده می‌شود.' %></p>
+          </div>
+
+          <div class="tk-chat-main" id="tkMain" hidden>
+            <header class="tk-head">
+              <button type="button" class="btn-icon tk-back" id="tkBack" aria-label="بازگشت به لیست"><i class="bi bi-arrow-right"></i></button>
+              <span class="tk-av tk-av-lg" id="tkAv">—</span>
+              <div class="tk-head-info">
+                <div class="tk-head-title"><b id="tkName">—</b><span class="tk-no" id="tkNo"></span></div>
+                <div class="tk-head-meta"><span class="tk-tag" id="tkDept"></span><span id="tkContact"></span></div>
+              </div>
+              <div class="tk-head-ctl">
+                <select class="sol-select tk-sel" id="tkPriority" aria-label="اولویت">
+                  <% Object.keys(PRIO).forEach(function (k) { %><option value="<%= k %>"><%= PRIO[k] %></option><% }); %>
+                </select>
+                <select class="sol-select tk-sel" id="tkStatus" aria-label="وضعیت">
+                  <% Object.keys(STATUS).forEach(function (k) { %><option value="<%= k %>"><%= STATUS[k] %></option><% }); %>
+                </select>
+                <form method="POST" id="tkDeleteForm" data-sw-confirm="این تیکت و همه پیام‌هایش حذف شود؟ این کار قابل بازگشت نیست.">
+                  <button type="submit" class="btn-icon danger" title="حذف تیکت" aria-label="حذف تیکت"><i class="bi bi-trash"></i></button>
+                </form>
+              </div>
+            </header>
+
+            <div class="tk-subject"><i class="bi bi-chat-left-text"></i><span id="tkSubject"></span><span class="tk-source" id="tkSource"></span></div>
+
+            <div class="tk-body" id="tkBody" aria-live="polite"></div>
+
+            <footer class="tk-compose">
+              <textarea id="tkInput" rows="1" placeholder="پاسخ خود را به‌عنوان پشتیبانی بنویسید…" aria-label="متن پاسخ"></textarea>
+              <button type="button" class="tk-send" id="tkSend" aria-label="ارسال پاسخ"><i class="bi bi-send-fill"></i></button>
+            </footer>
+          </div>
+        </section>
+
+      </div>
+    </main>
   </div>
-
-  <div class="msg-layout fade-up fade-up-2">
-
-    <!-- Sidebar Ticket List -->
-    <div class="msg-sidebar dash-panel">
-      <div class="msg-sidebar-header">
-        <div class="msg-search">
-          <i class="bi bi-search"></i>
-          <input type="text" placeholder="جستجو در تیکت‌ها…" id="msgSearch">
-        </div>
-        <div class="msg-tabs">
-          <button class="msg-tab active" data-tab="all">همه</button>
-          <button class="msg-tab" data-tab="open">باز <span class="msg-count">۵</span></button>
-          <button class="msg-tab" data-tab="pending">در حال بررسی</button>
-          <button class="msg-tab" data-tab="closed">بسته شده</button>
-        </div>
-      </div>
-      <div class="msg-list" id="msgList">
-        <%
-        const statusMeta = {
-          open:    { label:'باز',           cls:'tkt-badge-open'    },
-          pending: { label:'در حال بررسی',  cls:'tkt-badge-pending' },
-          closed:  { label:'بسته شده',      cls:'tkt-badge-closed'  }
-        };
-        const priorityMeta = {
-          urgent: { label:'فوری',   cls:'tkt-prio-urgent' },
-          medium: { label:'متوسط',  cls:'tkt-prio-medium' },
-          low:    { label:'کم',     cls:'tkt-prio-low'    }
-        };
-        const msgs = [
-          { id:1, ticketNo:'#TCK-1024', name:'محسن رضایی',  init:'محر', color:'var(--grad-main)',                         dept:'فنی',   sub:'مشکل در اتصال درگاه پرداخت', prev:'سلام، میخواستم یه چیزی بپرسم…', time:'الان',   status:'open',    priority:'urgent', active:true  },
-          { id:2, ticketNo:'#TCK-1023', name:'سارا طاهری',  init:'سار', color:'linear-gradient(135deg,#0090e8,#4dc3ff)', dept:'فنی',   sub:'درخواست تغییر طراحی هدر',    prev:'فقط یه تغییر کوچیک میخوام…',     time:'۲۰ د',   status:'pending', priority:'medium', active:false },
-          { id:3, ticketNo:'#TCK-1022', name:'رضا محمدی',   init:'رضا', color:'linear-gradient(135deg,#a394fb,#6447f4)', dept:'مالی',  sub:'تأیید پیش‌فاکتور',           prev:'پیش‌فاکتور رو دیدم، تأیید…',    time:'۱ س',    status:'open',    priority:'medium', active:false },
-          { id:4, ticketNo:'#TCK-1021', name:'علی امینی',   init:'علی', color:'linear-gradient(135deg,#22c55e,#0090e8)', dept:'عمومی', sub:'سوال درباره لانچ سایت',      prev:'سایت فروشگاه رو لانچ کردیم!',    time:'دیروز',  status:'closed',  priority:'low',     active:false },
-          { id:5, ticketNo:'#TCK-1020', name:'نگار صادقی',  init:'نگر', color:'linear-gradient(135deg,#f59e0b,#ef4444)', dept:'فنی',   sub:'اضافه کردن قابلیت بلاگ',     prev:'آیا امکان اضافه کردن بلاگ…',     time:'دیروز',  status:'pending', priority:'low',     active:false },
-          { id:6, ticketNo:'#TCK-1019', name:'کیانی لباس',  init:'کیا', color:'linear-gradient(135deg,#6447f4,#1e1274)', dept:'مالی',  sub:'پیگیری وضعیت فاکتور',        prev:'سلام، پروژه در چه مرحله‌ای…',    time:'۲ روز',  status:'open',    priority:'urgent', active:false },
-          { id:7, ticketNo:'#TCK-1018', name:'گروه پارسیان',init:'پار', color:'linear-gradient(135deg,#0090e8,#005896)', dept:'فنی',   sub:'باگ در صفحه ورود پرتال',     prev:'یه باگ پیدا کردیم در صفحه…',     time:'۳ روز',  status:'closed',  priority:'medium', active:false },
-        ]; %>
-        <% msgs.forEach(function(m){ const st = statusMeta[m.status]; const pr = priorityMeta[m.priority]; %>
-        <div class="msg-item tkt-item <%= m.status === 'open' ? 'unread' : '' %> <%= m.active ? 'active' : '' %>"
-             data-id="<%= m.id %>" data-status="<%= m.status %>">
-          <div class="msg-av" style="background:<%= m.color %>;"><%= m.init %></div>
-          <div class="msg-item-body">
-            <div class="msg-item-top">
-              <span class="msg-item-name"><%= m.name %></span>
-              <span class="msg-item-time"><%= m.time %></span>
-            </div>
-            <div class="tkt-item-meta">
-              <span class="tkt-no"><%= m.ticketNo %></span>
-              <span class="tkt-dept-tag"><%= m.dept %></span>
-            </div>
-            <div class="msg-item-sub"><%= m.sub %></div>
-            <div class="msg-item-prev"><%= m.prev %></div>
-            <div class="tkt-item-badges">
-              <span class="tkt-badge <%= st.cls %>"><%= st.label %></span>
-              <span class="tkt-prio <%= pr.cls %>"><i class="bi bi-flag-fill"></i> <%= pr.label %></span>
-            </div>
-          </div>
-        </div>
-        <% }); %>
-      </div>
-    </div>
-
-    <!-- Chat / Ticket Thread Area -->
-    <div class="msg-chat dash-panel">
-      <div class="msg-chat-header tkt-chat-header">
-        <div style="display:flex;align-items:center;gap:.85rem;">
-          <div class="msg-av" style="background:var(--grad-main);width:40px;height:40px;font-size:.82rem;">محر</div>
-          <div>
-            <div style="display:flex;align-items:center;gap:.5rem;">
-              <span style="font-weight:700;font-size:.9rem;">محسن رضایی</span>
-              <span class="tkt-no" style="font-size:.72rem;">#TCK-1024</span>
-            </div>
-            <div style="font-size:.73rem;color:var(--color-text-muted); display:flex; align-items:center; gap:.4rem; margin-top:.15rem;">
-              <span class="tkt-dept-tag"><i class="bi bi-tools"></i> فنی</span>
-              <span class="tkt-badge tkt-badge-open" id="currentStatusBadge">باز</span>
-              <span class="tkt-prio tkt-prio-urgent" id="currentPriorityBadge"><i class="bi bi-flag-fill"></i> فوری</span>
-            </div>
-          </div>
-        </div>
-        <div style="display:flex;gap:.5rem;">
-          <button class="hdr-btn" title="تغییر اولویت" id="btnChangePriority"><i class="bi bi-flag"></i></button>
-          <button class="hdr-btn" title="باز/بسته کردن تیکت" id="btnToggleStatus"><i class="bi bi-check2-circle"></i></button>
-          <button class="hdr-btn" title="بیشتر"><i class="bi bi-three-dots"></i></button>
-        </div>
-      </div>
-
-      <div class="msg-chat-body" id="chatBody">
-        <div class="msg-date-sep"><span>دیروز</span></div>
-
-        <div class="msg-bubble received">
-          <div class="bubble-sender"><i class="bi bi-person-circle"></i> محسن رضایی (کاربر)</div>
-          <div class="bubble-text">سلام! میخواستم درباره مشکل اتصال درگاه پرداخت یه سوال بپرسم.</div>
-          <div class="bubble-time">۱۴:۲۰</div>
-        </div>
-        <div class="msg-bubble sent">
-          <div class="bubble-sender"><i class="bi bi-headset"></i> تیم پشتیبانی (ادمین)</div>
-          <div class="bubble-text">سلام محسن جان! بفرمایید، چه مشکلی پیش اومده؟</div>
-          <div class="bubble-time">۱۴:۲۵</div>
-        </div>
-        <div class="msg-bubble received">
-          <div class="bubble-sender"><i class="bi bi-person-circle"></i> محسن رضایی (کاربر)</div>
-          <div class="bubble-text">درگاه زرین‌پال بعد از پرداخت، کاربر رو ریدایرکت نمی‌کنه. این عکس خطای مربوطه رو ببینید.</div>
-          <div class="bubble-attachment">
-            <i class="bi bi-file-earmark-image"></i>
-            <span class="att-name">error-screenshot.png</span>
-            <span class="att-size">۲۴۰ کیلوبایت</span>
-            <a href="#" class="att-download" title="دانلود"><i class="bi bi-download"></i></a>
-          </div>
-          <div class="bubble-time">۱۴:۲۸</div>
-        </div>
-        <div class="msg-bubble sent">
-          <div class="bubble-sender"><i class="bi bi-headset"></i> تیم پشتیبانی (ادمین)</div>
-          <div class="bubble-text">دریافت شد، تیم فنی در حال بررسی لاگ‌های تراکنش هستند.</div>
-          <div class="bubble-attachment">
-            <i class="bi bi-file-earmark-pdf"></i>
-            <span class="att-name">payment-log-report.pdf</span>
-            <span class="att-size">۱۱۰ کیلوبایت</span>
-            <a href="#" class="att-download" title="دانلود"><i class="bi bi-download"></i></a>
-          </div>
-          <div class="bubble-time">۱۴:۳۵</div>
-        </div>
-
-        <div class="msg-date-sep"><span>امروز</span></div>
-
-        <div class="msg-bubble received">
-          <div class="bubble-sender"><i class="bi bi-person-circle"></i> محسن رضایی (کاربر)</div>
-          <div class="bubble-text">خیلی ممنون! منتظر نتیجه بررسی هستم.</div>
-          <div class="bubble-time">۰۹:۱۵</div>
-        </div>
-        <div class="msg-bubble sent">
-          <div class="bubble-sender"><i class="bi bi-headset"></i> تیم پشتیبانی (ادمین)</div>
-          <div class="bubble-text">حتماً، به محض رفع مشکل شما رو در جریان می‌ذاریم 🙏</div>
-          <div class="bubble-time">۰۹:۲۰</div>
-        </div>
-        <div class="msg-bubble received">
-          <div class="bubble-sender"><i class="bi bi-person-circle"></i> محسن رضایی (کاربر)</div>
-          <div class="bubble-text">آیا امکان تست مجدد پرداخت الان هست؟</div>
-          <div class="bubble-time">الان</div>
-        </div>
-      </div>
-
-      <div class="msg-input-area">
-        <button class="hdr-btn" title="پیوست فایل"><i class="bi bi-paperclip"></i></button>
-        <div class="msg-input-box">
-          <input type="text" id="msgInput" placeholder="پاسخ خود را به عنوان پشتیبانی بنویسید…">
-        </div>
-        <button class="msg-emoji-btn" title="ایموجی"><i class="bi bi-emoji-smile"></i></button>
-        <button class="btn-sol-sm msg-send-btn" id="msgSend">
-          <i class="bi bi-send-fill"></i>
-        </button>
-      </div>
-    </div>
-
-  </div>
-
-</main>
-</div>
 </div>
 
-<!-- Modal: ایجاد تیکت جدید از طرف مدیریت -->
+<!-- Modal: ایجاد تیکت از طرف مدیریت -->
 <div class="modal-overlay" id="composeModal">
   <div class="modal-box">
-    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1.5rem;">
-      <div class="modal-title" style="margin:0;">ایجاد تیکت جدید از طرف مدیریت</div>
-      <button data-modal-close style="background:transparent;border:none;font-size:1.2rem;color:var(--color-text-muted);cursor:pointer;"><i class="bi bi-x-lg"></i></button>
+    <div class="modal-head">
+      <h3 class="modal-title">ایجاد تیکت از طرف مدیریت</h3>
+      <button type="button" class="btn-icon" data-modal-close aria-label="بستن"><i class="bi bi-x-lg"></i></button>
     </div>
-    <div class="form-row">
-      <label class="sol-label">کاربر</label>
-      <select class="sol-select" style="width:100%">
-        <option>انتخاب کاربر…</option>
-        <option>محسن رضایی — آفیلیو</option>
-        <option>علی امینی — اسیل</option>
-        <option>سارا طاهری — نگاه</option>
-        <option>رضا محمدی — آوا</option>
-      </select>
-    </div>
-    <div class="form-row" style="display:flex; gap:.75rem;">
-      <div style="flex:1;">
-        <label class="sol-label">دپارتمان</label>
-        <select class="sol-select" style="width:100%">
-          <option value="fni">فنی</option>
-          <option value="mali">مالی</option>
-          <option value="sale">فروش</option>
-        </select>
+
+    <form action="/sw-admin/tickets" method="POST" id="composeForm" data-validate novalidate>
+      <% if (clientsList.length) { %>
+        <div class="sw-field">
+          <label class="sol-label" for="cmpClient">مشتری</label>
+          <select class="sol-select" name="client" id="cmpClient" data-rule="required">
+            <option value="" selected disabled>انتخاب مشتری…</option>
+            <% clientsList.forEach(function (c) { %><option value="<%= c._id %>"><%= c.name %><%= c.company ? ' — ' + c.company : '' %></option><% }); %>
+          </select>
+        </div>
+      <% } else { %>
+        <div class="form-row two">
+          <div class="sw-field"><label class="sol-label" for="cmpName">نام</label><input class="sol-input" type="text" name="name" id="cmpName" data-rule="required" autocomplete="off"></div>
+          <div class="sw-field"><label class="sol-label" for="cmpEmail">ایمیل</label><input class="sol-input" type="email" name="email" id="cmpEmail" dir="ltr" data-rule="required|email" autocomplete="off"></div>
+        </div>
+      <% } %>
+
+      <div class="form-row two">
+        <div class="sw-field">
+          <label class="sol-label" for="cmpDept">دپارتمان</label>
+          <select class="sol-select" name="department" id="cmpDept">
+            <option value="technical">فنی</option><option value="financial">مالی</option><option value="sales">فروش</option><option value="general" selected>عمومی</option>
+          </select>
+        </div>
+        <div class="sw-field">
+          <label class="sol-label" for="cmpPriority">اولویت</label>
+          <select class="sol-select" name="priority" id="cmpPriority">
+            <option value="urgent">فوری</option><option value="medium" selected>متوسط</option><option value="low">کم</option>
+          </select>
+        </div>
       </div>
-      <div style="flex:1;">
-        <label class="sol-label">اولویت</label>
-        <select class="sol-select" style="width:100%">
-          <option value="urgent">فوری</option>
-          <option value="medium" selected>متوسط</option>
-          <option value="low">کم</option>
-        </select>
+
+      <div class="sw-field">
+        <label class="sol-label" for="cmpSubject">موضوع تیکت</label>
+        <input class="sol-input" type="text" name="subject" id="cmpSubject" placeholder="موضوع تیکت را بنویسید…" data-rule="required" autocomplete="off">
       </div>
-    </div>
-    <div class="form-row">
-      <label class="sol-label">موضوع تیکت</label>
-      <input class="sol-input" type="text" placeholder="موضوع تیکت را بنویسید…">
-    </div>
-    <div class="form-row">
-      <label class="sol-label">متن اولین پیام</label>
-      <textarea class="sol-input" rows="5" placeholder="شرح مشکل یا درخواست را بنویسید…" style="resize:vertical;"></textarea>
-    </div>
-    <div style="display:flex;gap:.75rem;justify-content:flex-end;margin-top:1.5rem;">
-      <button class="btn-ghost-sm" data-modal-close>انصراف</button>
-      <button class="btn-sol-sm"><i class="bi bi-plus-lg"></i> ایجاد تیکت</button>
-    </div>
+      <div class="sw-field">
+        <label class="sol-label" for="cmpBody">متن اولین پیام</label>
+        <textarea class="sol-input" name="body" id="cmpBody" rows="5" placeholder="شرح مشکل یا درخواست را بنویسید…" data-rule="required"></textarea>
+      </div>
+
+      <div class="modal-foot">
+        <button type="button" class="btn-ghost-sm" data-modal-close>انصراف</button>
+        <button type="submit" class="btn-sol-sm"><i class="bi bi-plus-lg"></i> ایجاد تیکت</button>
+      </div>
+    </form>
   </div>
 </div>
 
-<%- include('partials/_scripts', { extraScripts: `
-<style>
-.msg-layout { display:grid; grid-template-columns:320px 1fr; gap:1.25rem; height:calc(100vh - 180px); min-height:500px; }
-@media(max-width:900px){ .msg-layout{ grid-template-columns:1fr; } .msg-sidebar{ display:none; } }
-.msg-sidebar { display:flex; flex-direction:column; overflow:hidden; }
-.msg-sidebar-header { padding:.85rem 1rem; border-bottom:1px solid var(--color-border); flex-shrink:0; }
-.msg-search { display:flex; align-items:center; gap:.5rem; background:var(--color-bg); border:1.5px solid var(--color-border); border-radius:var(--radius-md); padding:.38rem .85rem; margin-bottom:.75rem; }
-.msg-search i { color:var(--color-text-light); font-size:.82rem; }
-.msg-search input { border:none; background:transparent; outline:none; font-family:var(--font-primary); font-size:.82rem; color:var(--color-text-primary); width:100%; }
-.msg-tabs { display:flex; gap:.35rem; flex-wrap:wrap; }
-.msg-tab { flex:1; font-family:var(--font-primary); font-size:.72rem; font-weight:600; padding:.38rem .5rem; border:1.5px solid var(--color-border); border-radius:var(--radius-sm); background:transparent; color:var(--color-text-muted); cursor:pointer; transition:all var(--dur-fast); display:flex; align-items:center; justify-content:center; gap:.3rem; white-space:nowrap; }
-.msg-tab.active { background:var(--main-500); border-color:var(--main-500); color:#fff; }
-.msg-count { background:rgba(255,255,255,.3); color:#fff; font-size:.62rem; padding:.05rem .35rem; border-radius:99px; }
-.msg-list { flex:1; overflow-y:auto; }
-.msg-item { display:flex; align-items:flex-start; gap:.75rem; padding:.85rem 1rem; cursor:pointer; transition:background var(--dur-fast); border-bottom:1px solid var(--color-border); position:relative; }
-.msg-item:hover { background:var(--color-bg); }
-.msg-item.active { background:rgba(100,71,244,.07); border-right:3px solid var(--main-500); }
-.msg-item.unread .msg-item-name { font-weight:800; color:var(--color-text-primary); }
-.msg-av { width:36px; height:36px; border-radius:var(--radius-sm); display:flex; align-items:center; justify-content:center; font-size:.7rem; font-weight:800; color:#fff; flex-shrink:0; }
-.msg-item-body { flex:1; min-width:0; }
-.msg-item-top { display:flex; justify-content:space-between; align-items:center; margin-bottom:.15rem; }
-.msg-item-name { font-size:.82rem; font-weight:600; color:var(--color-text-primary); }
-.msg-item-time { font-size:.68rem; color:var(--color-text-light); white-space:nowrap; }
-.msg-item-sub { font-size:.77rem; font-weight:600; color:var(--color-text-muted); margin-bottom:.1rem; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
-.msg-item-prev { font-size:.72rem; color:var(--color-text-light); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; margin-bottom:.4rem; }
-
-/* Ticket-specific meta */
-.tkt-item-meta { display:flex; align-items:center; gap:.4rem; margin-bottom:.2rem; }
-.tkt-no { font-size:.68rem; font-weight:700; color:var(--main-500); font-family:var(--font-mono); }
-.tkt-dept-tag { font-size:.66rem; font-weight:600; color:var(--color-text-muted); background:var(--color-bg); border:1px solid var(--color-border); border-radius:var(--radius-sm); padding:.05rem .5rem; display:inline-flex; align-items:center; gap:.25rem; }
-.tkt-item-badges { display:flex; align-items:center; gap:.4rem; flex-wrap:wrap; }
-.tkt-badge { font-size:.65rem; font-weight:700; padding:.15rem .55rem; border-radius:var(--radius-full); display:inline-block; }
-.tkt-badge-open { background:rgba(34,197,94,.12); color:#16a34a; }
-.tkt-badge-pending { background:rgba(245,158,11,.14); color:#b45309; }
-.tkt-badge-closed { background:rgba(108,117,125,.14); color:var(--color-text-muted); }
-.tkt-prio { font-size:.65rem; font-weight:700; display:inline-flex; align-items:center; gap:.25rem; }
-.tkt-prio-urgent { color:#ef4444; }
-.tkt-prio-medium { color:#f59e0b; }
-.tkt-prio-low { color:var(--color-text-light); }
-
-.msg-chat { display:flex; flex-direction:column; overflow:hidden; }
-.msg-chat-header { display:flex; align-items:center; justify-content:space-between; padding:.85rem 1.25rem; border-bottom:1px solid var(--color-border); flex-shrink:0; }
-.msg-chat-body { flex:1; overflow-y:auto; padding:1.25rem; display:flex; flex-direction:column; gap:.65rem; }
-.msg-date-sep { text-align:center; position:relative; margin:.5rem 0; }
-.msg-date-sep::before { content:''; position:absolute; top:50%; right:0; left:0; height:1px; background:var(--color-border); }
-.msg-date-sep span { position:relative; background:var(--color-surface); padding:0 .75rem; font-size:.7rem; color:var(--color-text-light); }
-.msg-bubble { display:flex; flex-direction:column; max-width:65%; }
-.msg-bubble.received { align-self:flex-start; align-items:flex-start; }
-.msg-bubble.sent { align-self:flex-end; align-items:flex-end; }
-.bubble-sender { font-size:.68rem; font-weight:700; color:var(--color-text-muted); margin-bottom:.25rem; display:flex; align-items:center; gap:.3rem; }
-.msg-bubble.received .bubble-sender { color:var(--accent-600); }
-.msg-bubble.sent .bubble-sender { color:var(--main-500); }
-.bubble-text { padding:.65rem 1rem; border-radius:var(--radius-lg); font-size:.84rem; line-height:1.55; }
-.msg-bubble.received .bubble-text { background:var(--color-bg); border-bottom-right-radius:.35rem; color:var(--color-text-primary); border:1.5px solid var(--color-border); }
-.msg-bubble.sent .bubble-text { background:var(--grad-main); color:#fff; border-bottom-left-radius:.35rem; }
-.bubble-time { font-size:.67rem; color:var(--color-text-light); margin-top:.25rem; padding:0 .25rem; }
-.bubble-attachment { display:flex; align-items:center; gap:.5rem; margin-top:.4rem; padding:.5rem .75rem; border-radius:var(--radius-md); background:var(--color-surface); border:1.5px solid var(--color-border); font-size:.75rem; max-width:100%; }
-.msg-bubble.sent .bubble-attachment { background:rgba(255,255,255,.15); border-color:rgba(255,255,255,.3); color:#fff; }
-.bubble-attachment i.bi-file-earmark-image,
-.bubble-attachment i.bi-file-earmark-pdf { font-size:1.1rem; color:var(--main-500); flex-shrink:0; }
-.msg-bubble.sent .bubble-attachment i.bi-file-earmark-image,
-.msg-bubble.sent .bubble-attachment i.bi-file-earmark-pdf { color:#fff; }
-.att-name { font-weight:600; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; flex:1; }
-.att-size { color:var(--color-text-light); white-space:nowrap; font-size:.68rem; }
-.msg-bubble.sent .att-size { color:rgba(255,255,255,.75); }
-.att-download { color:var(--main-500); flex-shrink:0; }
-.msg-bubble.sent .att-download { color:#fff; }
-
-.msg-input-area { display:flex; align-items:center; gap:.65rem; padding:.85rem 1.25rem; border-top:1px solid var(--color-border); flex-shrink:0; }
-.msg-input-box { flex:1; background:var(--color-bg); border:1.5px solid var(--color-border); border-radius:var(--radius-full); padding:.5rem 1.1rem; transition:all var(--dur-fast); }
-.msg-input-box:focus-within { border-color:var(--main-400); box-shadow:0 0 0 3px rgba(100,71,244,.1); }
-.msg-input-box input { border:none; background:transparent; outline:none; font-family:var(--font-primary); font-size:.85rem; color:var(--color-text-primary); width:100%; }
-.msg-emoji-btn { background:transparent; border:none; font-size:1.1rem; color:var(--color-text-light); cursor:pointer; transition:color var(--dur-fast); }
-.msg-emoji-btn:hover { color:var(--main-500); }
-.msg-send-btn { border-radius:var(--radius-full) !important; padding:.5rem .9rem !important; }
-</style>
 <script>
-// send on click / enter
-const msgSend = document.getElementById('msgSend');
-const msgInput = document.getElementById('msgInput');
-const chatBody = document.getElementById('chatBody');
+document.addEventListener('DOMContentLoaded', function () {
+  function $(s, c) { return (c || document).querySelector(s); }
+  function $$(s, c) { return Array.prototype.slice.call((c || document).querySelectorAll(s)); }
+  function fa(v) { return String(v == null ? '' : v).replace(/[0-9]/g, function (d) { return '۰۱۲۳۴۵۶۷۸۹'[d]; }); }
+  function norm(s) { return String(s || '').replace(/ي/g, 'ی').replace(/ك/g, 'ک').replace(/[۰-۹]/g, function (d) { return '۰۱۲۳۴۵۶۷۸۹'.indexOf(d); }).toLowerCase(); }
+  function toast(m, o) { if (window.SW) SW.island(m, o); }
 
-function sendMessage() {
-  const val = msgInput.value.trim();
-  if(!val) return;
-  const now = new Date();
-  const time = now.getHours().toString().padStart(2,'0') + ':' + now.getMinutes().toString().padStart(2,'0');
-  const bubble = document.createElement('div');
-  bubble.className = 'msg-bubble sent';
-  bubble.innerHTML = '<div class="bubble-sender"><i class="bi bi-headset"></i> تیم پشتیبانی (ادمین)</div><div class="bubble-text">' + val + '</div><div class="bubble-time">' + time + '</div>';
-  chatBody.appendChild(bubble);
-  chatBody.scrollTop = chatBody.scrollHeight;
-  msgInput.value = '';
-}
-msgSend.addEventListener('click', sendMessage);
-msgInput.addEventListener('keydown', function(e){ if(e.key==='Enter') sendMessage(); });
-chatBody.scrollTop = chatBody.scrollHeight;
+  var DATA = {};
+  try { DATA = JSON.parse($('#ticketsData').textContent || '{}'); } catch (e) {}
+  var STATUS = { open: 'باز', pending: 'در حال بررسی', closed: 'بسته شده' };
+  var PRIO = { urgent: 'فوری', medium: 'متوسط', low: 'کم' };
 
-// list filter — search
-document.getElementById('msgSearch').addEventListener('input', function(){
-  const q = this.value.toLowerCase();
-  document.querySelectorAll('.msg-item').forEach(function(item){
-    item.style.display = item.textContent.toLowerCase().includes(q) ? '' : 'none';
-  });
-});
+  var layout = $('#tkLayout'), listEl = $('#tkList'), bodyEl = $('#tkBody'), mainEl = $('#tkMain'), emptyEl = $('#tkEmpty');
+  var input = $('#tkInput'), sendBtn = $('#tkSend'), statusSel = $('#tkStatus'), prioSel = $('#tkPriority');
+  var state = { id: null, tab: 'all', q: '' }, sending = false;
+  function cur() { return state.id ? DATA[state.id] : null; }
+  function item(id) { return $('.tk-item[data-id="' + id + '"]', listEl); }
 
-// tab switch — filter by ticket status
-document.querySelectorAll('.msg-tab').forEach(function(tab){
-  tab.addEventListener('click', function(){
-    document.querySelectorAll('.msg-tab').forEach(t=>t.classList.remove('active'));
-    this.classList.add('active');
+  /* ───────── زمان ───────── */
+  var tf = new Intl.DateTimeFormat('fa-IR', { hour: '2-digit', minute: '2-digit' });
+  var df = new Intl.DateTimeFormat('fa-IR', { day: 'numeric', month: 'long' });
+  function dayKey(d) { return d.getFullYear() + '-' + d.getMonth() + '-' + d.getDate(); }
+  function dayLabel(d) {
+    var n = new Date(), y = new Date(Date.now() - 864e5);
+    return dayKey(d) === dayKey(n) ? 'امروز' : dayKey(d) === dayKey(y) ? 'دیروز' : df.format(d);
+  }
+  function ago(iso) {
+    var s = Math.round((Date.now() - new Date(iso).getTime()) / 1000); if (!isFinite(s)) return '';
+    if (s < 60) return 'الان'; var m = Math.round(s / 60); if (m < 60) return fa(m) + ' د';
+    var h = Math.round(m / 60); if (h < 24) return fa(h) + ' س';
+    var d = Math.round(h / 24); return d === 1 ? 'دیروز' : fa(d) + ' روز';
+  }
 
-    const filter = this.getAttribute('data-tab');
-    document.querySelectorAll('.msg-item').forEach(function(item){
-      const status = item.getAttribute('data-status');
-      item.style.display = (filter === 'all' || status === filter) ? '' : 'none';
+  /* ───────── شمارنده‌ها و فیلتر ───────── */
+  function recount() {
+    var c = { all: 0, open: 0, pending: 0, closed: 0 };
+    Object.keys(DATA).forEach(function (id) { c.all++; c[DATA[id].status]++; });
+    $$('.tk-count').forEach(function (n) { n.textContent = fa(c[n.dataset.count]); });
+    $('#subOpen').textContent = fa(c.open); $('#subPending').textContent = fa(c.pending); $('#subAll').textContent = fa(c.all);
+  }
+  function applyFilter() {
+    var q = norm(state.q), shown = 0;
+    $$('.tk-item', listEl).forEach(function (it) {
+      var ok = (state.tab === 'all' || it.dataset.status === state.tab) && (!q || norm(it.dataset.q).indexOf(q) > -1);
+      it.hidden = !ok; if (ok) shown++;
     });
-
-    // reset search box when switching tabs
-    const searchInput = document.getElementById('msgSearch');
-    if (searchInput.value) searchInput.value = '';
+    $('#tkNoMatch').hidden = !(Object.keys(DATA).length && !shown);
+  }
+  $$('.tk-tab').forEach(function (b) {
+    b.addEventListener('click', function () {
+      $$('.tk-tab').forEach(function (x) { x.classList.remove('active'); x.setAttribute('aria-selected', 'false'); });
+      b.classList.add('active'); b.setAttribute('aria-selected', 'true'); state.tab = b.dataset.tab; applyFilter();
+    });
   });
+  var st = 0;
+  $('#tkSearch').addEventListener('input', function (e) { clearTimeout(st); st = setTimeout(function () { state.q = e.target.value.trim(); applyFilter(); }, 90); });
+
+  /* ───────── نمایش گفتگو ───────── */
+  function bubble(m, pending) {
+    var out = m.sender !== 'client', el = document.createElement('div');
+    el.className = 'tk-msg ' + (out ? 'out' : 'in') + (pending ? ' pending' : '');
+    var tx = document.createElement('div'); tx.className = 'tk-text'; tx.textContent = m.body; el.appendChild(tx);
+    var tm = document.createElement('div'); tm.className = 'tk-time';
+    var d = m.at ? new Date(m.at) : null; tm.textContent = d && !isNaN(d.getTime()) ? tf.format(d) : ''; el.appendChild(tm);
+    return el;
+  }
+  function renderThread(t) {
+    bodyEl.textContent = '';
+    var lastDay = '';
+    if (!t.messages.length) { var n = document.createElement('div'); n.className = 'tk-day'; n.dataset.empty = '1'; n.textContent = 'هنوز پیامی ثبت نشده است'; bodyEl.appendChild(n); }
+    t.messages.forEach(function (m) {
+      var d = m.at ? new Date(m.at) : null;
+      if (d && !isNaN(d.getTime()) && dayKey(d) !== lastDay) {
+        lastDay = dayKey(d); var sep = document.createElement('div'); sep.className = 'tk-day'; sep.textContent = dayLabel(d); bodyEl.appendChild(sep);
+      }
+      bodyEl.appendChild(bubble(m, false));
+    });
+    bodyEl.scrollTop = bodyEl.scrollHeight;
+  }
+  function fillHead(t) {
+    var av = $('#tkAv'); av.className = 'tk-av tk-av-lg ' + t.av; av.textContent = t.initials;
+    $('#tkName').textContent = t.name; $('#tkNo').textContent = t.no; $('#tkDept').textContent = t.dept;
+    $('#tkContact').textContent = [t.email, t.phone ? fa(t.phone) : ''].filter(Boolean).join(' · ');
+    $('#tkSubject').textContent = t.subject; $('#tkSource').textContent = t.source;
+    statusSel.value = t.status; prioSel.value = t.priority;
+    $('#tkDeleteForm').action = '/sw-admin/tickets/' + t.id + '/delete';
+  }
+  function select(id, fromUser) {
+    var t = DATA[id]; if (!t) return;
+    state.id = id;
+    $$('.tk-item', listEl).forEach(function (it) { it.classList.toggle('active', it.dataset.id === id); });
+    emptyEl.hidden = true; mainEl.hidden = false;
+    fillHead(t); renderThread(t);
+    if (fromUser) { layout.classList.add('is-chat'); try { history.replaceState(null, '', '#' + id); } catch (e) {} }
+    if (!matchMedia('(pointer:coarse)').matches && fromUser) input.focus();
+  }
+  listEl.addEventListener('click', function (e) { var it = e.target.closest('.tk-item'); if (it) select(it.dataset.id, true); });
+  $('#tkBack').addEventListener('click', function () { layout.classList.remove('is-chat'); });
+  document.addEventListener('keydown', function (e) { if (e.key === 'Escape' && layout.classList.contains('is-chat') && !$$('.modal-overlay.active').length) layout.classList.remove('is-chat'); });
+
+  /* ───────── API ───────── */
+  function post(url, data) {
+    return fetch(url, {
+      method: 'POST', credentials: 'same-origin',
+      headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+      body: JSON.stringify(data)
+    }).then(function (r) {
+      return r.json().catch(function () { return {}; }).then(function (j) {
+        if (!r.ok || !j.success) throw new Error(j.message || 'خطا در ارتباط با سرور');
+        return j;
+      });
+    });
+  }
+
+  /* ───────── وضعیت و اولویت ───────── */
+  function paintItem(t) {
+    var it = item(t.id); if (!it) return;
+    it.dataset.status = t.status; it.classList.toggle('unread', t.status === 'open');
+    var sb = $('.tk-badge', it); sb.className = 'tk-badge tk-s-' + t.status; sb.textContent = STATUS[t.status];
+    var pb = $('.tk-prio', it); pb.className = 'tk-prio tk-p-' + t.priority; pb.textContent = ' ' + PRIO[t.priority];
+    var fl = document.createElement('i'); fl.className = 'bi bi-flag-fill'; pb.insertBefore(fl, pb.firstChild);
+  }
+  function change(field, to, label) {
+    var t = cur(); if (!t || t[field] === to) return;
+    var prev = t[field]; t[field] = to; paintItem(t); recount(); applyFilter();
+    post('/sw-admin/tickets/' + t.id + '/' + field, (function (o) { o[field] = to; return o; })({}))
+      .then(function () { toast(label + ' «' + (field === 'status' ? STATUS : PRIO)[to] + '» شد', { type: 'success', ms: 2200 }); })
+      .catch(function (err) {
+        t[field] = prev; paintItem(t); recount(); applyFilter();
+        if (state.id === t.id) (field === 'status' ? statusSel : prioSel).value = prev;
+        toast(err.message || 'تغییر انجام نشد', { type: 'error' });
+      });
+  }
+  statusSel.addEventListener('change', function () { change('status', statusSel.value, 'وضعیت تیکت'); });
+  prioSel.addEventListener('change', function () { change('priority', prioSel.value, 'اولویت تیکت'); });
+
+  /* ───────── ارسال پاسخ ───────── */
+  function grow() { input.style.height = 'auto'; input.style.height = Math.min(input.scrollHeight, 140) + 'px'; }
+  input.addEventListener('input', grow);
+  input.addEventListener('keydown', function (e) {
+    if (e.key === 'Enter' && !e.shiftKey && !e.isComposing && !matchMedia('(pointer:coarse)').matches) { e.preventDefault(); send(); }
+  });
+  sendBtn.addEventListener('click', send);
+
+  function send() {
+    var t = cur(), text = input.value.trim();
+    if (!t || !text || sending) return;
+    sending = true; sendBtn.classList.add('busy');
+    var msg = { sender: 'admin', body: text, at: new Date().toISOString() };
+    var ph = $('.tk-day[data-empty]', bodyEl); if (ph) ph.remove();
+    var node = bubble(msg, true); bodyEl.appendChild(node); bodyEl.scrollTo({ top: bodyEl.scrollHeight, behavior: 'smooth' });
+    input.value = ''; grow();
+    post('/sw-admin/tickets/' + t.id + '/reply', { body: text }).then(function (j) {
+      node.classList.remove('pending');
+      if (j.message && j.message.createdAt) { msg.at = j.message.createdAt; $('.tk-time', node).textContent = tf.format(new Date(msg.at)); }
+      t.messages.push(msg); t.last = msg.at;
+      var it = item(t.id);
+      if (it) { $('.tk-item-prev', it).textContent = text.replace(/\s+/g, ' ').slice(0, 90); $('.tk-item-time', it).textContent = 'الان'; listEl.insertBefore(it, listEl.firstChild); }
+      if (j.status && j.status !== t.status) { t.status = j.status; statusSel.value = j.status; paintItem(t); recount(); applyFilter(); }
+    }).catch(function (err) {
+      node.remove(); input.value = text; grow();
+      toast(err.message || 'ارسال پاسخ انجام نشد', { type: 'error', detail: 'متن شما در کادر نگه داشته شد.' });
+    }).then(function () { sending = false; sendBtn.classList.remove('busy'); });
+  }
+
+  /* ───────── انتخاب اولیه: hash → اولین تیکت (دسکتاپ) ───────── */
+  function fromHash() { var id = (location.hash || '').slice(1); if (id && DATA[id]) { select(id, false); layout.classList.add('is-chat'); return true; } return false; }
+  window.addEventListener('hashchange', fromHash);
+  if (!fromHash()) {
+    var first = $('.tk-item', listEl);
+    if (first && matchMedia('(min-width:901px)').matches) select(first.dataset.id, false);
+    else if (!first) emptyEl.hidden = false;
+  }
+  applyFilter();
 });
-
-// select ticket item -> mark active
-document.querySelectorAll('.msg-item').forEach(function(item){
-  item.addEventListener('click', function(){
-    document.querySelectorAll('.msg-item').forEach(i => i.classList.remove('active'));
-    this.classList.add('active');
-  });
-});
-
-// toggle ticket status (open/closed) from chat header
-const btnToggleStatus = document.getElementById('btnToggleStatus');
-const currentStatusBadge = document.getElementById('currentStatusBadge');
-if (btnToggleStatus && currentStatusBadge) {
-  btnToggleStatus.addEventListener('click', function(){
-    const isOpen = currentStatusBadge.textContent.trim() === 'باز';
-    if (isOpen) {
-      currentStatusBadge.textContent = 'بسته شده';
-      currentStatusBadge.className = 'tkt-badge tkt-badge-closed';
-    } else {
-      currentStatusBadge.textContent = 'باز';
-      currentStatusBadge.className = 'tkt-badge tkt-badge-open';
-    }
-  });
-}
-
-// cycle priority from chat header
-const btnChangePriority = document.getElementById('btnChangePriority');
-const currentPriorityBadge = document.getElementById('currentPriorityBadge');
-if (btnChangePriority && currentPriorityBadge) {
-  const priorityCycle = [
-    { label:'فوری',  cls:'tkt-prio tkt-prio-urgent' },
-    { label:'متوسط', cls:'tkt-prio tkt-prio-medium' },
-    { label:'کم',    cls:'tkt-prio tkt-prio-low'    }
-  ];
-  let priorityIndex = 0;
-  btnChangePriority.addEventListener('click', function(){
-    priorityIndex = (priorityIndex + 1) % priorityCycle.length;
-    const p = priorityCycle[priorityIndex];
-    currentPriorityBadge.className = p.cls;
-    currentPriorityBadge.innerHTML = '<i class="bi bi-flag-fill"></i> ' + p.label;
-  });
-}
 </script>
-`}) %>
+
+<%- include('partials/_scripts') %>

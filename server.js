@@ -935,56 +935,41 @@ app.post('/sw-admin/tickets/:id/delete', requireAdminAuth, async (req, res) => {
 // ─────────────────────────────────────────
 //  ADMIN — INVOICES
 // ─────────────────────────────────────────
-app.post('/sw-admin/invoices/:id/delete', requireAdminAuth, async (req, res) => {
+app.post('/sw-admin/invoices/:id/status', requireAdminAuth, async (req, res) => {
   try {
     const { id } = req.params
+    const { status } = req.body
 
     if (!mongoose.Types.ObjectId.isValid(id)) {
-      return res.status(400).send('شناسه فاکتور نامعتبر است')
+      return res.status(400).json({ success: false, message: 'شناسه فاکتور نامعتبر است' })
     }
 
-    const deletedInvoice = await Invoice.findByIdAndDelete(id)
-
-    if (!deletedInvoice) {
-      return res.status(404).send('فاکتور پیدا نشد')
-    }
-
-    res.redirect('/sw-admin/invoices')
-
-  } catch (err) {
-    console.error('Invoice delete error:', err)
-    res.status(500).send('خطا در حذف فاکتور')
-  }
-})
-
-
-
-app.post('/sw-admin/invoices/:id/publish', requireAdminAuth, async (req, res) => {
-  try {
-    const { id } = req.params
-
-    if (!mongoose.Types.ObjectId.isValid(id)) {
-      return res.status(400).send('شناسه فاکتور نامعتبر است')
+    // انتقال‌های مجاز (سمت چپ = وضعیت فعلی)
+    const flow = {
+      draft: ['sent', 'cancelled'],
+      sent: ['draft', 'paid', 'cancelled'],
+      overdue: ['sent', 'paid', 'cancelled'],
+      paid: ['sent'],
+      cancelled: ['draft', 'sent']
     }
 
     const invoice = await Invoice.findById(id)
-
     if (!invoice) {
-      return res.status(404).send('فاکتور پیدا نشد')
+      return res.status(404).json({ success: false, message: 'فاکتور پیدا نشد' })
     }
 
-    if (invoice.status !== 'draft') {
-      return res.status(400).send('این فاکتور در وضعیت پیش‌نویس نیست')
+    if (!(flow[invoice.status] || []).includes(status)) {
+      return res.status(400).json({ success: false, message: 'این تغییر وضعیت مجاز نیست' })
     }
 
-    invoice.status = 'sent'
+    invoice.status = status
+    if (status === 'paid') invoice.paidAt = new Date()   // اگر در schema نباشد نادیده گرفته می‌شود
     await invoice.save()
 
-    res.redirect('/sw-admin/invoices')
-
+    res.json({ success: true, status: invoice.status })
   } catch (err) {
-    console.error('Invoice publish error:', err)
-    res.status(500).send('خطا در انتشار فاکتور')
+    console.error('Invoice status error:', err)
+    res.status(500).json({ success: false, message: 'خطا در تغییر وضعیت فاکتور' })
   }
 })
 

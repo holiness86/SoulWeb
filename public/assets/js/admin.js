@@ -323,7 +323,7 @@
   // loading دکمه‌ی submit (فقط وقتی ارسال واقعی انجام می‌شود)
   d.addEventListener('submit', function (e) {
     if (e.defaultPrevented) return;
-    var b = e.target.querySelector && e.target.querySelector('button[type=submit]');
+    var b = e.submitter && e.submitter.matches && e.submitter.matches('button[type=submit]') ? e.submitter : (e.target.querySelector && e.target.querySelector('button[type=submit]'));
     if (b) setTimeout(function () { b.classList.add('sw-loading'); }, 0);
   });
   addEventListener('pageshow', function (e) { if (e.persisted) $$('.sw-loading').forEach(function (b) { b.classList.remove('sw-loading'); }); });

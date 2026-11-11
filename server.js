@@ -939,6 +939,11 @@ app.post('/sw-admin/invoices/:id/status', requireAdminAuth, async (req, res) => 
   try {
     const { id } = req.params
     const { status } = req.body
+    const allowedStatuses = ['draft', 'sent', 'paid', 'overdue', 'cancelled']
+
+    if (!allowedStatuses.includes(status)) {
+      return res.status(400).json({ success: false, message: 'وضعیت فاکتور نامعتبر است' })
+    }
 
     if (!mongoose.Types.ObjectId.isValid(id)) {
       return res.status(400).json({ success: false, message: 'شناسه فاکتور نامعتبر است' })
@@ -963,7 +968,7 @@ app.post('/sw-admin/invoices/:id/status', requireAdminAuth, async (req, res) => 
     }
 
     invoice.status = status
-    if (status === 'paid') invoice.paidAt = new Date()   // اگر در schema نباشد نادیده گرفته می‌شود
+    if (status === 'paid') invoice.paidAt = new Date()
     await invoice.save()
 
     res.json({ success: true, status: invoice.status })
@@ -973,10 +978,7 @@ app.post('/sw-admin/invoices/:id/status', requireAdminAuth, async (req, res) => 
   }
 })
 
-
-
-
-app.get('/sw-admin/invoices/export/pdf' , requireAdminAuth , async (req, res) => {
+app.get('/sw-admin/invoices/export/pdf', requireAdminAuth, async (req, res) => {
   let browser
 
   try {
@@ -1004,7 +1006,7 @@ app.get('/sw-admin/invoices/export/pdf' , requireAdminAuth , async (req, res) =>
       }
     )
 
-browser = await launchBrowser()
+    browser = await launchBrowser()
 
     const page = await browser.newPage()
 
@@ -1034,7 +1036,7 @@ browser = await launchBrowser()
 
   } catch (err) {
     if (browser) {
-      await browser.close()
+      await browser.close().catch(() => {})
     }
 
     console.error('Invoices PDF export error:', err)
@@ -1042,7 +1044,7 @@ browser = await launchBrowser()
   }
 })
 
-app.get('/sw-admin/invoices/:id/pdf' , requireAdminAuth , async (req, res) => {
+app.get('/sw-admin/invoices/:id/pdf', requireAdminAuth, async (req, res) => {
   let browser
 
   try {
@@ -1061,6 +1063,15 @@ app.get('/sw-admin/invoices/:id/pdf' , requireAdminAuth , async (req, res) => {
       return res.status(404).send('فاکتور پیدا نشد')
     }
 
+    const escapeHtml = (value) => {
+      return String(value ?? '—')
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;')
+    }
+
     const formatMoney = (value) => {
       const num = Number(value) || 0
       return num.toLocaleString('fa-IR')
@@ -1069,25 +1080,24 @@ app.get('/sw-admin/invoices/:id/pdf' , requireAdminAuth , async (req, res) => {
     const formatDate = (date) => {
       if (!date) return '—'
 
-      try {
-        return new Date(date).toLocaleDateString('fa-IR', {
-          year: 'numeric',
-          month: '2-digit',
-          day: '2-digit'
-        })
-      } catch (err) {
-        return '—'
-      }
+      const parsedDate = new Date(date)
+      if (Number.isNaN(parsedDate.getTime())) return '—'
+
+      return parsedDate.toLocaleDateString('fa-IR', {
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit'
+      })
     }
 
     const getClientName = (client) => {
       if (!client) return 'بدون مشتری'
-      return client.company || client.name || 'بدون نام'
+      return escapeHtml(client.company || client.name || 'بدون نام')
     }
 
     const getProjectTitle = (project) => {
       if (!project) return 'بدون پروژه'
-      return project.title || 'بدون عنوان'
+      return escapeHtml(project.title || 'بدون عنوان')
     }
 
     const getStatusLabel = (status) => {
@@ -1101,30 +1111,32 @@ app.get('/sw-admin/invoices/:id/pdf' , requireAdminAuth , async (req, res) => {
 
       return map[status] || 'نامشخص'
     }
-const buildItemsRows = (items) => {
-  if (!Array.isArray(items) || !items.length) {
-    return `
-      <tr>
-        <td>خدمات انجام‌شده</td>
-        <td>۱</td>
-        <td>${formatMoney(invoice.total)} تومان</td>
-      </tr>
-    `
-  }
 
-  return items.map(item => {
-    const qty = Number(item.quantity) || 1
-    const lineTotal = Number(item.total) || (qty * (Number(item.unitPrice) || 0))
+    const buildItemsRows = (items) => {
+      if (!Array.isArray(items) || !items.length) {
+        return `
+          <tr>
+            <td>خدمات انجام‌شده</td>
+            <td>۱</td>
+            <td>${formatMoney(invoice.total)} تومان</td>
+          </tr>
+        `
+      }
 
-    return `
-      <tr>
-        <td>${item.description || '—'}</td>
-        <td>${qty.toLocaleString('fa-IR')}</td>
-        <td>${formatMoney(lineTotal)} تومان</td>
-      </tr>
-    `
-  }).join('')
-}
+      return items.map(item => {
+        const qty = Number(item.quantity) || 1
+        const lineTotal = Number(item.total) || (qty * (Number(item.unitPrice) || 0))
+
+        return `
+          <tr>
+            <td>${escapeHtml(item.description || '—')}</td>
+            <td>${qty.toLocaleString('fa-IR')}</td>
+            <td>${formatMoney(lineTotal)} تومان</td>
+          </tr>
+        `
+      }).join('')
+    }
+
     const html = `
       <!DOCTYPE html>
       <html lang="fa" dir="rtl">
@@ -1285,7 +1297,7 @@ const buildItemsRows = (items) => {
             </div>
 
             <div class="invoice-meta">
-              <div><strong>شماره فاکتور:</strong> ${invoice.invoiceNumber || '—'}</div>
+              <div><strong>شماره فاکتور:</strong> ${escapeHtml(invoice.invoiceNumber || '—')}</div>
               <div><strong>تاریخ صدور:</strong> ${formatDate(invoice.issueDate || invoice.createdAt)}</div>
               <div><strong>سررسید:</strong> ${formatDate(invoice.dueDate)}</div>
               <div><strong>وضعیت:</strong> ${getStatusLabel(invoice.status)}</div>
@@ -1311,7 +1323,7 @@ const buildItemsRows = (items) => {
               <div class="card">
                 <div class="row">
                   <span class="label">شماره</span>
-                  <span class="value">${invoice.invoiceNumber || '—'}</span>
+                  <span class="value">${escapeHtml(invoice.invoiceNumber || '—')}</span>
                 </div>
 
                 <div class="row">
@@ -1355,8 +1367,7 @@ const buildItemsRows = (items) => {
       </html>
     `
 
-browser = await launchBrowser()
-
+    browser = await launchBrowser()
 
     const page = await browser.newPage()
 
@@ -1376,6 +1387,7 @@ browser = await launchBrowser()
     })
 
     await browser.close()
+    browser = null
 
     const fileName = `invoice-${invoice.invoiceNumber || invoice._id}.pdf`
 
@@ -1386,7 +1398,7 @@ browser = await launchBrowser()
     return res.send(pdfBuffer)
   } catch (err) {
     if (browser) {
-      await browser.close()
+      await browser.close().catch(() => {})
     }
 
     console.error('Invoice PDF Error:', err)
@@ -1394,9 +1406,7 @@ browser = await launchBrowser()
   }
 })
 
-
-
-app.get('/sw-admin/invoices' , requireAdminAuth , async (req, res) => {
+app.get('/sw-admin/invoices', requireAdminAuth, async (req, res) => {
   try {
     const invoices = await Invoice.find()
       .populate('client', 'name company email phone')

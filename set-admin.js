@@ -6,7 +6,10 @@ const mongoose = require('mongoose');
 const User = require('./models/user.model'); // اگه مسیر فرق داره، اینجا اصلاح کن
 
 // ⚠️ آدرس دیتابیس رو مطابق پروژه SoulWeb اصلاح کن
-const urlDB = 'mongodb://admin:pM8U6IsnbQBsnGspAg1f@soulwebdb-ttk-service:27017/admin';
+// const urlDB = 'mongodb://admin:pM8U6IsnbQBsnGspAg1f@soulwebdb-ttk-service:27017/admin';
+
+const urlDB = 'mongodb://localhost:27017/SoulWeb'
+
 
 async function run() {
     try {
@@ -20,8 +23,8 @@ async function run() {
         if (!adminUser) {
             adminUser = new User({
                 name: 'Arshya',
-                email: email,
-                password: 'arshya',
+                email: 'a@getMaxListeners.com',
+                password: '12345678',
                 role: 'admin'
             });
             console.log('یوزر ادمین جدید ساخته می‌شه...');

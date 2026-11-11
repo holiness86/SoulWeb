@@ -187,8 +187,8 @@ app.get('/sw-admin/api/notifications', requireAdminAuth, async (req, res) => {
 // ─────────────────────────────────────────
 //  DB + SERVER START
 // ─────────────────────────────────────────
-const DB_URL = 'mongodb://admin:pM8U6IsnbQBsnGspAg1f@soulwebdb-ttk-service:27017/admin'
-// const DB_URL = 'mongodb://localhost:27017/SoulWeb'
+// const DB_URL = 'mongodb://admin:pM8U6IsnbQBsnGspAg1f@soulwebdb-ttk-service:27017/admin'
+const DB_URL = 'mongodb://localhost:27017/SoulWeb'
 const PORT   = 3000
 
 mongoose.connect(DB_URL)
@@ -1439,7 +1439,7 @@ app.get('/sw-admin/invoices', requireAdminAuth, async (req, res) => {
       overdueAmount: sumInvoicesByStatus('overdue')
     }
 
-    res.render('admin/invoices', {
+    res.render('admin/Invoices', {
       layout: 'layouts/sw-admin',
       title: 'مدیریت فاکتورها',
       invoices,

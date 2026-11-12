@@ -1861,6 +1861,26 @@ app.post('/sw-admin/portfolio' , requireAdminAuth , upload.single('coverImage'),
   }
 })
 
+app.post('/sw-admin/portfolio/:id/status', requireAdminAuth, async (req, res) => {
+  try {
+    const { isPublished } = req.body
+
+    if (typeof isPublished !== 'boolean') {
+      return res.status(400).json({ success: false, message: 'مقدار نامعتبر است' })
+    }
+
+    const item = await Portfolio.findByIdAndUpdate(req.params.id, { isPublished }, { new: true })
+
+    if (!item) {
+      return res.status(404).json({ success: false, message: 'نمونه کار پیدا نشد' })
+    }
+
+    res.json({ success: true, isPublished: item.isPublished })
+  } catch (err) {
+    console.error('Portfolio status error:', err)
+    res.status(500).json({ success: false, message: 'خطا در تغییر وضعیت نمونه کار' })
+  }
+})
 
 // POST — update existing
 app.post('/sw-admin/portfolio/:id/update' , requireAdminAuth , upload.single('coverImage'), async (req, res) => {
@@ -1935,6 +1955,37 @@ app.post('/sw-admin/portfolio/:id/delete' , requireAdminAuth , async (req, res) 
   }
 })
 
+app.post('/sw-admin/service-categories/add', requireAdminAuth, async (req, res) => {
+  try {
+    const { title, type } = req.body
+
+    if (!title || !title.trim()) {
+      return res.status(400).json({ ok: false, message: 'عنوان دسته‌بندی الزامی است' })
+    }
+
+    const cleanTitle = title.trim()
+    const slug = cleanTitle.toLowerCase().replace(/\s+/g, '-')
+
+    const newCategory = await Category.create({
+      title: cleanTitle,
+      slug,
+      type: type || 'service'
+    })
+
+    res.json({
+      ok: true,
+      category: {
+        _id: newCategory._id,
+        title: newCategory.title,
+        slug: newCategory.slug,
+        type: newCategory.type
+      }
+    })
+  } catch (err) {
+    console.error('Category create error:', err)
+    res.status(500).json({ ok: false, message: 'خطا در ثبت دسته‌بندی' })
+  }
+})
 // ─────────────────────────────────────────
 //  ADMIN — PACKAGES
 // ─────────────────────────────────────────
@@ -1992,6 +2043,60 @@ app.post('/sw-admin/packages' , requireAdminAuth , async (req, res) => {
   }
 })
 
+app.post('/sw-admin/packages/:id/toggle', requireAdminAuth, async (req, res) => {
+  try {
+    const pkg = await Package.findById(req.params.id)
+
+    if (!pkg) {
+      return res.status(404).json({ success: false, message: 'پکیج پیدا نشد' })
+    }
+
+    pkg.isActive = typeof req.body.isActive === 'boolean' ? req.body.isActive : !pkg.isActive
+    await pkg.save()
+
+    res.json({ success: true, isActive: pkg.isActive })
+  } catch (err) {
+    console.error('Package toggle error:', err)
+    res.status(500).json({ success: false, message: 'خطا در تغییر وضعیت پکیج' })
+  }
+})
+
+app.post('/sw-admin/packages/save', requireAdminAuth, async (req, res) => {
+  try {
+    const {
+      id, name, slug, description, price, duration,
+      category, features, isFeatured, sales, views
+    } = req.body
+
+    const featureList = (features || '')
+      .split('\n')
+      .map(f => f.trim())
+      .filter(Boolean)
+
+    const data = {
+      name,
+      slug,
+      description,
+      price: Number(price) || 0,
+      duration,
+      features: featureList,
+      isFeatured: !!isFeatured,
+      sales: Number(sales) || 0,
+      views: Number(views) || 0
+    }
+
+    if (id) {
+      await Package.findByIdAndUpdate(id, data)
+    } else {
+      await Package.create({ ...data, category: category || 'web' })
+    }
+
+    res.redirect('/sw-admin/packages')
+  } catch (err) {
+    console.error(err)
+    res.status(500).send('Package error')
+  }
+})
 // ─────────────────────────────────────────
 //  ADMIN — REVIEWS
 // ─────────────────────────────────────────

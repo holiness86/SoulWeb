@@ -1,328 +1,196 @@
+<%# views/admin/Portfolio.ejs — مدیریت پورتفولیو (گالری)
+    ورودی‌ها از server.js: items (با populate('client','name') و 'category')، categories (type: portfolio)
+    روت‌ها: GET /sw-admin/portfolio/form[?id=] (ثبت/ویرایش) · POST /sw-admin/portfolio/:id/status (JSON) · POST /:id/delete %>
+<%
+  const list = Array.isArray(items) ? items : [];
+  const cats = (typeof categories !== 'undefined' && Array.isArray(categories)) ? categories : [];
+  const fa = (n) => Number(n || 0).toLocaleString('fa-IR');
+
+  const FALLBACK_TITLE = { web: 'طراحی وب', shop: 'فروشگاه', uiux: 'UI/UX', app: 'وب اپ' };
+  const ICONS = ['bi-laptop', 'bi-bag-heart', 'bi-palette2', 'bi-building', 'bi-cart3', 'bi-bar-chart-fill'];
+
+  // دسته می‌تواند populate‌شده (آبجکت) یا فقط slug (رشته) باشد
+  const slugOf  = (it) => it.category && typeof it.category === 'object' ? (it.category.slug || '') : (it.category || '');
+  const titleOf = (slug) => { const c = cats.find((x) => x.slug === slug); return c ? c.title : (FALLBACK_TITLE[slug] || slug || 'بدون دسته'); };
+  const catLabel = (it) => it.category && typeof it.category === 'object' ? (it.category.title || it.category.slug || 'بدون دسته') : titleOf(it.category);
+
+  const chips = cats.map((c) => ({ slug: c.slug, title: c.title }));
+  list.forEach((it) => { const s = slugOf(it); if (s && !chips.find((c) => c.slug === s)) chips.push({ slug: s, title: titleOf(s) }); });
+  const countOf = (slug) => list.filter((it) => slugOf(it) === slug).length;
+
+  const publishedCount = list.filter((it) => it.isPublished).length;
+  const draftCount = list.length - publishedCount;
+%>
 <%- include('partials/_head', { title: 'پورتفولیو' }) %>
 
 <div class="sidebar-overlay" id="sidebarOverlay"></div>
+
 <div class="admin-shell">
 
-<%- include('partials/_sidebar', {
-  activePage: 'portfolio',
-  adminUser: { name: 'علی مدیری', role: 'مدیر کل سیستم', initials: 'ادم' }
-}) %>
+  <%- include('partials/_sidebar', { activePage: 'portfolio' }) %>
 
-<div class="main-content" id="mainContent">
-<%- include('partials/_header', {
-  breadcrumbs: [{ label: 'داشبورد', href: '/sw-admin' }, { label: 'محتوا' }, { label: 'پورتفولیو' }],
-  searchPlaceholder: 'جستجو در پورتفولیو…'
-}) %>
-<%
-const publishedCount = items.filter(item => item.isPublished).length
-const draftCount = items.filter(item => !item.isPublished).length
-%>
+  <div class="main-content" id="mainContent">
 
-<main class="page-content">
+    <%- include('partials/_header', {
+      breadcrumbs: [{ label: 'داشبورد', href: '/sw-admin' }, { label: 'محتوا' }, { label: 'پورتفولیو' }],
+      searchPlaceholder: 'جستجو در پنل…'
+    }) %>
 
-  <div class="page-header fade-up fade-up-1">
-    <div>
-      <h1 class="page-title">مدیریت پورتفولیو</h1>
-<p class="page-subtitle">
-  <%= publishedCount.toLocaleString('fa-IR') %> نمونه کار منتشر‌شده ·
-  <%= draftCount.toLocaleString('fa-IR') %> پیش‌نویس
-</p>
-    </div>
-<a
-  href="/sw-admin/portfolio/form"
-  class="btn-sol-sm create-btn"
->
-  <i class="bi bi-plus-lg"></i> نمونه کار جدید
-</a>
-  </div>
+    <main class="page-content" id="portPage">
 
-  <!-- Filter -->
-<div class="filter-bar fade-up fade-up-2" data-filter-group style="display:flex;gap:.6rem;flex-wrap:wrap;margin-bottom:1.25rem;">
-
-  <button class="filter-chip active" data-filter="all">همه</button>
-
-  <% if (categories && categories.length) { %>
-    <% categories.forEach(cat => { %>
-      <button class="filter-chip" data-filter="<%= cat.slug %>">
-        <%= cat.title %>
-      </button>
-    <% }) %>
-  <% } %>
-
-</div>
-
-
-  <!-- Portfolio Grid -->
-<div class="port-grid fade-up fade-up-3">
-
-<%
-const categoryMap = {
-  web: 'طراحی وب',
-  shop: 'فروشگاه',
-  uiux: 'UI/UX',
-  app: 'وب اپ'
-}
-
-const gradients = [
-  'linear-gradient(135deg,#6447f4,#0090e8)',
-  'linear-gradient(135deg,#0090e8,#4dc3ff)',
-  'linear-gradient(135deg,#a394fb,#6447f4)',
-  'linear-gradient(135deg,#1e1274,#4028b8)',
-  'linear-gradient(135deg,#005896,#0090e8)',
-  'linear-gradient(135deg,#4028b8,#836af8)'
-]
-
-const icons = [
-  'bi-laptop',
-  'bi-bag-heart',
-  'bi-palette2',
-  'bi-building',
-  'bi-cart3',
-  'bi-bar-chart-fill'
-]
-%>
-
-<% items.forEach(function(item,index){ %>
-
-<div class="port-card" data-category="<%= item.category && item.category.slug ? item.category.slug : item.category %>">
-
-<div class="port-thumb">
-
-  <% if(item.coverImage){ %>
-    <img 
-      src="<%= item.coverImage %>" 
-      alt="<%= item.title %>" 
-      class="port-thumb-img"
-    >
-  <% } else { %>
-    <div 
-      class="port-thumb-fallback" 
-      style="background:<%= gradients[index % gradients.length] %>;"
-    >
-      <i 
-        class="bi <%= icons[index % icons.length] %>" 
-        style="font-size:3rem;color:rgba(255,255,255,.7);"
-      ></i>
-    </div>
-  <% } %>
-
-  <div class="port-thumb-overlay">
-    <a 
-      href="/sw-admin/portfolio/form?id=<%= item._id %>"
-      class="btn-ghost-sm edit-btn"
-    >
-      <i class="bi bi-pencil"></i> ویرایش
-    </a>
-  </div>
-
-  <% if(!item.isPublished){ %>
-    <span class="port-draft-badge">پیش‌نویس</span>
-  <% } %>
-
-</div>
-
-
-  <div class="port-body">
-
-    <div class="port-cat">
-      <%= categoryMap[item.category] || item.category %>
-    </div>
-
-    <div class="port-title">
-      <%= item.title %>
-    </div>
-
-    <div class="port-meta">
-      <span>
-        <i class="bi bi-person" style="font-size:.75rem;"></i>
-          <%= item.client ? item.client.name : '—' %>
-      </span>
-
-      <span>
-        <i class="bi bi-code-slash" style="font-size:.75rem;"></i>
-        <%= item.techStack ? item.techStack.join(' + ') : '' %>
-      </span>
-    </div>
-
-    <div class="port-footer">
-
-      <div class="port-footer-main">
-
-      <% if(item.isPublished){ %>
-
-      <div style="display:flex;align-items:center;gap:.3rem;font-size:.73rem;color:var(--color-text-muted);">
-        <i class="bi bi-eye"></i>
-        <%= item.views ? item.views.toLocaleString('fa-IR') : '۰' %> بازدید
+      <div class="page-header fade-up fade-up-1">
+        <div>
+          <h1 class="page-title">مدیریت پورتفولیو</h1>
+          <p class="page-subtitle"><span id="cntPub"><%= fa(publishedCount) %></span> نمونه کار منتشرشده · <span id="cntDraft"><%= fa(draftCount) %></span> پیش‌نویس</p>
+        </div>
+        <a href="/sw-admin/portfolio/form" class="btn-sol-sm"><i class="bi bi-plus-lg"></i> نمونه کار جدید</a>
       </div>
 
-      <span class="badge-status badge-done">منتشرشده</span>
+      <!-- Filter / Search -->
+      <div class="filter-bar fade-up fade-up-2" role="toolbar" aria-label="فیلتر نمونه کارها">
+        <button type="button" class="filter-chip active" data-cat="all">همه <span class="filter-count"><%= fa(list.length) %></span></button>
+        <% chips.forEach(function (c) { %>
+          <button type="button" class="filter-chip" data-cat="<%= c.slug %>"><%= c.title %> <span class="filter-count"><%= fa(countOf(c.slug)) %></span></button>
+        <% }); %>
 
-      <% } else { %>
-
-<span class="badge-status badge-new">پیش‌نویس</span>
-
-<form action="/sw-admin/portfolio/<%= item._id %>/publish" method="POST">
-  <button 
-    class="btn-sol-sm"
-    type="submit"
-    style="padding:.28rem .75rem;font-size:.73rem;"
-  >
-    <i class="bi bi-send"></i> انتشار
-  </button>
-</form>
-
-      <% } %>
-
+        <div class="tools">
+          <label class="sw-search" aria-label="جستجو در نمونه کارها">
+            <i class="bi bi-search" aria-hidden="true"></i>
+            <input type="search" id="portSearch" placeholder="عنوان، مشتری یا تکنولوژی…" autocomplete="off">
+          </label>
+          <select class="sol-select" id="portStatus" aria-label="فیلتر وضعیت">
+            <option value="all">همه وضعیت‌ها</option>
+            <option value="published">منتشرشده</option>
+            <option value="draft">پیش‌نویس</option>
+          </select>
+        </div>
       </div>
 
-      <form
-        action="/sw-admin/portfolio/<%= item._id %>/delete"
-        method="POST"
-        class="port-delete-form"
-        data-confirm-title="<%= item.title || 'این نمونه کار' %>"
-      >
-        <button type="submit" class="port-delete-btn" title="حذف نمونه کار">
-          <i class="bi bi-trash"></i>
-        </button>
-      </form>
+      <!-- Grid -->
+      <div class="port-grid fade-up fade-up-3" id="portGrid">
+        <% list.forEach(function (item, index) {
+             const pub = !!item.isPublished;
+             const tech = Array.isArray(item.techStack) ? item.techStack : [];
+             const clientName = item.client ? (item.client.name || '—') : '—';
+        %>
+          <article class="port-card <%= pub ? '' : 'is-draft' %>" style="--i:<%= Math.min(index, 8) %>"
+                   data-id="<%= item._id %>" data-cat="<%= slugOf(item) %>" data-status="<%= pub ? 'published' : 'draft' %>" data-title="<%= item.title || '' %>"
+                   data-q="<%= [item.title, clientName, tech.join(' '), catLabel(item)].join(' ') %>">
 
-    </div>
+            <a class="port-thumb" href="/sw-admin/portfolio/form?id=<%= item._id %>" aria-label="ویرایش «<%= item.title %>»">
+              <% if (item.coverImage) { %>
+                <img src="<%= item.coverImage %>" alt="<%= item.title %>" class="port-thumb-img" loading="lazy" decoding="async">
+              <% } else { %>
+                <span class="port-thumb-fallback g-<%= index % 6 + 1 %>"><i class="bi <%= ICONS[index % ICONS.length] %>"></i></span>
+              <% } %>
+              <span class="port-draft-badge" <%= pub ? 'hidden' : '' %>>پیش‌نویس</span>
+              <% if (item.isFeatured) { %><span class="port-feat-badge"><i class="bi bi-star-fill"></i> ویژه</span><% } %>
+            </a>
 
+            <div class="port-body">
+              <div class="port-cat"><%= catLabel(item) %></div>
+              <h2 class="port-title"><%= item.title || 'بدون عنوان' %></h2>
+
+              <div class="port-meta">
+                <span><i class="bi bi-person"></i> <%= clientName %></span>
+                <% if (tech.length) { %><span dir="ltr"><i class="bi bi-code-slash"></i> <%= tech.join(' + ') %></span><% } %>
+              </div>
+
+              <div class="port-footer">
+                <div class="port-footer-main">
+                  <span class="badge-status <%= pub ? 'badge-done' : 'badge-new' %>" data-badge><%= pub ? 'منتشرشده' : 'پیش‌نویس' %></span>
+                  <span class="port-views"><i class="bi bi-eye"></i> <%= fa(item.views) %> بازدید</span>
+                </div>
+              </div>
+
+              <div class="port-actions">
+                <button type="button" class="btn-ghost-sm grow" data-pub-toggle>
+                  <i class="bi <%= pub ? 'bi-file-earmark' : 'bi-send' %>"></i> <span data-pub-label><%= pub ? 'برگرداندن به پیش‌نویس' : 'انتشار' %></span>
+                </button>
+                <a href="/sw-admin/portfolio/form?id=<%= item._id %>" class="btn-icon" title="ویرایش" aria-label="ویرایش"><i class="bi bi-pencil"></i></a>
+                <form action="/sw-admin/portfolio/<%= item._id %>/delete" method="POST" data-sw-confirm="آیا از حذف «<%= item.title || 'این نمونه کار' %>» مطمئن هستید؟ این عملیات غیرقابل بازگشت است.">
+                  <button type="submit" class="btn-icon danger" title="حذف" aria-label="حذف نمونه کار"><i class="bi bi-trash"></i></button>
+                </form>
+              </div>
+            </div>
+          </article>
+        <% }); %>
+
+        <div class="sw-empty port-empty" id="portNoMatch" hidden><i class="bi bi-search"></i>نمونه کاری با این فیلترها پیدا نشد.</div>
+        <% if (!list.length) { %>
+          <div class="sw-empty port-empty"><i class="bi bi-collection"></i>هنوز نمونه کاری ثبت نشده است.<br><a href="/sw-admin/portfolio/form" class="btn-sol-sm" style="margin-top:1rem;">اولین نمونه کار را بسازید</a></div>
+        <% } %>
+      </div>
+
+    </main>
   </div>
-
 </div>
 
-<% }) %>
-
-</div>
-
-
-</main>
-</div>
-</div>
-
-<%- include('partials/_scripts', { extraScripts: `
-<style>
-
-  .port-thumb{
-  height:180px;
-  display:flex;
-  align-items:center;
-  justify-content:center;
-  position:relative;
-  overflow:hidden;
-  background:var(--color-bg);
-}
-
-.port-thumb-img{
-  width:100%;
-  height:100%;
-  object-fit:cover;
-  display:block;
-  transition:transform var(--dur-normal) var(--ease-spring);
-}
-
-.port-card:hover .port-thumb-img{
-  transform:scale(1.06);
-}
-
-.port-thumb-fallback{
-  width:100%;
-  height:100%;
-  display:flex;
-  align-items:center;
-  justify-content:center;
-}
-
-.filter-chip{display:inline-flex;align-items:center;gap:.35rem;font-family:var(--font-primary);font-size:.78rem;font-weight:600;padding:.38rem .9rem;border-radius:var(--radius-full);border:1.5px solid var(--color-border);background:var(--color-surface);color:var(--color-text-muted);cursor:pointer;transition:all var(--dur-fast);}
-.filter-chip:hover,.filter-chip.active{background:var(--main-500);border-color:var(--main-500);color:#fff;}
-.port-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:1.25rem;}
-.port-card{background:var(--color-surface);border:1px solid var(--color-border);border-radius:var(--radius-lg);overflow:hidden;transition:all var(--dur-normal) var(--ease-spring);}
-.port-card:hover{transform:translateY(-4px);box-shadow:var(--shadow-lg);border-color:var(--main-200);}
-.port-thumb{height:180px;display:flex;align-items:center;justify-content:center;position:relative;overflow:hidden;}
-.port-thumb-overlay{position:absolute;inset:0;background:rgba(30,18,116,.6);backdrop-filter:blur(4px);display:flex;align-items:center;justify-content:center;opacity:0;transition:opacity var(--dur-normal);}
-.port-card:hover .port-thumb-overlay{opacity:1;}
-.port-draft-badge{position:absolute;top:.75rem;right:.75rem;background:rgba(0,0,0,.6);color:#fff;font-size:.67rem;font-weight:700;padding:.2rem .6rem;border-radius:99px;backdrop-filter:blur(4px);}
-.port-body{padding:1.1rem;}
-.port-cat{font-size:.7rem;font-weight:700;color:var(--main-500);text-transform:uppercase;letter-spacing:.06em;margin-bottom:.3rem;}
-.port-title{font-size:.88rem;font-weight:700;margin-bottom:.5rem;line-height:1.4;}
-.port-meta{display:flex;gap:.85rem;flex-wrap:wrap;margin-bottom:.75rem;}
-.port-meta span{font-size:.73rem;color:var(--color-text-muted);display:flex;align-items:center;gap:.25rem;}
-
-.port-footer{display:flex;align-items:center;justify-content:space-between;gap:.6rem;}
-.port-footer-main{display:flex;align-items:center;gap:.5rem;flex-wrap:wrap;flex:1;min-width:0;}
-
-.port-delete-form{flex-shrink:0;}
-.port-delete-btn{
-  width:2.1rem;
-  height:2.1rem;
-  border-radius:14px;
-  border:1.5px solid var(--color-border);
-  background:var(--color-surface);
-  color:var(--color-text-muted);
-  display:flex;
-  align-items:center;
-  justify-content:center;
-  font-size:.85rem;
-  cursor:pointer;
-  transition:all var(--dur-fast) var(--ease-smooth);
-}
-.port-delete-btn:hover{
-  background:#ef4444;
-  border-color:#ef4444;
-  color:#fff;
-  transform:translateY(-2px);
-  box-shadow:0 6px 16px rgba(239,68,68,.35);
-}
-</style>
 <script>
-(function(){
+document.addEventListener('DOMContentLoaded', function () {
+  function $(s, c) { return (c || document).querySelector(s); }
+  function $$(s, c) { return Array.prototype.slice.call((c || document).querySelectorAll(s)); }
+  function fa(v) { return String(v == null ? '' : v).replace(/[0-9]/g, function (d) { return '۰۱۲۳۴۵۶۷۸۹'[d]; }); }
+  function norm(s) { return String(s || '').replace(/ي/g, 'ی').replace(/ك/g, 'ک').toLowerCase(); }
+  function toast(m, o) { if (window.SW) SW.island(m, o); }
 
-  const filterGroup = document.querySelector('[data-filter-group]')
-  if(!filterGroup) return
+  var grid = $('#portGrid'), cards = $$('.port-card', grid), state = { cat: 'all', status: 'all', q: '' };
 
-  const buttons = filterGroup.querySelectorAll('.filter-chip')
-  const cards   = document.querySelectorAll('.port-card')
+  /* ───────── فیلتر + جستجو ───────── */
+  function apply() {
+    var q = norm(state.q), shown = 0;
+    cards.forEach(function (c) {
+      var ok = (state.cat === 'all' || c.dataset.cat === state.cat) && (state.status === 'all' || c.dataset.status === state.status) && (!q || norm(c.dataset.q).indexOf(q) > -1);
+      c.hidden = !ok; if (ok) shown++;
+    });
+    $('#portNoMatch').hidden = !(cards.length && !shown);
+  }
+  $$('.filter-chip[data-cat]').forEach(function (chip) {
+    chip.addEventListener('click', function () {
+      $$('.filter-chip[data-cat]').forEach(function (x) { x.classList.remove('active'); });
+      chip.classList.add('active'); state.cat = chip.dataset.cat; apply();
+    });
+  });
+  $('#portStatus').addEventListener('change', function (e) { state.status = e.target.value; apply(); });
+  var t = 0;
+  $('#portSearch').addEventListener('input', function (e) { clearTimeout(t); t = setTimeout(function () { state.q = e.target.value.trim(); apply(); }, 90); });
 
-  filterGroup.addEventListener('click', function(e){
-
-    const btn = e.target.closest('.filter-chip')
-    if(!btn) return
-
-    buttons.forEach(b => b.classList.remove('active'))
-    btn.classList.add('active')
-
-    const selectedCat = btn.dataset.filter
-
-    cards.forEach(card => {
-      const cardCat = card.dataset.category
-
-      if(selectedCat === 'all' || cardCat === selectedCat){
-        card.style.display = ''
-      } else {
-        card.style.display = 'none'
-      }
-    })
-
-  })
-
-})();
-
-// تأیید حذف نمونه کار پیش از ارسال فرم
-(function () {
-
-  document.addEventListener('submit', function (e) {
-    const form = e.target.closest('.port-delete-form')
-    if (!form) return
-
-    const title = form.dataset.confirmTitle || 'این نمونه کار'
-    const confirmed = window.confirm('آیا از حذف «' + title + '» مطمئن هستید؟ این عملیات غیرقابل بازگشت است.')
-
-    if (!confirmed) {
-      e.preventDefault()
-    }
-  })
-
-})();
+  /* ───────── انتشار / پیش‌نویس (JSON) با بازگردانی ───────── */
+  function recount() {
+    var pub = cards.filter(function (c) { return c.dataset.status === 'published'; }).length;
+    $('#cntPub').textContent = fa(pub); $('#cntDraft').textContent = fa(cards.length - pub);
+  }
+  function paint(card, pub) {
+    card.dataset.status = pub ? 'published' : 'draft'; card.classList.toggle('is-draft', !pub);
+    var b = $('[data-badge]', card); b.className = 'badge-status ' + (pub ? 'badge-done' : 'badge-new'); b.textContent = pub ? 'منتشرشده' : 'پیش‌نویس';
+    $('.port-draft-badge', card).hidden = pub;
+    $('[data-pub-label]', card).textContent = pub ? 'برگرداندن به پیش‌نویس' : 'انتشار';
+    $('[data-pub-toggle] i', card).className = 'bi ' + (pub ? 'bi-file-earmark' : 'bi-send');
+  }
+  function setPublished(card, pub, undoable) {
+    var prev = card.dataset.status === 'published';
+    paint(card, pub); recount(); apply();
+    return fetch('/sw-admin/portfolio/' + card.dataset.id + '/status', {
+      method: 'POST', credentials: 'same-origin',
+      headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+      body: JSON.stringify({ isPublished: pub })
+    }).then(function (r) {
+      return r.json().catch(function () { return {}; }).then(function (j) { if (!r.ok || !j.success) throw new Error(j.message || 'خطا در ارتباط با سرور'); return j; });
+    }).then(function () {
+      if (!undoable) return;
+      toast(pub ? 'نمونه کار منتشر شد' : 'به پیش‌نویس برگشت', {
+        type: 'success', detail: card.dataset.title, ms: 5000,
+        actions: [{ label: 'بازگردانی', fn: function () { setPublished(card, prev, false); } }]
+      });
+    }).catch(function (err) {
+      paint(card, prev); recount(); apply(); toast(err.message || 'تغییر وضعیت انجام نشد', { type: 'error' });
+    });
+  }
+  grid.addEventListener('click', function (e) {
+    var b = e.target.closest('[data-pub-toggle]'); if (!b) return;
+    var card = b.closest('.port-card'); setPublished(card, card.dataset.status !== 'published', true);
+  });
+});
 </script>
-`}) %>
+
+<%- include('partials/_scripts') %>

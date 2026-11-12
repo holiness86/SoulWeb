@@ -1,302 +1,258 @@
-<%# views/sw-admin/packages.ejs %>
+<%# views/admin/Packages.ejs — مدیریت پکیج‌ها
+    ورودی‌ها از server.js: packages
+    روت‌ها: POST /sw-admin/packages/save (افزودن/ویرایش) · /:id/toggle (JSON) · /:id/delete
+    نکته: فیلد duration در مدل برای نام آیکون Bootstrap (bi-…) استفاده می‌شود و slug برای برچسب نمایشی؛ قیمت به «میلیون تومان» است. %>
+<%
+  const list = Array.isArray(packages) ? packages : [];
+  const fa = (n) => Number(n || 0).toLocaleString('fa-IR');
+  const iconOf = (p) => (typeof p.duration === 'string' && p.duration.indexOf('bi-') === 0) ? p.duration : 'bi-box-seam';
+
+  // آمار مستقیم از خود پکیج‌ها محاسبه می‌شود (مدل سفارش جدا نداریم)
+  const activeCount  = list.filter((p) => p.isActive).length;
+  const totalSales   = list.reduce((s, p) => s + (Number(p.sales) || 0), 0);
+  const totalViews   = list.reduce((s, p) => s + (Number(p.views) || 0), 0);
+  const revenue      = list.reduce((s, p) => s + (Number(p.price) || 0) * (Number(p.sales) || 0), 0);
+  const best         = list.reduce((m, p) => ((Number(p.sales) || 0) > (m ? Number(m.sales) || 0 : 0) ? p : m), null);
+
+  const payload = (p) => JSON.stringify({
+    id: String(p._id), name: p.name || '', slug: p.slug || '', price: p.price ?? '', icon: p.duration || '',
+    description: p.description || '', features: (p.features || []).join('\n'),
+    featured: !!p.isFeatured, sales: Number(p.sales) || 0, views: Number(p.views) || 0
+  });
+%>
 <%- include('partials/_head', { title: 'مدیریت پکیج‌ها' }) %>
 
 <div class="sidebar-overlay" id="sidebarOverlay"></div>
+
 <div class="admin-shell">
 
-<%- include('partials/_sidebar', { activePage: 'packages', adminUser: { name: 'علی مدیری', role: 'مدیر کل سیستم', initials: 'ادم' } }) %>
+  <%- include('partials/_sidebar', { activePage: 'packages' }) %>
 
-<div class="main-content" id="mainContent">
-<%- include('partials/_header', {
-  breadcrumbs: [{ label: 'داشبورد', href: '/sw-admin' }, { label: 'پکیج‌ها' }],
-  searchPlaceholder: 'جستجو در پکیج‌ها…'
-}) %>
+  <div class="main-content" id="mainContent">
 
-<main class="page-content">
+    <%- include('partials/_header', {
+      breadcrumbs: [{ label: 'داشبورد', href: '/sw-admin' }, { label: 'پکیج‌ها' }],
+      searchPlaceholder: 'جستجو در پنل…'
+    }) %>
 
-  <div class="page-header fade-up fade-up-1">
-    <div>
-      <h1 class="page-title">مدیریت پکیج‌ها</h1>
-      <p class="page-subtitle"><%= stats.activeCount %> پکیج فعال · نمایش در صفحه «پکیج‌ها» وب‌سایت</p>
-    </div>
-    <div style="display:flex;gap:.6rem;">
-      <a href="../#packages" class="btn-ghost-sm"><i class="bi bi-eye"></i> مشاهده در سایت</a>
-      <button class="btn-sol-sm" data-modal-open="packageModal" onclick="openNewPackageModal()"><i class="bi bi-plus-lg"></i> پکیج جدید</button>
-    </div>
-  </div>
+    <main class="page-content" id="pkgPage" data-total="<%= list.length %>">
 
-  <!-- Stats -->
-  <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:1rem;margin-bottom:1.75rem;" class="fade-up fade-up-2">
-    <div class="pstat">
-      <div class="pstat-icon" style="background:rgba(100,71,244,.1);color:var(--main-500);"><i class="bi bi-box-seam-fill"></i></div>
-      <div><div class="pstat-val text-grad stat-value" data-count="<%= stats.activeCount %>" data-suffix=""><%= stats.activeCount %></div><div class="pstat-lbl">پکیج فعال</div></div>
-    </div>
-    <div class="pstat">
-      <div class="pstat-icon" style="background:rgba(34,197,94,.1);color:#16a34a;"><i class="bi bi-graph-up-arrow"></i></div>
-      <div><div class="pstat-val text-grad stat-value" data-count="<%= stats.monthlyPurchases %>" data-suffix=""><%= stats.monthlyPurchases %></div><div class="pstat-lbl">خرید این ماه</div></div>
-    </div>
-    <div class="pstat">
-      <div class="pstat-icon" style="background:rgba(245,158,11,.1);color:#d97706;"><i class="bi bi-star-fill"></i></div>
-      <div><div class="pstat-val text-grad"><%= stats.bestSellerName %></div><div class="pstat-lbl">پرفروش‌ترین</div></div>
-    </div>
-    <div class="pstat">
-      <div class="pstat-icon" style="background:rgba(0,144,232,.1);color:var(--accent-500);"><i class="bi bi-cash-stack"></i></div>
-      <div><div class="pstat-val text-grad"><%= stats.totalRevenue %></div><div class="pstat-lbl">درآمد پکیج‌ها</div></div>
-    </div>
-  </div>
+      <div class="page-header fade-up fade-up-1">
+        <div>
+          <h1 class="page-title">مدیریت پکیج‌ها</h1>
+          <p class="page-subtitle"><span id="subActive"><%= fa(activeCount) %></span> پکیج فعال از <%= fa(list.length) %> · نمایش در صفحهٔ «پکیج‌ها» وب‌سایت</p>
+        </div>
+        <div class="d-flex gap-2">
+          <a href="/#packages" class="btn-ghost-sm" target="_blank" rel="noopener"><i class="bi bi-eye"></i> مشاهده در سایت</a>
+          <button type="button" class="btn-sol-sm" id="newPackageBtn" data-modal-open="packageModal"><i class="bi bi-plus-lg"></i> پکیج جدید</button>
+        </div>
+      </div>
 
-  <!-- Packages Grid -->
-  <div class="pkg-admin-grid fade-up fade-up-3">
+      <!-- Stats -->
+      <div class="sw-g c4 fade-up fade-up-2">
+        <div class="pstat"><div class="pstat-icon"><i class="bi bi-box-seam-fill"></i></div><div><div class="pstat-val text-grad" id="statActive"><%= fa(activeCount) %></div><div class="pstat-lbl">پکیج فعال</div></div></div>
+        <div class="pstat"><div class="pstat-icon ok"><i class="bi bi-cart-check-fill"></i></div><div><div class="pstat-val text-grad"><%= fa(totalSales) %></div><div class="pstat-lbl">مجموع فروش</div></div></div>
+        <div class="pstat"><div class="pstat-icon warn"><i class="bi bi-star-fill"></i></div><div><div class="pstat-val money"><%= best ? best.name : '—' %></div><div class="pstat-lbl">پرفروش‌ترین</div></div></div>
+        <div class="pstat"><div class="pstat-icon accent"><i class="bi bi-cash-stack"></i></div><div><div class="pstat-val money"><%= revenue ? fa(Math.round(revenue * 10) / 10) + ' م' : '—' %></div><div class="pstat-lbl">درآمد تخمینی (میلیون تومان)</div></div></div>
+      </div>
 
-    <% if (packages && packages.length > 0) { %>
-      <% packages.forEach(pkg => { %>
-        <div class="pkg-admin-card <%= pkg.isFeatured ? 'featured' : '' %>">
-          <div class="pkg-admin-top">
-            <span class="pkg-admin-badge <%= pkg.isFeatured ? 'featured' : '' %>">
-              <%= pkg.isFeatured ? 'پرطرفدار ⭐' : (pkg.slug || 'پکیج') %>
-            </span>
-            <div class="pkg-admin-switch">
-              <label class="sw-toggle">
-                <input type="checkbox" <%= pkg.isActive ? 'checked' : '' %> onchange="togglePackageActive('<%= pkg._id %>', this)">
+      <!-- Packages -->
+      <div class="pkg-admin-grid fade-up fade-up-3" id="pkgGrid">
+        <% list.forEach(function (p, i) { %>
+          <article class="pkg-admin-card <%= p.isFeatured ? 'featured' : '' %> <%= p.isActive ? '' : 'is-off' %>" style="--i:<%= Math.min(i, 8) %>" data-package="<%= payload(p) %>">
+            <div class="pkg-admin-top">
+              <span class="pkg-admin-badge <%= p.isFeatured ? 'featured' : '' %>"><%= p.isFeatured ? 'پرطرفدار ⭐' : (p.slug || 'پکیج') %></span>
+              <label class="sw-toggle" title="فعال / غیرفعال">
+                <input type="checkbox" data-pkg-toggle aria-label="فعال بودن پکیج <%= p.name %>" <%= p.isActive ? 'checked' : '' %>>
                 <span class="sw-slider"></span>
               </label>
             </div>
-          </div>
-          <div class="pkg-admin-icon <%= pkg.isFeatured ? 'featured' : '' %>">
-            <i class="bi <%= pkg.duration && pkg.duration.startsWith('bi-') ? pkg.duration : 'bi-box-seam' %>"></i>
-          </div>
-          <h5 class="pkg-admin-name"><%= pkg.name %></h5>
-          <div class="pkg-admin-price">
-            <%= Number(pkg.price).toLocaleString('fa-IR') %><small>میلیون تومان</small>
-          </div>
-          <p class="pkg-admin-desc"><%= pkg.description || '' %></p>
-          <ul class="pkg-admin-feat">
-            <% if (pkg.features && pkg.features.length > 0) { %>
-              <% pkg.features.forEach(feat => { %>
-                <li><i class="bi bi-check-lg"></i> <%= feat %></li>
-              <% }) %>
-            <% } %>
-          </ul>
-          <div class="pkg-admin-stats">
-            <span><i class="bi bi-cart-check"></i> <%= pkg.sales || 0 %> فروش</span>
-            <span><i class="bi bi-eye"></i> <%= pkg.views || 0 %> بازدید</span>
-          </div>
-          <div class="pkg-admin-actions">
-            <button
-              type="button"
-              class="btn-ghost-sm"
-              style="flex:1;justify-content:center;"
-              data-modal-open="packageModal"
-              onclick='openEditPackageModal(<%- JSON.stringify({
-                _id: pkg._id,
-                name: pkg.name,
-                slug: pkg.slug,
-                price: pkg.price,
-                duration: pkg.duration,
-                description: pkg.description,
-                features: (pkg.features || []).join("\n"),
-                isFeatured: pkg.isFeatured,
-                sales: pkg.sales,
-                views: pkg.views
-              }) %>)'
-            >
-              <i class="bi bi-pencil"></i> ویرایش
-            </button>
-            <form action="/sw-admin/packages/delete/<%= pkg._id %>" method="POST" onsubmit="return confirm('آیا از حذف این پکیج مطمئن هستید؟');" style="display:inline;">
-              <button type="submit" class="btn-danger-sm" style="padding:.42rem .7rem;"><i class="bi bi-trash"></i></button>
-            </form>
+
+            <div class="pkg-admin-icon <%= p.isFeatured ? 'featured' : '' %>"><i class="bi <%= iconOf(p) %>"></i></div>
+            <h2 class="pkg-admin-name"><%= p.name %></h2>
+            <div class="pkg-admin-price"><%= fa(p.price) %><small>میلیون تومان</small></div>
+            <p class="pkg-admin-desc"><%= p.description || '' %></p>
+
+            <ul class="pkg-admin-feat">
+              <% (p.features || []).forEach(function (feat) { %><li><i class="bi bi-check-lg"></i> <%= feat %></li><% }); %>
+            </ul>
+
+            <div class="pkg-admin-stats">
+              <span><i class="bi bi-cart-check"></i> <%= fa(p.sales) %> فروش</span>
+              <span><i class="bi bi-eye"></i> <%= fa(p.views) %> بازدید</span>
+            </div>
+
+            <div class="pkg-admin-actions">
+              <button type="button" class="btn-ghost-sm grow" data-modal-open="packageModal" data-pkg-edit><i class="bi bi-pencil"></i> ویرایش</button>
+              <form action="/sw-admin/packages/<%= p._id %>/delete" method="POST" data-sw-confirm="پکیج «<%= p.name %>» حذف شود؟ این کار قابل بازگشت نیست.">
+                <button type="submit" class="btn-danger-sm" title="حذف" aria-label="حذف پکیج <%= p.name %>"><i class="bi bi-trash"></i></button>
+              </form>
+            </div>
+          </article>
+        <% }); %>
+
+        <% if (!list.length) { %>
+          <div class="sw-empty pkg-empty"><i class="bi bi-box-seam"></i>هنوز هیچ پکیجی ثبت نشده است.</div>
+        <% } %>
+      </div>
+
+    </main>
+  </div>
+</div>
+
+<!-- Modal: پکیج جدید / ویرایش -->
+<div class="modal-overlay" id="packageModal">
+  <div class="modal-box">
+    <div class="modal-head">
+      <h3 class="modal-title" id="packageModalTitle">افزودن پکیج جدید</h3>
+      <button type="button" class="btn-icon" data-modal-close aria-label="بستن"><i class="bi bi-x-lg"></i></button>
+    </div>
+
+    <form action="/sw-admin/packages/save" method="POST" id="packageForm" data-validate novalidate>
+      <input type="hidden" name="id" id="packageId">
+
+      <div class="form-row two">
+        <div class="sw-field">
+          <label class="sol-label" for="packageName">نام پکیج</label>
+          <input class="sol-input" name="name" id="packageName" type="text" placeholder="مثال: حرفه‌ای" data-rule="required" autocomplete="off">
+        </div>
+        <div class="sw-field">
+          <label class="sol-label" for="packageSlug">برچسب نمایشی</label>
+          <input class="sol-input" name="slug" id="packageSlug" type="text" placeholder="مثال: پرطرفدار" autocomplete="off">
+        </div>
+      </div>
+
+      <div class="form-row two">
+        <div class="sw-field">
+          <label class="sol-label" for="packagePrice">قیمت (میلیون تومان)</label>
+          <input class="sol-input" name="price" id="packagePrice" type="number" min="0" step="any" dir="ltr" placeholder="45" data-rule="required|num|min:0">
+        </div>
+        <div class="sw-field">
+          <label class="sol-label" for="packageIcon">آیکون (Bootstrap Icons)</label>
+          <div class="sw-inline">
+            <div class="grow"><input class="sol-input" name="duration" id="packageIcon" type="text" dir="ltr" placeholder="bi-rocket-takeoff" autocomplete="off"></div>
+            <span class="icon-preview" id="iconPreview"><i class="bi bi-box-seam"></i></span>
           </div>
         </div>
-      <% }) %>
-    <% } else { %>
-      <div style="grid-column: 1 / -1; text-align:center; padding: 3rem 1rem; color: var(--color-text-muted);">
-        <i class="bi bi-box-seam fs-1 d-block mb-3" style="opacity:.5;"></i>
-        هنوز هیچ پکیجی ثبت نشده است.
       </div>
-    <% } %>
 
-  </div><!-- /grid -->
+      <div class="icon-picks" id="iconPicks" role="group" aria-label="انتخاب سریع آیکون">
+        <% ['bi-rocket-takeoff', 'bi-box-seam', 'bi-lightning-charge', 'bi-gem', 'bi-building', 'bi-shop', 'bi-code-slash', 'bi-palette', 'bi-globe2', 'bi-shield-check'].forEach(function (ic) { %>
+          <button type="button" class="icon-pick" data-icon="<%= ic %>" title="<%= ic %>" aria-label="<%= ic %>"><i class="bi <%= ic %>"></i></button>
+        <% }); %>
+      </div>
 
-</main>
+      <div class="sw-field">
+        <label class="sol-label" for="packageDescription">توضیح کوتاه</label>
+        <input class="sol-input" name="description" id="packageDescription" type="text" placeholder="توضیح یک‌خطی پکیج" autocomplete="off">
+      </div>
+
+      <div class="sw-field">
+        <label class="sol-label" for="packageFeatures">ویژگی‌ها (هر خط یک ویژگی) <span class="feat-count" id="featCount">۰ مورد</span></label>
+        <textarea class="sol-input" name="features" id="packageFeatures" rows="4" placeholder="کدنویسی اختصاصی&#10;صفحات نامحدود&#10;سئو پیشرفته"></textarea>
+      </div>
+
+      <div class="form-row two">
+        <div class="sw-field">
+          <label class="sol-label" for="packageSales">تعداد فروش</label>
+          <input class="sol-input" name="sales" id="packageSales" type="number" min="0" dir="ltr" value="0" data-rule="num|min:0">
+        </div>
+        <div class="sw-field">
+          <label class="sol-label" for="packageViews">تعداد بازدید</label>
+          <input class="sol-input" name="views" id="packageViews" type="number" min="0" dir="ltr" value="0" data-rule="num|min:0">
+        </div>
+      </div>
+
+      <div class="sw-field">
+        <label class="sw-switch-row">
+          <span class="sw-toggle"><input type="checkbox" name="isFeatured" id="packageIsFeatured"><span class="sw-slider"></span></span>
+          <span>پکیج پرطرفدار (نمایش ویژه)</span>
+        </label>
+      </div>
+
+      <div class="modal-foot">
+        <button type="button" class="btn-ghost-sm" data-modal-close>انصراف</button>
+        <button type="submit" class="btn-sol-sm"><i class="bi bi-check-lg"></i> ذخیره پکیج</button>
+      </div>
+    </form>
+  </div>
 </div>
-</div>
-
-<!-- Modal: پکیج جدید/ویرایش -->
-<div class="modal-overlay" id="packageModal">
-  <form class="modal-box" id="packageForm" action="/sw-admin/packages/save" method="POST">
-
-    <input type="hidden" name="id" id="packageId">
-
-    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1.5rem;">
-      <div class="modal-title" style="margin:0;" id="packageModalTitle">افزودن / ویرایش پکیج</div>
-      <button type="button" data-modal-close style="background:transparent;border:none;font-size:1.2rem;color:var(--color-text-muted);cursor:pointer;">
-        <i class="bi bi-x-lg"></i>
-      </button>
-    </div>
-
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;">
-      <div class="form-row">
-        <label class="sol-label">نام پکیج</label>
-        <input class="sol-input" name="name" id="packageName" type="text" placeholder="مثال: حرفه‌ای" required>
-      </div>
-
-      <div class="form-row">
-        <label class="sol-label">برچسب نمایشی</label>
-        <input class="sol-input" name="slug" id="packageSlug" type="text" placeholder="مثال: پرطرفدار">
-      </div>
-    </div>
-
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;">
-      <div class="form-row">
-        <label class="sol-label">قیمت (میلیون تومان)</label>
-        <input class="sol-input" name="price" id="packagePrice" type="number" placeholder="۴۵" required>
-      </div>
-
-      <div class="form-row">
-        <label class="sol-label">آیکون (Bootstrap Icons)</label>
-        <input class="sol-input" name="duration" id="packageDuration" type="text" placeholder="bi-rocket-takeoff">
-      </div>
-    </div>
-
-    <div class="form-row">
-      <label class="sol-label">توضیح کوتاه</label>
-      <input class="sol-input" name="description" id="packageDescription" type="text" placeholder="توضیح یک‌خطی پکیج">
-    </div>
-
-    <div class="form-row">
-      <label class="sol-label">ویژگی‌ها (هر خط یک ویژگی)</label>
-      <textarea class="sol-input" name="features" id="packageFeatures" rows="4" placeholder="کدنویسی اختصاصی&#10;صفحات نامحدود&#10;سئو پیشرفته" style="resize:vertical;"></textarea>
-    </div>
-
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;">
-      <div class="form-row">
-        <label class="sol-label">تعداد فروش</label>
-        <input class="sol-input" name="sales" id="packageSales" type="number" placeholder="۰" value="0">
-      </div>
-
-      <div class="form-row">
-        <label class="sol-label">تعداد بازدید</label>
-        <input class="sol-input" name="views" id="packageViews" type="number" placeholder="۰" value="0">
-      </div>
-    </div>
-
-    <div class="form-row" style="display:flex;align-items:center;gap:.75rem;">
-      <label class="sw-toggle">
-        <input type="checkbox" name="isFeatured" id="packageIsFeatured">
-        <span class="sw-slider"></span>
-      </label>
-
-      <span style="font-size:.83rem;font-weight:600;">
-        پکیج پرطرفدار (نمایش ویژه)
-      </span>
-    </div>
-
-    <div style="display:flex;gap:.75rem;justify-content:flex-end;margin-top:1.5rem;">
-      <button type="button" class="btn-ghost-sm" data-modal-close>انصراف</button>
-
-      <button type="submit" class="btn-sol-sm">
-        <i class="bi bi-check-lg"></i>
-        ذخیره پکیج
-      </button>
-    </div>
-
-  </form>
-</div>
-
-
-<%- include('partials/_scripts', { extraScripts: `
-<style>
-.pstat{background:var(--color-surface);border:1px solid var(--color-border);border-radius:var(--radius-lg);padding:1.1rem 1.25rem;display:flex;align-items:center;gap:.85rem;transition:all var(--dur-normal) var(--ease-spring)}
-.pstat:hover{transform:translateY(-2px);box-shadow:var(--shadow-sm);border-color:var(--main-200)}
-.pstat-icon{width:40px;height:40px;border-radius:var(--radius-sm);display:flex;align-items:center;justify-content:center;font-size:1.1rem;flex-shrink:0}
-.pstat-val{font-size:1.5rem;font-weight:900;line-height:1}
-.pstat-lbl{font-size:.73rem;color:var(--color-text-muted);margin-top:.15rem}
-
-.pkg-admin-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:1.25rem}
-@media(max-width:1199px){.pkg-admin-grid{grid-template-columns:repeat(2,1fr)}}
-@media(max-width:575px){.pkg-admin-grid{grid-template-columns:1fr}}
-
-.pkg-admin-card{background:var(--color-surface);border:1px solid var(--color-border);border-radius:var(--radius-lg);padding:1.5rem;display:flex;flex-direction:column;transition:all var(--dur-normal) var(--ease-spring);position:relative;overflow:hidden}
-.pkg-admin-card:hover{transform:translateY(-4px);box-shadow:var(--shadow-lg);border-color:var(--main-200)}
-.pkg-admin-card.featured{background:var(--grad-main);border-color:transparent;box-shadow:var(--shadow-main)}
-.pkg-admin-card.featured .pkg-admin-name,
-.pkg-admin-card.featured .pkg-admin-desc,
-.pkg-admin-card.featured .pkg-admin-price,
-.pkg-admin-card.featured .pkg-admin-feat li,
-.pkg-admin-card.featured .pkg-admin-stats{color:rgba(255,255,255,.95)!important}
-.pkg-admin-card.featured .pkg-admin-feat li i{color:#fff!important}
-.pkg-admin-card.featured .pkg-admin-stats i{color:rgba(255,255,255,.7)!important}
-
-.pkg-admin-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:1rem}
-.pkg-admin-badge{font-size:.68rem;font-weight:800;color:var(--main-600);background:var(--main-50);border:1px solid var(--main-200);border-radius:var(--radius-full);padding:.22rem .75rem;text-transform:uppercase;letter-spacing:.04em}
-.pkg-admin-badge.featured{background:rgba(255,255,255,.2);color:#fff;border-color:transparent}
-
-.sw-toggle{position:relative;display:inline-block;width:38px;height:21px;flex-shrink:0}
-.sw-toggle input{opacity:0;width:0;height:0}
-.sw-slider{position:absolute;cursor:pointer;inset:0;background:var(--color-border);border-radius:99px;transition:var(--dur-fast)}
-.sw-slider::before{content:'';position:absolute;width:15px;height:15px;right:3px;top:3px;background:#fff;border-radius:50%;transition:var(--dur-fast)}
-.sw-toggle input:checked + .sw-slider{background:var(--grad-main)}
-.sw-toggle input:checked + .sw-slider::before{transform:translateX(-17px)}
-.pkg-admin-card.featured .sw-slider{background:rgba(255,255,255,.3)}
-.pkg-admin-card.featured .sw-toggle input:checked + .sw-slider{background:rgba(255,255,255,.5)}
-
-.pkg-admin-icon{width:52px;height:52px;border-radius:var(--radius-md);background:var(--main-50);color:var(--main-500);display:flex;align-items:center;justify-content:center;font-size:1.5rem;margin-bottom:1rem}
-.pkg-admin-icon.featured{background:rgba(255,255,255,.2);color:#fff}
-.pkg-admin-name{font-size:1.2rem;font-weight:900;margin-bottom:.4rem}
-.pkg-admin-price{font-size:1.6rem;font-weight:900;margin-bottom:.5rem;color:var(--main-600)}
-.pkg-admin-card.featured .pkg-admin-price{color:#fff}
-.pkg-admin-price small{font-size:.7rem;font-weight:500;color:var(--color-text-muted);margin-right:.3rem}
-.pkg-admin-card.featured .pkg-admin-price small{color:rgba(255,255,255,.75)}
-.pkg-admin-desc{font-size:.8rem;color:var(--color-text-muted);line-height:1.6;margin-bottom:1rem}
-.pkg-admin-feat{list-style:none;padding:0;margin:0 0 1.1rem;display:flex;flex-direction:column;gap:.45rem}
-.pkg-admin-feat li{display:flex;align-items:center;gap:.45rem;font-size:.8rem}
-.pkg-admin-feat li i{color:var(--main-500);font-size:.8rem;flex-shrink:0}
-.pkg-admin-stats{display:flex;justify-content:space-between;font-size:.72rem;color:var(--color-text-muted);padding-top:.9rem;margin-top:auto;border-top:1px solid var(--color-border)}
-.pkg-admin-card.featured .pkg-admin-stats{border-top-color:rgba(255,255,255,.2)}
-.pkg-admin-stats span{display:flex;align-items:center;gap:.3rem}
-.pkg-admin-actions{display:flex;gap:.5rem;margin-top:1rem}
-.pkg-admin-card.featured .btn-ghost-sm{background:rgba(255,255,255,.15);border-color:rgba(255,255,255,.3);color:#fff}
-.pkg-admin-card.featured .btn-ghost-sm:hover{background:rgba(255,255,255,.25)}
-</style>
 
 <script>
-// باز کردن مودال برای پکیج جدید (فرم خالی)
-function openNewPackageModal() {
-  document.getElementById('packageForm').reset();
-  document.getElementById('packageId').value = '';
-  document.getElementById('packageModalTitle').textContent = 'افزودن پکیج جدید';
-  document.getElementById('packageSales').value = 0;
-  document.getElementById('packageViews').value = 0;
-}
+document.addEventListener('DOMContentLoaded', function () {
+  function $(s, c) { return (c || document).querySelector(s); }
+  function $$(s, c) { return Array.prototype.slice.call((c || document).querySelectorAll(s)); }
+  function fa(v) { return String(v == null ? '' : v).replace(/[0-9]/g, function (d) { return '۰۱۲۳۴۵۶۷۸۹'[d]; }); }
+  function toast(m, o) { if (window.SW) SW.island(m, o); }
 
-// باز کردن مودال برای ویرایش پکیج موجود و پر کردن فیلدها با اطلاعات فعلی
-function openEditPackageModal(pkg) {
-  document.getElementById('packageId').value = pkg._id || '';
-  document.getElementById('packageName').value = pkg.name || '';
-  document.getElementById('packageSlug').value = pkg.slug || '';
-  document.getElementById('packagePrice').value = pkg.price || '';
-  document.getElementById('packageDuration').value = pkg.duration || '';
-  document.getElementById('packageDescription').value = pkg.description || '';
-  document.getElementById('packageFeatures').value = pkg.features || '';
-  document.getElementById('packageSales').value = pkg.sales || 0;
-  document.getElementById('packageViews').value = pkg.views || 0;
-  document.getElementById('packageIsFeatured').checked = !!pkg.isFeatured;
-  document.getElementById('packageModalTitle').textContent = 'ویرایش پکیج';
-}
+  var form = $('#packageForm'), title = $('#packageModalTitle');
+  var F = { id: $('#packageId'), name: $('#packageName'), slug: $('#packageSlug'), price: $('#packagePrice'), icon: $('#packageIcon'),
+            desc: $('#packageDescription'), feats: $('#packageFeatures'), sales: $('#packageSales'), views: $('#packageViews'), featured: $('#packageIsFeatured') };
 
-// فعال/غیرفعال کردن پکیج با AJAX از طریق سوییچ بالای کارت
-async function togglePackageActive(packageId, checkboxEl) {
-  try {
-    const response = await fetch('/sw-admin/packages/toggle/' + packageId, { method: 'POST' });
-    const result = await response.json();
-    if (!result.success) {
-      checkboxEl.checked = !checkboxEl.checked; // برگرداندن وضعیت در صورت خطا
-      alert('خطا در تغییر وضعیت پکیج');
-    }
-  } catch (err) {
-    checkboxEl.checked = !checkboxEl.checked;
-    alert('خطای ارتباط با سرور');
+  /* ───────── آیکون: پیش‌نمایش زنده + انتخاب سریع ───────── */
+  function syncIcon() {
+    var v = (F.icon.value || '').trim(), ok = /^bi-[a-z0-9-]+$/.test(v);
+    $('#iconPreview i').className = 'bi ' + (ok ? v : 'bi-box-seam');
+    $$('.icon-pick').forEach(function (b) { b.classList.toggle('active', b.dataset.icon === v); });
   }
-}
+  F.icon.addEventListener('input', syncIcon);
+  $('#iconPicks').addEventListener('click', function (e) {
+    var b = e.target.closest('.icon-pick'); if (!b) return; F.icon.value = b.dataset.icon; syncIcon();
+  });
+
+  /* ───────── شمارندهٔ ویژگی‌ها ───────── */
+  function syncFeats() { var n = F.feats.value.split('\n').filter(function (l) { return l.trim(); }).length; $('#featCount').textContent = fa(n) + ' مورد'; }
+  F.feats.addEventListener('input', syncFeats);
+
+  /* ───────── حالت ثبت / ویرایش ───────── */
+  function clearErrors() {
+    $$('.sw-err', form).forEach(function (n) { n.remove(); });
+    $$('.is-invalid', form).forEach(function (n) { n.classList.remove('is-invalid'); n.removeAttribute('aria-invalid'); });
+  }
+  function setMode(d) {
+    clearErrors();
+    if (d) {
+      title.textContent = 'ویرایش پکیج';
+      F.id.value = d.id; F.name.value = d.name; F.slug.value = d.slug; F.price.value = d.price; F.icon.value = d.icon;
+      F.desc.value = d.description; F.feats.value = d.features; F.sales.value = d.sales; F.views.value = d.views; F.featured.checked = !!d.featured;
+    } else {
+      title.textContent = 'افزودن پکیج جدید'; form.reset(); F.id.value = ''; F.sales.value = 0; F.views.value = 0;
+    }
+    syncIcon(); syncFeats();
+  }
+  $('#newPackageBtn').addEventListener('click', function () { setMode(null); });
+  $('#pkgGrid').addEventListener('click', function (e) {
+    var b = e.target.closest('[data-pkg-edit]'); if (!b) return;
+    var card = b.closest('[data-package]'), d = null;
+    try { d = JSON.parse(card.dataset.package); } catch (err) {}
+    if (d) setMode(d);
+  });
+
+  /* ───────── فعال / غیرفعال با AJAX (خوش‌بینانه، با برگشت در خطا) ───────── */
+  function recount() {
+    var n = $$('.pkg-admin-card:not(.is-off)').length;
+    $('#statActive').textContent = fa(n); $('#subActive').textContent = fa(n);
+  }
+  $('#pkgGrid').addEventListener('change', function (e) {
+    var cb = e.target.closest('[data-pkg-toggle]'); if (!cb) return;
+    var card = cb.closest('.pkg-admin-card'), d = JSON.parse(card.dataset.package), want = cb.checked;
+    card.classList.toggle('is-off', !want); recount();
+    fetch('/sw-admin/packages/' + d.id + '/toggle', {
+      method: 'POST', credentials: 'same-origin',
+      headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+      body: JSON.stringify({ isActive: want })
+    }).then(function (r) {
+      return r.json().catch(function () { return {}; }).then(function (j) { if (!r.ok || !j.success) throw new Error(j.message || 'خطا در تغییر وضعیت پکیج'); return j; });
+    }).then(function () {
+      toast(want ? 'پکیج در سایت نمایش داده می‌شود' : 'پکیج از سایت مخفی شد', { type: 'success', detail: d.name, ms: 2200 });
+    }).catch(function (err) {
+      cb.checked = !want; card.classList.toggle('is-off', want); recount();
+      toast(err.message || 'خطای ارتباط با سرور', { type: 'error' });
+    });
+  });
+
+  recount();
+});
 </script>
-` }) %>
+
+<%- include('partials/_scripts') %>

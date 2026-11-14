@@ -2164,6 +2164,29 @@ app.post('/sw-admin/blog' , requireAdminAuth , async (req, res) => {
   }
 })
 
+app.post('/sw-admin/blog/:id/status', requireAdminAuth, async (req, res) => {
+  try {
+    const { status } = req.body
+
+    if (!['published', 'draft'].includes(status)) {
+      return res.status(400).json({ success: false, message: 'وضعیت نامعتبر است' })
+    }
+
+    const post = await BlogPost.findById(req.params.id)
+    if (!post) {
+      return res.status(404).json({ success: false, message: 'مقاله پیدا نشد' })
+    }
+
+    post.status = status
+    await post.save()
+
+    res.json({ success: true, status: post.status })
+  } catch (err) {
+    console.error('Blog status error:', err)
+    res.status(500).json({ success: false, message: 'خطا در تغییر وضعیت مقاله' })
+  }
+})
+
 app.post('/sw-admin/blog/:id/delete' , requireAdminAuth , async (req, res) => {
   try {
     await BlogPost.findByIdAndDelete(req.params.id)
@@ -2743,7 +2766,7 @@ app.post('/sw-admin/service-categories/add', requireAdminAuth, async (req, res) 
 
 app.get('/sw-admin/blog-form', requireAdminAuth, async (req, res) => {
   try {
-    const authors = await BlogPost.distinct('author');
+    const authors = await User.find().select('name').lean()   // به‌جای BlogPost.distinct('author')
     const categoriesRaw = await BlogPost.distinct('category');
     const categories = categoriesRaw
       .filter(Boolean)
@@ -2769,9 +2792,10 @@ app.get('/sw-admin/blog-form/:id', requireAdminAuth, async (req, res) => {
     const post = await BlogPost.findById(req.params.id).lean();
     if (!post) return res.status(404).send('مقاله یافت نشد');
 
-    const authors = await BlogPost.distinct('author');
+    const authors = await User.find().select('name').lean()   // به‌جای BlogPost.distinct('author')
     const categoriesRaw = await BlogPost.distinct('category');
     const categories = categoriesRaw
+
       .filter(Boolean)
       .map(c => ({ slug: c, title: c }));
 

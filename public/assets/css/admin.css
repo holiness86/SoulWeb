@@ -1032,3 +1032,18 @@ body.sw-ios{
 @media (max-width:991.98px){body.sw-ios .pf-layout{grid-template-columns:minmax(0,1fr);gap:1.25rem}}
 @media (max-width:767.98px){body.sw-ios .pf-seo-grid{grid-template-columns:minmax(0,1fr)}}
 @media (max-width:575.98px){body.sw-ios .ql-editor{padding:1rem;min-height:240px}body.sw-ios .pf-title-input{font-size:1.2rem}}
+
+/* ═══════════════ ۱۶) وبلاگ (Blog.ejs + blog-form.ejs) ═══════════════ */
+body.sw-ios{
+  .blog-cell{display:flex;align-items:center;gap:.85rem;min-width:260px}
+  .blog-thumb{width:52px;height:52px;flex:none;display:grid;place-items:center;overflow:hidden;border-radius:var(--radius-md);background:var(--tint);color:var(--main-400);font-size:1.3rem;text-decoration:none}
+  .blog-thumb img{width:100%;height:100%;object-fit:cover;display:block}
+  .blog-cell-text{min-width:0}
+  .blog-title-link{display:block;color:var(--color-text-primary);text-decoration:none;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:360px}
+  .blog-title-link:hover{color:var(--tint-fg)}
+  .blog-cell-text .cell-sub{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:360px;text-align:right}
+  .pf-slug-row{display:flex;align-items:center;gap:.4rem;padding:.55rem 0 .75rem;border-top:1px solid var(--color-border);font-size:var(--sw-t-xs);direction:ltr}
+  .pf-slug-prefix{color:var(--color-text-light);font-weight:700}
+  .pf-slug-input{flex:1;min-width:0;border:0;outline:0;background:transparent;font-family:var(--font-mono);font-size:var(--sw-t-xs);color:var(--tint-fg)}
+  .pf-slug-input::placeholder{color:var(--color-text-light)}
+}

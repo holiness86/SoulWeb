@@ -1047,3 +1047,52 @@ body.sw-ios{
   .pf-slug-input{flex:1;min-width:0;border:0;outline:0;background:transparent;font-family:var(--font-mono);font-size:var(--sw-t-xs);color:var(--tint-fg)}
   .pf-slug-input::placeholder{color:var(--color-text-light)}
 }
+
+/* ═══════════════ ۱۷) نظرات (Reviews.ejs) ═══════════════ */
+body.sw-ios{
+  .rev-summary{display:grid;grid-template-columns:180px minmax(0,1fr) minmax(0,1fr);gap:var(--sw-s3);align-items:center;margin-bottom:var(--sw-s3);padding:var(--sw-s3);background:var(--color-surface);border:1px solid var(--color-border);border-radius:var(--radius-lg);box-shadow:var(--shadow-sm)}
+  .rev-score-box{text-align:center}
+  .rev-score{font-size:2.8rem;font-weight:900;line-height:1;background:var(--grad-main);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;font-variant-numeric:tabular-nums}
+  .rev-stars-lg{margin-top:.4rem;color:#f59e0b;letter-spacing:.15em;font-size:1.05rem}
+  .rev-score-sub{margin-top:.3rem;font-size:var(--sw-t-xs);color:var(--color-text-muted)}
+  .rev-bars{display:flex;flex-direction:column;gap:.5rem;padding-inline:var(--sw-s3);border-inline:1px solid var(--color-border)}
+  .rev-bar-row{display:grid;grid-template-columns:58px minmax(0,1fr) 30px;align-items:center;gap:.6rem;font-size:var(--sw-t-xs);color:var(--color-text-muted)}
+  .rev-bar-track{height:6px;border-radius:9999px;background:var(--color-border);overflow:hidden}
+  .rev-bar-fill{height:100%;border-radius:inherit;background:var(--grad-main);transform-origin:right center;transition:width .6s var(--sw-smooth);animation:sw-fill .9s var(--sw-smooth) backwards}
+  .rev-bar-count{text-align:left;font-weight:700;color:var(--color-text-primary)}
+  .rev-mini-stats{display:flex;flex-direction:column;gap:.85rem}
+  .rmini{display:flex;align-items:center;justify-content:space-between;gap:1rem}
+  .rmini-val{font-size:1.3rem;font-weight:900;font-variant-numeric:tabular-nums}
+  .rmini-warn{color:var(--warn)}
+  .rmini-lbl{font-size:var(--sw-t-xs);color:var(--color-text-muted)}
+  .filter-count.alert{background:var(--danger-bg);color:var(--danger)}
+  .filter-chip.active .filter-count.alert{background:rgba(255,255,255,.28);color:#fff}
+
+  .rev-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:var(--sw-s3)}
+  .rev-empty{grid-column:1 / -1}
+  .rev-card{display:flex;flex-direction:column;padding:1.4rem;animation:sw-up .45s var(--sw-smooth) backwards;animation-delay:calc(var(--i,0) * 45ms)}
+  .rev-card.pending{border-color:color-mix(in srgb,var(--warn) 40%,transparent);background:color-mix(in srgb,var(--warn) 5%,var(--color-surface))}
+  .rev-card-top{display:flex;align-items:flex-start;justify-content:space-between;gap:.75rem;flex-wrap:wrap}
+  .rev-who{display:flex;align-items:center;gap:.75rem;min-width:0}
+  .rev-name{font-size:var(--sw-t-sm);font-weight:700}
+  .rev-meta{font-size:.72rem;color:var(--color-text-muted)}
+  .rev-state{display:flex;align-items:center;gap:.5rem}
+  .rev-stars{margin:.7rem 0 .4rem;color:#f59e0b;letter-spacing:.1em;font-size:.95rem}
+  .rev-stars .bi-star{color:var(--color-border)}
+  .rev-text{flex:1;margin:.3rem 0 0;font-size:var(--sw-t-sm);line-height:1.9;color:var(--color-text-muted);overflow-wrap:anywhere}
+  .rev-project{display:inline-flex;align-items:center;gap:.35rem;align-self:flex-start;margin-top:.7rem;padding:.15rem .7rem;border-radius:var(--radius-full);background:var(--tint);color:var(--tint-fg);font-size:.7rem;font-weight:700}
+  .rev-actions{display:flex;flex-wrap:wrap;align-items:center;gap:.5rem;margin-top:1rem;padding-top:1rem;border-top:1px solid var(--color-border)}
+  .rev-actions form{margin:0;margin-inline-start:auto}
+
+  /* انتخاب ستاره در مودال */
+  .star-pick{display:flex;gap:.25rem;direction:ltr;justify-content:flex-end}
+  .star-pick button{width:44px;height:44px;display:grid;place-items:center;border:0;border-radius:var(--radius-md);background:transparent;color:var(--color-border);font-size:1.5rem;cursor:pointer;transition:color .15s,transform .4s var(--sw-spring)}
+  .star-pick button.on{color:#f59e0b}
+  .star-pick button:hover{transform:scale(1.15)}
+  .star-pick button:active{transform:scale(.9)}
+}
+@media (max-width:991.98px){
+  body.sw-ios .rev-summary{grid-template-columns:minmax(0,1fr);text-align:center}
+  body.sw-ios .rev-bars{padding-inline:0;border-inline:0;border-block:1px solid var(--color-border);padding-block:var(--sw-s2)}
+  body.sw-ios .rev-grid{grid-template-columns:minmax(0,1fr)}
+}

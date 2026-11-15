@@ -2111,16 +2111,71 @@ app.get('/sw-admin/reviews' , requireAdminAuth , async (req, res) => {
     res.status(500).send('خطا در بارگذاری نظرات')
   }
 })
-
-app.post('/sw-admin/reviews/:id/approve', requireAdminAuth , async (req, res) => {
+app.post('/sw-admin/reviews/:id/status', requireAdminAuth, async (req, res) => {
   try {
-    await Review.findByIdAndUpdate(req.params.id, {
-      isApproved : true,
-      isPublished: true
-    })
+    const update = {}
+    if (typeof req.body.isApproved === 'boolean') update.isApproved = req.body.isApproved
+    if (typeof req.body.isPublished === 'boolean') update.isPublished = req.body.isPublished
+
+    if (!Object.keys(update).length) {
+      return res.status(400).json({ success: false, message: 'مقدار نامعتبر است' })
+    }
+
+    // نظر تأییدنشده در سایت نمایش داده نمی‌شود
+    if (update.isApproved === false) update.isPublished = false
+    if (update.isPublished === true) update.isApproved = true
+
+    const review = await Review.findByIdAndUpdate(req.params.id, update, { new: true })
+
+    if (!review) {
+      return res.status(404).json({ success: false, message: 'نظر پیدا نشد' })
+    }
+
+    res.json({ success: true, isApproved: review.isApproved, isPublished: review.isPublished })
+  } catch (err) {
+    console.error('Review status error:', err)
+    res.status(500).json({ success: false, message: 'خطا در تغییر وضعیت نظر' })
+  }
+})
+
+
+app.post('/sw-admin/reviews/:id/delete', requireAdminAuth, async (req, res) => {
+  try {
+    await Review.findByIdAndDelete(req.params.id)
     res.redirect('/sw-admin/reviews')
   } catch (err) {
-    res.status(500).send('خطا')
+    console.error('Review delete error:', err)
+    res.status(500).send('خطا در حذف نظر')
+  }
+})
+
+app.post('/sw-admin/reviews/save', requireAdminAuth, async (req, res) => {
+  try {
+    const { id, name, company, rating, text, isPublished } = req.body
+
+    if (!name || !name.trim() || !text || !text.trim()) {
+      return res.status(400).send('نام و متن نظر الزامی است')
+    }
+
+    const data = {
+      name: name.trim(),
+      company: company ? company.trim() : '',
+      rating: Math.min(5, Math.max(1, parseInt(rating, 10) || 5)),
+      text: text.trim(),
+      isPublished: isPublished === 'on'
+    }
+
+    if (id) {
+      await Review.findByIdAndUpdate(id, data)
+    } else {
+      // نظری که مدیر خودش اضافه می‌کند همان لحظه تأییدشده است
+      await Review.create({ ...data, isApproved: true })
+    }
+
+    res.redirect('/sw-admin/reviews')
+  } catch (err) {
+    console.error('Review save error:', err)
+    res.status(500).send('خطا در ذخیره نظر')
   }
 })
 

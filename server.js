@@ -2254,31 +2254,58 @@ app.post('/sw-admin/blog/:id/delete' , requireAdminAuth , async (req, res) => {
 // ─────────────────────────────────────────
 //  ADMIN — TASKS (AJAX-friendly)
 // ─────────────────────────────────────────
-app.get('/sw-admin/tasks' , requireAdminAuth , async (req, res) => {
+app.get('/sw-admin/tasks', requireAdminAuth, async (req, res) => {
   try {
-    const tasks = await Task.find()
-      .populate('project', 'title')
-      .sort({ createdAt: -1 })
-    res.render('admin/Tasks', { tasks })
+    const [tasks, projects] = await Promise.all([
+      Task.find().populate('project', 'title').sort({ createdAt: -1 }),
+      Project.find({ status: { $ne: 'cancelled' } }).select('title').sort({ createdAt: -1 }).lean()
+    ])
+    res.render('admin/Tasks', { tasks, projects })
   } catch (err) {
     res.status(500).send('خطا')
   }
 })
 
-app.post('/sw-admin/tasks' , requireAdminAuth , async (req, res) => {
+app.post('/sw-admin/tasks', requireAdminAuth, async (req, res) => {
+  const wantsJson = (req.get('Accept') || '').includes('application/json')
+
   try {
     const { title, priority, dueDate, project } = req.body
-    await Task.create({
-      title,
-      priority  : priority || 'medium',
-      dueDate   : dueDate  || null,
-      project   : project  || null,
-      assignedTo: '000000000000000000000001',
-      createdBy : '000000000000000000000001'
+
+    if (!title || !title.trim()) {
+      return wantsJson
+        ? res.status(400).json({ success: false, message: 'عنوان وظیفه الزامی است' })
+        : res.status(400).send('عنوان وظیفه الزامی است')
+    }
+
+    const task = await Task.create({
+      title: title.trim(),
+      priority: ['low', 'medium', 'high'].includes(priority) ? priority : 'medium',
+      dueDate: dueDate || null,
+      project: project || null,
+      assignedTo: req.session.user.id,
+      createdBy: req.session.user.id
     })
-    res.redirect(req.get('Referer') || '/sw-admin')
+
+    if (wantsJson) {
+      return res.json({
+        success: true,
+        task: {
+          _id: task._id,
+          title: task.title,
+          priority: task.priority,
+          dueDate: task.dueDate,
+          isDone: false
+        }
+      })
+    }
+
+    res.redirect(req.get('Referer') || '/sw-admin/tasks')
   } catch (err) {
-    res.status(500).send('خطا در ثبت وظیفه')
+    console.error('Task create error:', err)
+    wantsJson
+      ? res.status(500).json({ success: false, message: 'خطا در ثبت وظیفه' })
+      : res.status(500).send('خطا در ثبت وظیفه')
   }
 })
 
@@ -2307,31 +2334,136 @@ app.post('/sw-admin/tasks/:id/delete' , requireAdminAuth , async (req, res) => {
 // ─────────────────────────────────────────
 //  ADMIN — REPORTS
 // ─────────────────────────────────────────
-app.get('/sw-admin/reports' , requireAdminAuth , async (req, res) => {
+app.get('/sw-admin/reports', requireAdminAuth, async (req, res) => {
   try {
-    const [totalProjects, totalClients, totalInvoices,
-           paidInvoices, totalReviews] = await Promise.all([
-      Project.countDocuments(),
-      Client.countDocuments(),
-      Invoice.countDocuments(),
-      Invoice.countDocuments({ status: 'paid' }),
-      Review.countDocuments({ isApproved: true })
+    const RANGES = {
+      '6m':     { label: '۶ ماه اخیر', months: 6 },
+      '12m':    { label: '۱۲ ماه اخیر', months: 12 },
+      year:     { label: 'امسال', months: 12 },
+      lastyear: { label: 'سال گذشته', months: 12 }
+    }
+    const range = RANGES[req.query.range] ? req.query.range : '6m'
+    const { label: rangeLabel, months: n } = RANGES[range]
+
+    // بازهٔ زمانی (ماه شمسی)
+    const now = moment().locale('en')
+    let start
+    if (range === '6m' || range === '12m') start = now.clone().startOf('jMonth').subtract(n - 1, 'jMonth')
+    else if (range === 'year') start = now.clone().startOf('jYear')
+    else start = now.clone().subtract(1, 'jYear').startOf('jYear')
+
+    const end = start.clone().add(n, 'jMonth').subtract(1, 'ms')
+    const prevStart = start.clone().subtract(n, 'jMonth')
+    const prevEnd = start.clone().subtract(1, 'ms')
+
+    const s = start.toDate(), e = end.toDate(), ps = prevStart.toDate(), pe = prevEnd.toDate()
+    const inRange = (d, a, b) => d && new Date(d) >= a && new Date(d) <= b
+
+    // ماه‌های بازه برای محور نمودار
+    const buckets = []
+    for (let i = 0; i < n; i++) {
+      const m = start.clone().add(i, 'jMonth')
+      buckets.push({ key: m.format('jYYYY-jMM'), label: m.clone().locale('fa').format('jMMMM'), revenue: 0, projects: 0, done: 0, clients: 0 })
+    }
+    const bucketOf = (d) => buckets.find(b => b.key === moment(d).locale('en').format('jYYYY-jMM'))
+
+    const [invoices, projects, clients, reviews] = await Promise.all([
+      Invoice.find().select('total status issueDate createdAt paidAt client').lean(),
+      Project.find().select('status createdAt updatedAt completedAt category client').populate('category', 'title').lean(),
+      Client.find().select('name company isActive createdAt').lean(),
+      Review.find({ isApproved: true }).select('rating').lean()
     ])
 
-    const revenueResult = await Invoice.aggregate([
-      { $match: { status: 'paid' } },
-      { $group: { _id: null, total: { $sum: '$total' } } }
-    ])
-    const totalRevenue = revenueResult[0]?.total || 0
+    const paidDate = (inv) => inv.paidAt || inv.issueDate || inv.createdAt
+    const doneDate = (p) => p.completedAt || p.updatedAt || p.createdAt
+
+    const paid = invoices.filter(inv => inv.status === 'paid')
+    let revenue = 0, prevRevenue = 0
+    paid.forEach(inv => {
+      const d = paidDate(inv), t = Number(inv.total) || 0
+      if (inRange(d, s, e)) { revenue += t; const b = bucketOf(d); if (b) b.revenue += t }
+      else if (inRange(d, ps, pe)) prevRevenue += t
+    })
+
+    let done = 0, prevDone = 0
+    projects.filter(p => p.status === 'done').forEach(p => {
+      const d = doneDate(p)
+      if (inRange(d, s, e)) { done++; const b = bucketOf(d); if (b) b.done++ }
+      else if (inRange(d, ps, pe)) prevDone++
+    })
+
+    projects.forEach(p => {
+      if (inRange(p.createdAt, s, e)) { const b = bucketOf(p.createdAt); if (b) b.projects++ }
+    })
+
+    let newClients = 0, prevNewClients = 0
+    clients.forEach(c => {
+      if (inRange(c.createdAt, s, e)) { newClients++; const b = bucketOf(c.createdAt); if (b) b.clients++ }
+      else if (inRange(c.createdAt, ps, pe)) prevNewClients++
+    })
+
+    // درصد تغییر نسبت به بازهٔ قبل (اگر بازهٔ قبل صفر باشد null = نمایش داده نمی‌شود)
+    const trend = (cur, prev) => prev > 0 ? Math.round(((cur - prev) / prev) * 100) : null
+
+    // میانگین امتیاز نظرات تأییدشده (اگر فیلد rating وجود نداشته باشد null می‌شود)
+    const rated = reviews.filter(r => Number(r.rating) > 0)
+    const ratingAvg = rated.length ? Math.round((rated.reduce((a, r) => a + Number(r.rating), 0) / rated.length) * 10) / 10 : null
+
+    // پروژه‌های ثبت‌شده در بازه بر اساس نوع
+    const typeMap = {}
+    projects.filter(p => inRange(p.createdAt, s, e)).forEach(p => {
+      const title = (p.category && p.category.title) || 'بدون نوع'
+      typeMap[title] = (typeMap[title] || 0) + 1
+    })
+    const types = Object.keys(typeMap).map(title => ({ title, count: typeMap[title] })).sort((a, b) => b.count - a.count).slice(0, 6)
+
+    // برترین مشتریان بر اساس درآمد فاکتورهای پرداخت‌شده در بازه
+    const byClient = {}
+    paid.filter(inv => inRange(paidDate(inv), s, e) && inv.client).forEach(inv => {
+      const id = String(inv.client)
+      byClient[id] = (byClient[id] || 0) + (Number(inv.total) || 0)
+    })
+    const projectCount = {}
+    projects.forEach(p => { if (p.client) projectCount[String(p.client)] = (projectCount[String(p.client)] || 0) + 1 })
+    const clientById = {}
+    clients.forEach(c => { clientById[String(c._id)] = c })
+    const topClients = Object.keys(byClient)
+      .map(id => ({
+        name: clientById[id] ? (clientById[id].company || clientById[id].name) : 'مشتری حذف‌شده',
+        projects: projectCount[id] || 0,
+        revenue: byClient[id]
+      }))
+      .sort((a, b) => b.revenue - a.revenue)
+      .slice(0, 5)
+
+    // وضعیت فاکتورهای صادرشده در بازه
+    const invoiceStatus = { paid: 0, sent: 0, overdue: 0, draft: 0, cancelled: 0 }
+    invoices.filter(inv => inRange(inv.issueDate || inv.createdAt, s, e)).forEach(inv => {
+      if (invoiceStatus[inv.status] !== undefined) invoiceStatus[inv.status]++
+    })
 
     res.render('admin/Reports', {
-      stats: {
-        totalProjects, totalClients,
-        totalInvoices, paidInvoices,
-        totalReviews,  totalRevenue
-      }
+      range,
+      rangeLabel,
+      months: buckets.map(b => b.label),
+      series: {
+        revenue : buckets.map(b => b.revenue),
+        projects: buckets.map(b => b.projects),
+        done    : buckets.map(b => b.done),
+        clients : buckets.map(b => b.clients)
+      },
+      kpi: {
+        revenue   : { value: revenue, trend: trend(revenue, prevRevenue) },
+        done      : { value: done, trend: trend(done, prevDone) },
+        newClients: { value: newClients, trend: trend(newClients, prevNewClients), active: clients.filter(c => c.isActive).length },
+        rating    : { avg: ratingAvg, count: rated.length }
+      },
+      types,
+      topClients,
+      invoiceStatus
     })
   } catch (err) {
+    console.error('Reports error:', err)
     res.status(500).send('خطا در بارگذاری گزارش‌ها')
   }
 })

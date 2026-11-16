@@ -1,0 +1,300 @@
+<%# views/admin/Tasks.ejs — مدیریت وظایف
+    ورودی‌ها از server.js: tasks (با populate('project','title'))؛ اختیاری: projects ([{_id,title}] برای انتخاب پروژه هنگام ثبت)
+    روت‌ها: POST /sw-admin/tasks (ثبت؛ اگر Accept: application/json بفرستید و JSON برگردد، بدون ریلود اضافه می‌شود) ·
+            POST /sw-admin/tasks/:id/toggle (JSON) · POST /sw-admin/tasks/:id/delete
+    نکته: dueDate به‌صورت میلادی (YYYY-MM-DD) ارسال می‌شود (مدل Date است)؛ کاربر تاریخ شمسی انتخاب می‌کند. %>
+<%
+  const list = Array.isArray(tasks) ? tasks : [];
+  const projs = (typeof projects !== 'undefined' && Array.isArray(projects)) ? projects : [];
+  const fa = (n) => Number(n || 0).toLocaleString('fa-IR');
+  const PRI = { high: 'بالا', medium: 'متوسط', low: 'کم' };
+
+  const startToday = new Date(); startToday.setHours(0, 0, 0, 0);
+  const ms = (d) => { const x = d ? new Date(d).getTime() : 0; return Number.isNaN(x) ? 0 : x; };
+  const isOverdue = (t) => !t.isDone && ms(t.dueDate) && ms(t.dueDate) < startToday.getTime();
+
+  const dueLabel = (t) => {
+    const m = ms(t.dueDate); if (!m) return '';
+    const d = new Date(m); d.setHours(0, 0, 0, 0);
+    const diff = Math.round((d.getTime() - startToday.getTime()) / 86400000);
+    if (diff < 0 && !t.isDone) return fa(-diff) + ' روز تأخیر';
+    if (diff === 0) return 'امروز';
+    if (diff === 1) return 'فردا';
+    return new Date(m).toLocaleDateString('fa-IR', { day: 'numeric', month: 'long' });
+  };
+
+  const total = list.length;
+  const doneCount = list.filter((t) => t.isDone).length;
+  const overdueCount = list.filter(isOverdue).length;
+  const openCount = total - doneCount;
+  const pct = total ? Math.round(doneCount / total * 100) : 0;
+%>
+<%- include('partials/_head', { title: 'مدیریت وظایف' }) %>
+
+<div class="sidebar-overlay" id="sidebarOverlay"></div>
+
+<div class="admin-shell">
+
+  <%- include('partials/_sidebar', { activePage: 'tasks' }) %>
+
+  <div class="main-content" id="mainContent">
+
+    <%- include('partials/_header', {
+      breadcrumbs: [{ label: 'داشبورد', href: '/sw-admin' }, { label: 'وظایف' }],
+      searchPlaceholder: 'جستجو در پنل…'
+    }) %>
+
+    <main class="page-content" id="taskPage" data-today="<%= startToday.getTime() %>">
+
+      <div class="page-header fade-up fade-up-1">
+        <div>
+          <h1 class="page-title">مدیریت وظایف</h1>
+          <p class="page-subtitle"><span id="subOpen"><%= fa(openCount) %></span> وظیفهٔ باز · <span id="subOver"><%= fa(overdueCount) %></span> عقب‌افتاده</p>
+        </div>
+      </div>
+
+      <!-- خلاصه -->
+      <div class="sw-g c4 fade-up fade-up-2">
+        <div class="pstat"><div class="pstat-icon"><i class="bi bi-list-check"></i></div><div><div class="pstat-val text-grad" id="statOpen"><%= fa(openCount) %></div><div class="pstat-lbl">وظیفهٔ باز</div></div></div>
+        <div class="pstat"><div class="pstat-icon ok"><i class="bi bi-check2-circle"></i></div><div><div class="pstat-val text-grad" id="statDone"><%= fa(doneCount) %></div><div class="pstat-lbl">انجام‌شده</div></div></div>
+        <div class="pstat"><div class="pstat-icon danger"><i class="bi bi-exclamation-circle-fill"></i></div><div><div class="pstat-val text-grad" id="statOver"><%= fa(overdueCount) %></div><div class="pstat-lbl">عقب‌افتاده</div></div></div>
+        <div class="pstat"><div class="pstat-icon accent"><i class="bi bi-pie-chart-fill"></i></div>
+          <div class="grow">
+            <div class="pstat-val text-grad" id="statPct"><%= fa(pct) %>٪</div><div class="pstat-lbl">پیشرفت کلی</div>
+            <div class="task-progress"><div class="task-progress-fill" id="progFill" style="width:<%= pct %>%;"></div></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ثبت سریع -->
+      <form class="task-add fade-up fade-up-2" id="taskForm" action="/sw-admin/tasks" method="POST" novalidate>
+        <div class="task-add-main">
+          <i class="bi bi-plus-circle-fill" aria-hidden="true"></i>
+          <input type="text" name="title" id="taskTitle" placeholder="وظیفهٔ جدید… (Enter برای ثبت)" autocomplete="off" aria-label="عنوان وظیفه" maxlength="140">
+          <button type="submit" class="btn-sol-sm" id="taskAddBtn"><i class="bi bi-plus-lg"></i> افزودن</button>
+        </div>
+        <div class="task-add-opts">
+          <select class="sol-select" name="priority" id="taskPri" aria-label="اولویت">
+            <option value="low">اولویت: کم</option><option value="medium" selected>اولویت: متوسط</option><option value="high">اولویت: بالا</option>
+          </select>
+          <% if (projs.length) { %>
+            <select class="sol-select" name="project" id="taskProject" aria-label="پروژه">
+              <option value="">بدون پروژه</option>
+              <% projs.forEach(function (p) { %><option value="<%= p._id %>"><%= p.title %></option><% }); %>
+            </select>
+          <% } %>
+          <input class="sol-input" type="text" id="taskDueText" placeholder="موعد (اختیاری)" autocomplete="off" aria-label="موعد انجام" data-jdp data-jdp-only-date>
+          <input type="hidden" name="dueDate" id="taskDue">
+          <div class="task-chips" role="group" aria-label="موعد سریع">
+            <button type="button" class="filter-chip" data-due-days="0">امروز</button>
+            <button type="button" class="filter-chip" data-due-days="1">فردا</button>
+            <button type="button" class="filter-chip" data-due-days="7">هفتهٔ بعد</button>
+          </div>
+        </div>
+      </form>
+
+      <!-- فیلتر -->
+      <div class="filter-bar fade-up fade-up-3" role="toolbar" aria-label="فیلتر وظایف">
+        <button type="button" class="filter-chip active" data-filter="all">همه</button>
+        <button type="button" class="filter-chip" data-filter="open">باز</button>
+        <button type="button" class="filter-chip" data-filter="today">امروز</button>
+        <button type="button" class="filter-chip" data-filter="overdue">عقب‌افتاده</button>
+        <button type="button" class="filter-chip" data-filter="done">انجام‌شده</button>
+        <div class="tools">
+          <label class="sw-search" aria-label="جستجو در وظایف">
+            <i class="bi bi-search" aria-hidden="true"></i>
+            <input type="search" id="taskSearch" placeholder="عنوان یا پروژه…" autocomplete="off">
+          </label>
+        </div>
+      </div>
+
+      <!-- لیست -->
+      <div class="dash-panel task-panel fade-up fade-up-3">
+        <div id="taskList">
+          <% list.forEach(function (t) { const over = isOverdue(t); const proj = t.project && t.project.title ? t.project.title : ''; %>
+            <div class="task-item" data-id="<%= t._id %>" data-done="<%= !!t.isDone %>" data-pri="<%= t.priority || 'medium' %>"
+                 data-due="<%= ms(t.dueDate) %>" data-created="<%= ms(t.createdAt) %>" data-title="<%= t.title || '' %>" data-q="<%= [t.title, proj].join(' ') %>">
+              <div class="task-check <%= t.isDone ? 'done' : '' %>" role="checkbox" tabindex="0" aria-checked="<%= !!t.isDone %>" aria-label="انجام شد"><%- t.isDone ? '<i class="bi bi-check-lg"></i>' : '' %></div>
+              <div class="task-main">
+                <span class="task-text <%= t.isDone ? 'done' : '' %>"><%= t.title %></span>
+                <div class="task-meta">
+                  <% if (proj) { %><span class="task-proj"><i class="bi bi-kanban"></i> <%= proj %></span><% } %>
+                  <span class="task-due <%= over ? 'over' : '' %>" data-due-label <%= t.dueDate ? '' : 'hidden' %>><i class="bi bi-calendar3"></i> <span><%= dueLabel(t) %></span></span>
+                </div>
+              </div>
+              <span class="pri <%= t.priority || 'medium' %>"><%= PRI[t.priority] || PRI.medium %></span>
+              <form action="/sw-admin/tasks/<%= t._id %>/delete" method="POST" class="task-del" data-sw-confirm="وظیفه «<%= t.title || '' %>» حذف شود؟">
+                <button type="submit" class="btn-icon danger" title="حذف" aria-label="حذف وظیفه"><i class="bi bi-trash"></i></button>
+              </form>
+            </div>
+          <% }); %>
+        </div>
+        <div class="sw-empty" id="taskNoMatch" hidden><i class="bi bi-search"></i>وظیفه‌ای با این فیلتر پیدا نشد.</div>
+        <% if (!list.length) { %><div class="sw-empty" id="taskEmpty"><i class="bi bi-check2-all"></i>هنوز وظیفه‌ای ثبت نشده است. از کادر بالا اولین وظیفه را اضافه کنید.</div><% } %>
+      </div>
+
+    </main>
+  </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+  function $(s, c) { return (c || document).querySelector(s); }
+  function $$(s, c) { return Array.prototype.slice.call((c || document).querySelectorAll(s)); }
+  function fa(v) { return Number(v).toLocaleString('fa-IR'); }
+  function en(v) { return String(v == null ? '' : v).replace(/[۰-۹]/g, function (d) { return '۰۱۲۳۴۵۶۷۸۹'.indexOf(d); }).replace(/[٠-٩]/g, function (d) { return '٠١٢٣٤٥٦٧٨٩'.indexOf(d); }); }
+  function norm(s) { return String(s || '').replace(/ي/g, 'ی').replace(/ك/g, 'ک').toLowerCase(); }
+  function toast(m, o) { if (window.SW) SW.island(m, o); }
+  var PRI = { high: 'بالا', medium: 'متوسط', low: 'کم' }, ORDER = { high: 0, medium: 1, low: 2 };
+
+  var page = $('#taskPage'), list = $('#taskList'), state = { filter: 'all', q: '' };
+  var today0 = new Date(); today0.setHours(0, 0, 0, 0); var T0 = today0.getTime(), DAY = 864e5;
+  function items() { return $$('.task-item', list); }
+  function done(el) { return el.dataset.done === 'true'; }
+  function dueMs(el) { return Number(el.dataset.due) || 0; }
+  function overdue(el) { return !done(el) && dueMs(el) && dueMs(el) < T0; }
+
+  /* ───────── تاریخ شمسی ⇄ میلادی (با Intl؛ بدون کتابخانه) ───────── */
+  var jf = new Intl.DateTimeFormat('fa-IR-u-nu-latn', { year: 'numeric', month: 'numeric', day: 'numeric' });
+  function jparts(d) { var o = {}; jf.formatToParts(d).forEach(function (p) { o[p.type] = Number(p.value); }); return o; }
+  function jalaliToDate(y, m, d) {
+    var off = (m <= 6 ? (m - 1) * 31 : 186 + (m - 7) * 30) + (d - 1), dt = new Date(y + 621, 2, 21 + off, 12), want = y * 10000 + m * 100 + d;
+    for (var i = 0; i < 6; i++) {
+      var p = jparts(dt), cur = p.year * 10000 + p.month * 100 + p.day;
+      if (cur === want) return dt;
+      dt.setDate(dt.getDate() + (cur > want ? -1 : 1));
+    }
+    return null;
+  }
+  function iso(d) { return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0'); }
+  function jtext(d) { var p = jparts(d); return fa(p.year).replace(/٬/g, '') + '/' + String(fa(p.month)).padStart(2, '۰') + '/' + String(fa(p.day)).padStart(2, '۰'); }
+  function dueLabel(ms, isDone) {
+    if (!ms) return ''; var d = new Date(ms); d.setHours(0, 0, 0, 0); var diff = Math.round((d.getTime() - T0) / DAY);
+    if (diff < 0 && !isDone) return fa(-diff) + ' روز تأخیر'; if (diff === 0) return 'امروز'; if (diff === 1) return 'فردا';
+    return new Date(ms).toLocaleDateString('fa-IR', { day: 'numeric', month: 'long' });
+  }
+
+  /* ───────── آمار زنده ───────── */
+  function recount() {
+    var all = items(), dn = all.filter(done).length, ov = all.filter(overdue).length, open = all.length - dn, pct = all.length ? Math.round(dn / all.length * 100) : 0;
+    $('#statOpen').textContent = fa(open); $('#statDone').textContent = fa(dn); $('#statOver').textContent = fa(ov); $('#statPct').textContent = fa(pct) + '٪';
+    $('#subOpen').textContent = fa(open); $('#subOver').textContent = fa(ov); $('#progFill').style.width = pct + '%';
+  }
+
+  /* ───────── مرتب‌سازی (باز اول، سپس موعد نزدیک‌تر، سپس اولویت) + فیلتر ───────── */
+  function sortList() {
+    items().sort(function (a, b) {
+      if (done(a) !== done(b)) return done(a) ? 1 : -1;
+      var da = dueMs(a) || 9e15, db = dueMs(b) || 9e15; if (da !== db) return da - db;
+      if (a.dataset.pri !== b.dataset.pri) return ORDER[a.dataset.pri] - ORDER[b.dataset.pri];
+      return Number(b.dataset.created) - Number(a.dataset.created);
+    }).forEach(function (el) { list.appendChild(el); });
+  }
+  function apply() {
+    var q = norm(state.q), shown = 0, rows = items();
+    rows.forEach(function (el) {
+      var f = state.filter, d = dueMs(el);
+      var ok = f === 'all' || (f === 'open' && !done(el)) || (f === 'done' && done(el)) || (f === 'overdue' && overdue(el)) || (f === 'today' && !done(el) && d && d >= T0 && d < T0 + DAY);
+      ok = ok && (!q || norm(el.dataset.q).indexOf(q) > -1);
+      el.hidden = !ok; if (ok) shown++;
+    });
+    $('#taskNoMatch').hidden = !(rows.length && !shown);
+    var empty = $('#taskEmpty'); if (empty) empty.hidden = rows.length > 0;
+  }
+  $$('.filter-chip[data-filter]').forEach(function (chip) {
+    chip.addEventListener('click', function () {
+      $$('.filter-chip[data-filter]').forEach(function (c) { c.classList.remove('active'); });
+      chip.classList.add('active'); state.filter = chip.dataset.filter; apply();
+    });
+  });
+  var t = 0;
+  $('#taskSearch').addEventListener('input', function (e) { clearTimeout(t); t = setTimeout(function () { state.q = e.target.value.trim(); apply(); }, 90); });
+
+  /* ───────── انجام / برگرداندن (JSON، خوش‌بینانه) ───────── */
+  function paint(el, v) {
+    el.dataset.done = String(v);
+    var chk = $('.task-check', el); chk.classList.toggle('done', v); chk.setAttribute('aria-checked', String(v)); chk.textContent = '';
+    if (v) { var i = document.createElement('i'); i.className = 'bi bi-check-lg'; chk.appendChild(i); }
+    $('.task-text', el).classList.toggle('done', v);
+    var due = $('[data-due-label]', el); if (due) { due.classList.toggle('over', overdue(el)); $('span', due).textContent = dueLabel(dueMs(el), v); }
+  }
+  function toggle(el) {
+    var was = done(el); paint(el, !was); recount(); apply();
+    fetch('/sw-admin/tasks/' + el.dataset.id + '/toggle', { method: 'POST', credentials: 'same-origin', headers: { Accept: 'application/json' } })
+      .then(function (r) { return r.json(); })
+      .then(function (j) {
+        if (!j.success) throw new Error('fail');
+        paint(el, j.isDone); recount(); apply(); sortList();
+        if (j.isDone) toast('وظیفه انجام شد', { type: 'success', icon: 'check2-circle', ms: 2200 });
+      })
+      .catch(function () { paint(el, was); recount(); apply(); toast('تغییر وضعیت وظیفه انجام نشد', { type: 'error' }); });
+  }
+  list.addEventListener('click', function (e) {
+    if (e.target.closest('.task-del')) return;
+    var row = e.target.closest('.task-item'); if (row && (e.target.closest('.task-check') || !e.target.closest('button,a,form'))) toggle(row);
+  });
+  list.addEventListener('keydown', function (e) {
+    if ((e.key === 'Enter' || e.key === ' ') && e.target.classList.contains('task-check')) { e.preventDefault(); toggle(e.target.closest('.task-item')); }
+  });
+
+  /* ───────── ثبت وظیفه ───────── */
+  var form = $('#taskForm'), title = $('#taskTitle'), dueText = $('#taskDueText'), dueHidden = $('#taskDue'), addBtn = $('#taskAddBtn');
+  function setDue(days) { var d = new Date(); d.setDate(d.getDate() + days); dueText.value = jtext(d); }
+  $$('[data-due-days]').forEach(function (b) { b.addEventListener('click', function () { setDue(Number(b.dataset.dueDays)); }); });
+
+  function parseDue() {                 // '۱۴۰۵/۰۸/۲۰' → '2026-11-11'
+    var v = en(dueText.value.trim()); if (!v) return { ok: true, iso: '' };
+    var m = v.match(/^(\d{4})[\/\-.](\d{1,2})[\/\-.](\d{1,2})$/); if (!m) return { ok: false };
+    var d = jalaliToDate(Number(m[1]), Number(m[2]), Number(m[3])); return d ? { ok: true, iso: iso(d), date: d } : { ok: false };
+  }
+  function buildRow(task, projTitle) {
+    var el = document.createElement('div'); el.className = 'task-item'; el.dataset.id = task._id; el.dataset.done = 'false'; el.dataset.pri = task.priority;
+    el.dataset.due = task.due || 0; el.dataset.created = Date.now(); el.dataset.title = task.title; el.dataset.q = task.title + ' ' + (projTitle || '');
+    var chk = document.createElement('div'); chk.className = 'task-check'; chk.setAttribute('role', 'checkbox'); chk.tabIndex = 0; chk.setAttribute('aria-checked', 'false'); chk.setAttribute('aria-label', 'انجام شد');
+    var main = document.createElement('div'); main.className = 'task-main';
+    var tx = document.createElement('span'); tx.className = 'task-text'; tx.textContent = task.title;
+    var meta = document.createElement('div'); meta.className = 'task-meta';
+    if (projTitle) { var pr = document.createElement('span'); pr.className = 'task-proj'; var pi = document.createElement('i'); pi.className = 'bi bi-kanban'; pr.appendChild(pi); pr.appendChild(document.createTextNode(' ' + projTitle)); meta.appendChild(pr); }
+    var dueEl = document.createElement('span'); dueEl.className = 'task-due'; dueEl.setAttribute('data-due-label', ''); dueEl.hidden = !task.due;
+    var di = document.createElement('i'); di.className = 'bi bi-calendar3'; var ds = document.createElement('span'); ds.textContent = dueLabel(task.due); dueEl.appendChild(di); dueEl.appendChild(document.createTextNode(' ')); dueEl.appendChild(ds); meta.appendChild(dueEl);
+    main.appendChild(tx); main.appendChild(meta);
+    var pri = document.createElement('span'); pri.className = 'pri ' + task.priority; pri.textContent = PRI[task.priority] || PRI.medium;
+    var del = document.createElement('form'); del.action = '/sw-admin/tasks/' + task._id + '/delete'; del.method = 'POST'; del.className = 'task-del'; del.setAttribute('data-sw-confirm', 'وظیفه «' + task.title + '» حذف شود؟');
+    var db = document.createElement('button'); db.type = 'submit'; db.className = 'btn-icon danger'; db.title = 'حذف'; db.setAttribute('aria-label', 'حذف وظیفه'); var dbi = document.createElement('i'); dbi.className = 'bi bi-trash'; db.appendChild(dbi); del.appendChild(db);
+    [chk, main, pri, del].forEach(function (n) { el.appendChild(n); });
+    return el;
+  }
+
+  form.addEventListener('submit', function (e) {
+    e.preventDefault();
+    var text = title.value.trim();
+    if (!text) { title.focus(); return toast('عنوان وظیفه را وارد کنید', { type: 'warning' }); }
+    var due = parseDue(); if (!due.ok) { dueText.focus(); return toast('تاریخ موعد معتبر نیست', { type: 'warning', detail: 'مثال: ۱۴۰۵/۰۸/۲۰' }); }
+    dueHidden.value = due.iso;
+
+    var projSel = $('#taskProject'), projTitle = projSel && projSel.value ? projSel.selectedOptions[0].textContent : '';
+    var body = { title: text, priority: $('#taskPri').value, dueDate: due.iso, project: projSel ? projSel.value : '' };
+    addBtn.classList.add('sw-loading'); addBtn.disabled = true;
+    fetch('/sw-admin/tasks', { method: 'POST', credentials: 'same-origin', headers: { 'Content-Type': 'application/json', Accept: 'application/json' }, body: JSON.stringify(body) })
+      .then(function (r) {
+        if (!(r.headers.get('content-type') || '').includes('json')) { location.reload(); return null; }   // روت قدیمی redirect می‌کند
+        return r.json().then(function (j) { if (!r.ok || !j.success) throw new Error(j.message || 'ثبت وظیفه انجام نشد'); return j; });
+      })
+      .then(function (j) {
+        if (!j) return;
+        var row = buildRow({ _id: j.task._id, title: j.task.title, priority: j.task.priority, due: j.task.dueDate ? new Date(j.task.dueDate).getTime() : 0 }, projTitle);
+        list.appendChild(row); var empty = $('#taskEmpty'); if (empty) empty.hidden = true;
+        sortList(); recount(); apply(); row.classList.add('landed');
+        title.value = ''; dueText.value = ''; title.focus();
+        toast('وظیفه اضافه شد', { type: 'success', ms: 1800 });
+      })
+      .catch(function (err) { toast(err.message || 'خطا در ارتباط با سرور', { type: 'error' }); })
+      .then(function () { addBtn.classList.remove('sw-loading'); addBtn.disabled = false; });
+  });
+
+  if (window.jalaliDatepicker) jalaliDatepicker.startWatch({ time: false, persianDigits: true, autoHide: true, topSpace: 4, zIndex: 99999 });
+  sortList(); recount(); apply();
+});
+</script>
+
+<%- include('partials/_scripts') %>

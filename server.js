@@ -2339,14 +2339,78 @@ app.get('/sw-admin/reports' , requireAdminAuth , async (req, res) => {
 // ─────────────────────────────────────────
 //  ADMIN — SETTINGS
 // ─────────────────────────────────────────
-app.get('/sw-admin/settings' , requireAdminAuth , async (req, res) => {
+app.get('/sw-admin/settings', requireAdminAuth, async (req, res) => {
   try {
-    // getOrCreate the singleton
-    let setting = await Setting.findOne()
-    if (!setting) setting = await Setting.create({})
-    res.render('admin/Settings', { setting })
+    const setting = (await Setting.findOne()) || (await Setting.create({}))
+
+    const [me, users] = await Promise.all([
+      User.findById(req.session.user.id).select('name email role').lean(),
+      User.find().select('name email role isActive createdAt').sort({ createdAt: 1 }).lean()
+    ])
+
+    res.render('admin/Settings', { setting, me, users })
   } catch (err) {
+    console.error(err)
     res.status(500).send('خطا در بارگذاری تنظیمات')
+  }
+})
+
+app.post('/sw-admin/settings/profile', requireAdminAuth, async (req, res) => {
+  try {
+    const { name, email } = req.body
+
+    if (!name || !name.trim() || !email || !email.trim()) {
+      return res.redirect('/sw-admin/settings?tab=account&error=نام و ایمیل الزامی است')
+    }
+
+    const user = await User.findById(req.session.user.id)
+    if (!user) return res.redirect('/sw-admin/login')
+
+    user.name = name.trim()
+    user.email = email.trim().toLowerCase()
+    await user.save()
+
+    // نام و ایمیل داخل session هم به‌روز شود
+    req.session.user.name = user.name
+    req.session.user.email = user.email
+
+    res.redirect('/sw-admin/settings?tab=account&success=پروفایل با موفقیت به‌روزرسانی شد')
+  } catch (err) {
+    console.error('Profile update error:', err)
+
+    if (err.code === 11000) {
+      return res.redirect('/sw-admin/settings?tab=account&error=این ایمیل برای کاربر دیگری ثبت شده است')
+    }
+
+    res.redirect('/sw-admin/settings?tab=account&error=خطا در به‌روزرسانی پروفایل')
+  }
+})
+
+app.post('/sw-admin/settings/password', requireAdminAuth, async (req, res) => {
+  try {
+    const { currentPassword, newPassword } = req.body
+
+    if (typeof currentPassword !== 'string' || typeof newPassword !== 'string') {
+      return res.status(400).json({ success: false, message: 'اطلاعات ارسالی نامعتبر است' })
+    }
+
+    if (newPassword.length < 8) {
+      return res.status(400).json({ success: false, message: 'رمز عبور جدید باید حداقل ۸ کاراکتر باشد' })
+    }
+
+    const user = await User.findById(req.session.user.id).select('+password')
+
+    if (!user || !(await user.comparePassword(currentPassword))) {
+      return res.status(400).json({ success: false, message: 'رمز عبور فعلی اشتباه است' })
+    }
+
+    user.password = newPassword
+    await user.save()
+
+    res.json({ success: true })
+  } catch (err) {
+    console.error('Password change error:', err)
+    res.status(500).json({ success: false, message: 'خطا در تغییر رمز عبور' })
   }
 })
 

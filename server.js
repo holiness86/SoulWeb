@@ -14,9 +14,9 @@ const methodOverride = require('method-override');
 
 const app = express()
 
-// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ─────────────────────────────────────────
 //  MIDDLEWARE
-// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ─────────────────────────────────────────
 app.set('view engine', 'ejs')
 app.set('views', path.join(__dirname, 'views'))
 app.use(express.static(path.join(__dirname, 'public')))
@@ -41,7 +41,7 @@ app.use(session({
   resave: false,
   saveUninitialized: false,
   cookie: {
-    secure: false, // Ø§Ú¯Ø± https Ø¯Ø§Ø´ØªÛŒ true Ú©Ù†
+    secure: false, // اگر https داشتی true کن
     httpOnly: true,
     maxAge: 1000 * 60 * 60 * 24 // 1 day
   }
@@ -60,10 +60,10 @@ function requireAdminAuth(req, res, next) {
 const toEnglishDigits = (str) => {
   if (!str) return str
   const persianDigits = 'Û°Û±Û²Û³Û´ÛµÛ¶Û·Û¸Û¹'
-  const arabicDigits  = 'Ù Ù¡Ù¢Ù£Ù¤Ù¥Ù¦Ù§Ù¨Ù©'
+  const arabicDigits  = '٠١٢٣٤٥٦٧٨٩'
   return String(str)
     .replace(/[Û°-Û¹]/g, d => persianDigits.indexOf(d))
-    .replace(/[Ù -Ù©]/g, d => arabicDigits.indexOf(d))
+    .replace(/[٠-٩]/g, d => arabicDigits.indexOf(d))
 }
 
 const normalizeDate = (value) => {
@@ -79,7 +79,7 @@ const normalizeTechStack = (value) => {
   if (Array.isArray(value)) {
     return value.map(item => String(item).trim()).filter(Boolean)
   }
-  return String(value).split(/[,ØŒÂ·|]/).map(item => item.trim()).filter(Boolean)
+  return String(value).split(/[,،·|]/).map(item => item.trim()).filter(Boolean)
 }
 
 const normalizeProgress = (value) => {
@@ -92,9 +92,9 @@ const normalizeProgress = (value) => {
 //   headless: true
 // })
 
-// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ─────────────────────────────────────────
 //  MODELS
-// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ─────────────────────────────────────────
 const User      = require('./models/user.model')
 const Client    = require('./models/client.model')
 const Project   = require('./models/project.model')
@@ -111,9 +111,9 @@ const Category  = require('./models/category')
 const Media     = require('./models/media.model')
 
 
-// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-// ADMIN LOCALS â€” Ø§Ø·Ù„Ø§Ø¹Ø§Øª Ù…Ø´ØªØ±Ú© Ù‡Ø¯Ø± Ùˆ Ø³Ø§ÛŒØ¯Ø¨Ø§Ø±
-// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ─────────────────────────────────────────
+// ADMIN LOCALS — اطلاعات مشترک هدر و سایدبار
+// ─────────────────────────────────────────
 
 app.use('/sw-admin', async (req, res, next) => {
     const admin = req.session?.user;
@@ -121,12 +121,12 @@ app.use('/sw-admin', async (req, res, next) => {
     if (!admin) return next();
 
     try {
-        const name = String(admin.name || 'Ù…Ø¯ÛŒØ±').trim();
+        const name = String(admin.name || 'مدیر').trim();
         const words = name.split(/\s+/).filter(Boolean);
 
         res.locals.adminUser = {
             name: name,
-            role: admin.role || 'Ù…Ø¯ÛŒØ±',
+            role: admin.role || 'مدیر',
             initials: words.slice(0, 2).map(w => w[0]).join('')
         };
 
@@ -148,9 +148,9 @@ app.use('/sw-admin', async (req, res, next) => {
 });
 
 
-// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-// ADMIN â€” LIVE NOTIFICATIONS API
-// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ─────────────────────────────────────────
+// ADMIN — LIVE NOTIFICATIONS API
+// ─────────────────────────────────────────
 
 app.get('/sw-admin/media', requireAdminAuth, async (req, res) => {
   try {
@@ -216,9 +216,9 @@ app.get('/sw-admin/api/notifications', requireAdminAuth, async (req, res) => {
             tickets,
             items: latest.map(t => ({
                 id: t._id,
-                title: t.subject || 'ØªÛŒÚ©Øª Ø¬Ø¯ÛŒØ¯',
+                title: t.subject || 'تیکت جدید',
                 body: t.requesterName
-                    ? `Ø§Ø² Ø·Ø±Ù ${t.requesterName}`
+                    ? `از طرف ${t.requesterName}`
                     : '',
                 href: '/sw-admin/tickets',
                 at: t.createdAt
@@ -235,30 +235,30 @@ app.get('/sw-admin/api/notifications', requireAdminAuth, async (req, res) => {
     }
 });
 
-// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ─────────────────────────────────────────
 //  DB + SERVER START
-// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ─────────────────────────────────────────
 const DB_URL = 'mongodb://admin:pM8U6IsnbQBsnGspAg1f@soulwebdb-ttk-service:27017/admin'
 // const DB_URL = 'mongodb://localhost:27017/SoulWeb'
 const PORT   = 3000
 
 mongoose.connect(DB_URL)
   .then(() => {
-    console.log('DB is connected âœ…')
+    console.log('DB is connected ✅')
     app.listen(PORT, () => {
       console.log(`Server running on port ${PORT} ðŸš€`)
     })
   })
   .catch(err => {
-    console.error('DB connection failed âŒ', err.message)
+    console.error('DB connection failed ❌', err.message)
     process.exit(1)
   })
 
 
 
-// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ─────────────────────────────────────────
 //  MULTER CODE
-// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ─────────────────────────────────────────
 const storage = multer.diskStorage({
   destination: function (req, file, cb) {
     cb(null, 'public/uploads/portfolio')
@@ -305,9 +305,9 @@ const mediaUpload = multer({
   fileFilter: (req, file, cb) => cb(null, ['image/jpeg', 'image/png', 'image/webp', 'image/gif', 'image/svg+xml'].includes(file.mimetype))
 })
 
-// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ─────────────────────────────────────────
 //  PUBLIC ROUTES
-// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ─────────────────────────────────────────
 app.get('/', async (req, res) => {
   try {
     const [portfolio, packages, siteSetting] = await Promise.all([
@@ -330,18 +330,18 @@ app.get('/', async (req, res) => {
 
 
 
-// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-//  ADMIN â€” DASHBOARD
-// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ─────────────────────────────────────────
+//  ADMIN — DASHBOARD
+// ─────────────────────────────────────────
 app.get('/sw-admin', requireAdminAuth, async (req, res) => {
   try {
     const now = new Date();
 
-    // Ø´Ø±ÙˆØ¹ Ù‡ÙØªÙ‡
+    // شروع هفته
     const weekStart = new Date(now);
     weekStart.setDate(now.getDate() - 7);
 
-    // Ø´Ø±ÙˆØ¹ Ø¨Ø§Ø²Ù‡ Û¶ Ù…Ø§Ù‡Ù‡ Ù†Ù…ÙˆØ¯Ø§Ø±
+    // شروع بازه Û¶ ماهه نمودار
     const chartStart = new Date(now.getFullYear(), now.getMonth() - 5, 1);
 
     const [
@@ -389,7 +389,7 @@ app.get('/sw-admin', requireAdminAuth, async (req, res) => {
       Review.aggregate([{ $match: { isApproved: true, rating: { $gt: 0 } } }, { $group: { _id: null, avg: { $avg: '$rating' }, count: { $sum: 1 } } }])
     ]);
 
-    // Ø¢Ù…Ø§Ø± Ø§ØµÙ„ÛŒ Ø¯Ø§Ø´Ø¨ÙˆØ±Ø¯
+    // آمار اصلی داشبورد
     const stats = {
       activeProjects: activeProjects || 0,
       reviewProjects: reviewProjects || 0,
@@ -404,7 +404,7 @@ app.get('/sw-admin', requireAdminAuth, async (req, res) => {
       deliveredProjects: doneProjects || 0
     };
 
-    // Ú©Ø§Ø±Øª Ù‡Ø§ÛŒ Ú©ÙˆÚ†Ú©
+    // کارت های کوچک
     const minis = {
       paidAmount: paidRevenueData[0]?.total || 0,
       pendingCount: pendingInvoices || 0,
@@ -413,7 +413,7 @@ app.get('/sw-admin', requireAdminAuth, async (req, res) => {
       ratingCount: reviewsForRating[0]?.count || 0
     };
 
-    // Ù†Ù…ÙˆØ¯Ø§Ø± Û¶ Ù…Ø§Ù‡ Ø§Ø®ÛŒØ±
+    // نمودار Û¶ ماه اخیر
     const chart = [];
 
     for (let i = 5; i >= 0; i--) {
@@ -442,27 +442,27 @@ app.get('/sw-admin', requireAdminAuth, async (req, res) => {
       });
     }
 
-    // ÙØ¹Ø§Ù„ÛŒØª Ù‡Ø§ÛŒ Ø§Ø®ÛŒØ±
+    // فعالیت های اخیر
     const recentActivities = (recentActivitiesData || []).map(activity => ({
       ...activity,
-      title: activity.title || 'ÙØ¹Ø§Ù„ÛŒØª Ø¬Ø¯ÛŒØ¯',
+      title: activity.title || 'فعالیت جدید',
       icon: activity.icon || 'bi-lightning-charge-fill',
       colorVariant: activity.colorVariant || 'accent',
       createdAt: activity.createdAt || now
     }));
 
-    // Ù¾Ø±ÙˆÚ˜Ù‡ Ù‡Ø§ÛŒ Ø§Ø®ÛŒØ± Ø¨Ø§ Ø³Ø§Ø®ØªØ§Ø± Ù…ÙˆØ±Ø¯ Ù†ÛŒØ§Ø² EJS
+    // پروژه های اخیر با ساختار مورد نیاز EJS
     const statusLabels = {
-      active: { label: 'Ø¯Ø± Ø­Ø§Ù„ Ø§Ù†Ø¬Ø§Ù…', cls: 'active' },
-      review: { label: 'Ø¯Ø± Ø­Ø§Ù„ Ø¨Ø±Ø±Ø³ÛŒ', cls: 'warning' },
-      done: { label: 'ØªÚ©Ù…ÛŒÙ„ Ø´Ø¯Ù‡', cls: 'success' },
-      pending: { label: 'Ø¯Ø± Ø§Ù†ØªØ¸Ø§Ø±', cls: 'secondary' },
-      cancelled: { label: 'Ù„ØºÙˆ Ø´Ø¯Ù‡', cls: 'danger' }
+      active: { label: 'در حال انجام', cls: 'active' },
+      review: { label: 'در حال بررسی', cls: 'warning' },
+      done: { label: 'تکمیل شده', cls: 'success' },
+      pending: { label: 'در انتظار', cls: 'secondary' },
+      cancelled: { label: 'لغو شده', cls: 'danger' }
     };
 
     const projects = (projectsData || []).map(project => {
       const status = statusLabels[project.status] || {
-        label: project.status || 'Ù†Ø§Ù…Ø´Ø®Øµ',
+        label: project.status || 'نامشخص',
         cls: 'secondary'
       };
 
@@ -473,19 +473,19 @@ app.get('/sw-admin', requireAdminAuth, async (req, res) => {
 
       const deadline = project.deadline
         ? new Date(project.deadline).toLocaleDateString('fa-IR')
-        : 'â€”';
+        : '—';
 
       return {
-        name: project.name || project.title || 'Ø¨Ø¯ÙˆÙ† Ø¹Ù†ÙˆØ§Ù†',
+        name: project.name || project.title || 'بدون عنوان',
         type: project.type || '',
         client:
           project.client?.name ||
           project.client?.company ||
-          'Ø¨Ø¯ÙˆÙ† Ù…Ø´ØªØ±ÛŒ',
+          'بدون مشتری',
         cat:
           project.category?.title ||
           project.category ||
-          'â€”',
+          '—',
         cls: status.cls,
         label: status.label,
         prog: progress,
@@ -496,14 +496,14 @@ app.get('/sw-admin', requireAdminAuth, async (req, res) => {
       };
     });
 
-    // ØªÛŒÚ©Øª Ù‡Ø§ÛŒ Ø§Ø®ÛŒØ± Ø¨Ø§ Ø³Ø§Ø®ØªØ§Ø± Ù…ÙˆØ±Ø¯ Ù†ÛŒØ§Ø² EJS
+    // تیکت های اخیر با ساختار مورد نیاز EJS
     const tickets = (ticketsData || []).map((ticket, index) => {
       const ticketName =
         ticket.name ||
         ticket.user?.name ||
         ticket.client?.name ||
         ticket.sender?.name ||
-        'Ú©Ø§Ø±Ø¨Ø±';
+        'کاربر';
 
       const initials = String(ticketName)
         .trim()
@@ -514,30 +514,30 @@ app.get('/sw-admin', requireAdminAuth, async (req, res) => {
 
       return {
         name: ticketName,
-        initials: initials || 'ØŸ',
+        initials: initials || '؟',
         preview:
           ticket.subject ||
           ticket.title ||
           ticket.message ||
           ticket.description ||
-          'ØªÛŒÚ©Øª Ø¬Ø¯ÛŒØ¯',
+          'تیکت جدید',
         time: ticket.createdAt || now,
         unread: ticket.isRead === false || ticket.unread === true,
         v: (index % 5) + 1
       };
     });
 
-    // ÙˆØ¸Ø§ÛŒÙ
+    // وظایف
     const todayTasks = (todayTasksData || []).map(task => ({
       _id: task._id,
-      title: task.title || 'Ø¨Ø¯ÙˆÙ† Ø¹Ù†ÙˆØ§Ù†',
+      title: task.title || 'بدون عنوان',
       isDone: Boolean(task.isDone),
       priority: ['high', 'medium', 'low'].includes(task.priority)
         ? task.priority
         : 'medium'
     }));
 
-    // ØªØ§Ø±ÛŒØ® Ø§Ù…Ø±ÙˆØ²
+    // تاریخ امروز
     const todayFa = new Intl.DateTimeFormat('fa-IR', {
       year: 'numeric',
       month: 'long',
@@ -557,13 +557,13 @@ app.get('/sw-admin', requireAdminAuth, async (req, res) => {
 
   } catch (err) {
     console.error('Dashboard Error:', err);
-    res.status(500).send('Ø®Ø·Ø§ Ø¯Ø± Ø¨Ø§Ø±Ú¯Ø°Ø§Ø±ÛŒ Ø¯Ø§Ø´Ø¨ÙˆØ±Ø¯');
+    res.status(500).send('خطا در بارگذاری داشبورد');
   }
 });
 
-// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-//  ADMIN â€” PROJECTS
-// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ─────────────────────────────────────────
+//  ADMIN — PROJECTS
+// ─────────────────────────────────────────
 app.get('/sw-admin/projects', requireAdminAuth, async (req, res) => {
   try {
 
@@ -585,10 +585,10 @@ app.get('/sw-admin/projects', requireAdminAuth, async (req, res) => {
 
     const serviceCategories = await Category.find({ type: 'service' }).lean()
 const kanbanColumns = [
-  { key: 'todo', title: 'Ø¯Ø± Ø§Ù†ØªØ¸Ø§Ø±' },
-  { key: 'inprogress', title: 'Ø¯Ø± Ø­Ø§Ù„ Ø§Ù†Ø¬Ø§Ù…' },
-  { key: 'review', title: 'Ø¯Ø± Ø­Ø§Ù„ Ø¨Ø±Ø±Ø³ÛŒ' },
-  { key: 'done', title: 'Ø§Ù†Ø¬Ø§Ù…â€ŒØ´Ø¯Ù‡' }
+  { key: 'todo', title: 'در انتظار' },
+  { key: 'inprogress', title: 'در حال انجام' },
+  { key: 'review', title: 'در حال بررسی' },
+  { key: 'done', title: 'انجام‌شده' }
 ];
 
 const defaultTechOptions = ['HTML', 'CSS', 'JavaScript', 'Node.js', 'React', 'MongoDB'];
@@ -606,7 +606,7 @@ res.render('admin/Projects', {
 
   } catch (err) {
     console.error(err)
-    res.status(500).send('Ø®Ø·Ø§ Ø¯Ø± Ø¨Ø§Ø±Ú¯Ø°Ø§Ø±ÛŒ Ù¾Ø±ÙˆÚ˜Ù‡â€ŒÙ‡Ø§')
+    res.status(500).send('خطا در بارگذاری پروژه‌ها')
   }
 })
 
@@ -617,7 +617,7 @@ res.render('admin/Projects', {
 //     const { title, description, client, type, techStack,
 //             status, progress, deadline, price, tags } = req.body
 
-//     // createdBy: Ø¯Ø± Ù¾Ø±ÙˆÚ˜Ù‡ ÙˆØ§Ù‚Ø¹ÛŒ Ø§Ø² session Ù…ÛŒØ§Ø¯ â€” ÙØ¹Ù„Ø§ placeholder
+//     // createdBy: در پروژه واقعی از session میاد — فعلا placeholder
 //     const ADMIN_PLACEHOLDER_ID = '000000000000000000000001'
 
 //     await Project.create({
@@ -631,10 +631,10 @@ res.render('admin/Projects', {
 //       createdBy : ADMIN_PLACEHOLDER_ID
 //     })
 
-//     // Ø«Ø¨Øª ÙØ¹Ø§Ù„ÛŒØª
+//     // ثبت فعالیت
 //     await Activity.create({
 //       type        : 'project_created',
-//       title       : `Ù¾Ø±ÙˆÚ˜Ù‡ Ø¬Ø¯ÛŒØ¯ Â«${title}Â» Ø«Ø¨Øª Ø´Ø¯`,
+//       title       : `پروژه جدید «${title}» ثبت شد`,
 //       icon        : 'bi-file-earmark-plus-fill',
 //       colorVariant: 'main'
 //     })
@@ -642,7 +642,7 @@ res.render('admin/Projects', {
 //     res.redirect('/sw-admin/projects')
 //   } catch (err) {
 //     console.error(err)
-//     res.status(500).send('Ø®Ø·Ø§ Ø¯Ø± Ø«Ø¨Øª Ù¾Ø±ÙˆÚ˜Ù‡')
+//     res.status(500).send('خطا در ثبت پروژه')
 //   }
 // })
 
@@ -661,17 +661,17 @@ app.post('/sw-admin/projects/:id/update', requireAdminAuth, async (req, res) => 
     } = req.body
 
     if (!title || !client || !category) {
-      return res.status(400).send('Ù†Ø§Ù… Ù¾Ø±ÙˆÚ˜Ù‡ØŒ Ù…Ø´ØªØ±ÛŒ Ùˆ Ù†ÙˆØ¹ Ù¾Ø±ÙˆÚ˜Ù‡ Ø§Ù„Ø²Ø§Ù…ÛŒ Ù‡Ø³ØªÙ†Ø¯')
+      return res.status(400).send('نام پروژه، مشتری و نوع پروژه الزامی هستند')
     }
 
     const parsedStartDate = normalizeDate(startDate)
     const parsedDeadline  = normalizeDate(deadline)
 
     if (startDate && !parsedStartDate) {
-      return res.status(400).send('ØªØ§Ø±ÛŒØ® Ø´Ø±ÙˆØ¹ Ù†Ø§Ù…Ø¹ØªØ¨Ø± Ø§Ø³Øª')
+      return res.status(400).send('تاریخ شروع نامعتبر است')
     }
     if (deadline && !parsedDeadline) {
-      return res.status(400).send('ØªØ§Ø±ÛŒØ® Ø¯Ø¯Ù„Ø§ÛŒÙ† Ù†Ø§Ù…Ø¹ØªØ¨Ø± Ø§Ø³Øª')
+      return res.status(400).send('تاریخ ددلاین نامعتبر است')
     }
 
     await Project.findByIdAndUpdate(req.params.id, {
@@ -689,7 +689,7 @@ app.post('/sw-admin/projects/:id/update', requireAdminAuth, async (req, res) => 
     res.redirect('/sw-admin/projects')
   } catch (err) {
     console.error('Project update error:', err)
-    res.status(500).send('Ø®Ø·Ø§ Ø¯Ø± ÙˆÛŒØ±Ø§ÛŒØ´ Ù¾Ø±ÙˆÚ˜Ù‡')
+    res.status(500).send('خطا در ویرایش پروژه')
   }
 })
 
@@ -699,7 +699,7 @@ app.post('/sw-admin/projects/:id/delete' , requireAdminAuth , async (req, res) =
     res.redirect('/sw-admin/projects')
   } catch (err) {
     console.error(err)
-    res.status(500).send('Ø®Ø·Ø§ Ø¯Ø± Ø­Ø°Ù Ù¾Ø±ÙˆÚ˜Ù‡')
+    res.status(500).send('خطا در حذف پروژه')
   }
 })
 
@@ -709,7 +709,7 @@ app.post('/sw-admin/projects/:id/status', requireAdminAuth, async (req, res) => 
     const allowed = ['active', 'review', 'done', 'hold', 'cancelled'];
 
     if (!allowed.includes(status)) {
-      return res.status(400).json({ success: false, message: 'ÙˆØ¶Ø¹ÛŒØª Ù†Ø§Ù…Ø¹ØªØ¨Ø± Ø§Ø³Øª' });
+      return res.status(400).json({ success: false, message: 'وضعیت نامعتبر است' });
     }
 
     const project = await Project.findByIdAndUpdate(
@@ -719,18 +719,18 @@ app.post('/sw-admin/projects/:id/status', requireAdminAuth, async (req, res) => 
     );
 
     if (!project) {
-      return res.status(404).json({ success: false, message: 'Ù¾Ø±ÙˆÚ˜Ù‡ Ù¾ÛŒØ¯Ø§ Ù†Ø´Ø¯' });
+      return res.status(404).json({ success: false, message: 'پروژه پیدا نشد' });
     }
 
     res.json({ success: true, status: project.status });
   } catch (err) {
     console.error('Project status error:', err);
-    res.status(500).json({ success: false, message: 'Ø®Ø·Ø§ Ø¯Ø± ØªØºÛŒÛŒØ± ÙˆØ¶Ø¹ÛŒØª Ù¾Ø±ÙˆÚ˜Ù‡' });
+    res.status(500).json({ success: false, message: 'خطا در تغییر وضعیت پروژه' });
   }
 });
-// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-//  ADMIN â€” CLIENTS
-// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ─────────────────────────────────────────
+//  ADMIN — CLIENTS
+// ─────────────────────────────────────────
 
 app.get('/sw-admin/clients', requireAdminAuth, async (req, res) => {
   try {
@@ -799,7 +799,7 @@ app.get('/sw-admin/clients', requireAdminAuth, async (req, res) => {
     })
   } catch (err) {
     console.error(err)
-    res.status(500).send('Ø®Ø·Ø§ Ø¯Ø± Ø¨Ø§Ø±Ú¯Ø°Ø§Ø±ÛŒ Ù…Ø´ØªØ±ÛŒØ§Ù†')
+    res.status(500).send('خطا در بارگذاری مشتریان')
   }
 })
 
@@ -829,7 +829,7 @@ app.post('/sw-admin/clients' , requireAdminAuth , async (req, res) => {
     res.redirect('/sw-admin/clients')
   } catch (err) {
     console.error(err)
-    res.status(500).send('Ø®Ø·Ø§ Ø¯Ø± Ø«Ø¨Øª Ù…Ø´ØªØ±ÛŒ')
+    res.status(500).send('خطا در ثبت مشتری')
   }
 })
 
@@ -840,7 +840,7 @@ app.post('/sw-admin/clients/:id/delete' , requireAdminAuth , async (req, res) =>
     await Client.findByIdAndDelete(req.params.id)
     res.redirect('/sw-admin/clients')
   } catch (err) {
-    res.status(500).send('Ø®Ø·Ø§ Ø¯Ø± Ø­Ø°Ù Ù…Ø´ØªØ±ÛŒ')
+    res.status(500).send('خطا در حذف مشتری')
   }
 })
 
@@ -848,19 +848,19 @@ app.get('/sw-admin/clients/export' , requireAdminAuth , async (req, res) => {
   try {
     const clients = await Client.find().sort({ createdAt: -1 })
 
-    let csv = 'Ù†Ø§Ù…,Ø´Ø±Ú©Øª,Ø§ÛŒÙ…ÛŒÙ„,ØªÙ„ÙÙ†,Ø¢Ø¯Ø±Ø³,ÙˆØ¶Ø¹ÛŒØª\n'
+    let csv = 'نام,شرکت,ایمیل,تلفن,آدرس,وضعیت\n'
 
     clients.forEach(client => {
-      csv += `"${client.name || ''}","${client.company || ''}","${client.email || ''}","${client.phone || ''}","${client.address || ''}","${client.isActive ? 'ÙØ¹Ø§Ù„' : 'ØºÛŒØ±ÙØ¹Ø§Ù„'}"\n`
+      csv += `"${client.name || ''}","${client.company || ''}","${client.email || ''}","${client.phone || ''}","${client.address || ''}","${client.isActive ? 'فعال' : 'غیرفعال'}"\n`
     })
 
     res.setHeader('Content-Type', 'text/csv; charset=utf-8')
     res.setHeader('Content-Disposition', 'attachment; filename=clients.csv')
 
-    res.send('\uFEFF' + csv) // Ø¨Ø±Ø§ÛŒ Ø¯Ø±Ø³Øª Ù†Ù…Ø§ÛŒØ´ ÙØ§Ø±Ø³ÛŒ Ø¯Ø± Excel
+    res.send('\uFEFF' + csv) // برای درست نمایش فارسی در Excel
   } catch (err) {
     console.error(err)
-    res.status(500).send('Ø®Ø·Ø§ Ø¯Ø± Ø®Ø±ÙˆØ¬ÛŒ CSV')
+    res.status(500).send('خطا در خروجی CSV')
   }
 })
 
@@ -869,7 +869,7 @@ app.post('/sw-admin/clients/:id/update', requireAdminAuth, async (req, res) => {
     const { name, company, email, phone, address, notes, category, isActive } = req.body;
 
     if (!name || !name.trim()) {
-      return res.redirect('/sw-admin/clients?error=Ù†Ø§Ù… Ù…Ø´ØªØ±ÛŒ Ø§Ù„Ø²Ø§Ù…ÛŒ Ø§Ø³Øª');
+      return res.redirect('/sw-admin/clients?error=نام مشتری الزامی است');
     }
 
     const updateData = {
@@ -882,7 +882,7 @@ app.post('/sw-admin/clients/:id/update', requireAdminAuth, async (req, res) => {
       isActive: isActive === 'on'
     };
 
-    // Ø§ÛŒÙ…ÛŒÙ„ Ø®Ø§Ù„ÛŒ Ø±Ø§ Ø­Ø°Ù Ù…ÛŒâ€ŒÚ©Ù†ÛŒÙ… ØªØ§ unique index Ø®Ø±Ø§Ø¨ Ù†Ø´ÙˆØ¯
+    // ایمیل خالی را حذف می‌کنیم تا unique index خراب نشود
     const mail = email ? email.trim().toLowerCase() : '';
     if (mail) updateData.email = mail;
     else updateData.$unset = { email: 1 };
@@ -893,24 +893,24 @@ app.post('/sw-admin/clients/:id/update', requireAdminAuth, async (req, res) => {
     });
 
     if (!client) {
-      return res.redirect('/sw-admin/clients?error=Ù…Ø´ØªØ±ÛŒ Ù¾ÛŒØ¯Ø§ Ù†Ø´Ø¯');
+      return res.redirect('/sw-admin/clients?error=مشتری پیدا نشد');
     }
 
-    res.redirect('/sw-admin/clients?success=Ø§Ø·Ù„Ø§Ø¹Ø§Øª Ù…Ø´ØªØ±ÛŒ Ø¨Ø§ Ù…ÙˆÙÙ‚ÛŒØª Ø¨Ù‡â€ŒØ±ÙˆØ²Ø±Ø³Ø§Ù†ÛŒ Ø´Ø¯');
+    res.redirect('/sw-admin/clients?success=اطلاعات مشتری با موفقیت به‌روزرسانی شد');
   } catch (err) {
     console.error('Edit client error:', err);
 
     if (err.code === 11000) {
-      return res.redirect('/sw-admin/clients?error=Ø§ÛŒÙ† Ø§ÛŒÙ…ÛŒÙ„ Ù‚Ø¨Ù„Ø§Ù‹ Ø¨Ø±Ø§ÛŒ Ù…Ø´ØªØ±ÛŒ Ø¯ÛŒÚ¯Ø±ÛŒ Ø«Ø¨Øª Ø´Ø¯Ù‡');
+      return res.redirect('/sw-admin/clients?error=این ایمیل قبلاً برای مشتری دیگری ثبت شده');
     }
 
-    res.redirect('/sw-admin/clients?error=Ø®Ø·Ø§ Ø¯Ø± Ø¨Ù‡â€ŒØ±ÙˆØ²Ø±Ø³Ø§Ù†ÛŒ Ø§Ø·Ù„Ø§Ø¹Ø§Øª Ù…Ø´ØªØ±ÛŒ');
+    res.redirect('/sw-admin/clients?error=خطا در به‌روزرسانی اطلاعات مشتری');
   }
 });
 
-// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-//  ADMIN â€” TICKETS
-// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ─────────────────────────────────────────
+//  ADMIN — TICKETS
+// ─────────────────────────────────────────
 app.get('/sw-admin/tickets', requireAdminAuth, async (req, res) => {
   try {
     const [tickets, clients] = await Promise.all([
@@ -919,7 +919,7 @@ app.get('/sw-admin/tickets', requireAdminAuth, async (req, res) => {
     ])
     res.render('admin/Tickets', { tickets, clients })
   } catch (err) {
-    res.status(500).send('Ø®Ø·Ø§ Ø¯Ø± Ø¨Ø§Ø±Ú¯Ø°Ø§Ø±ÛŒ ØªÛŒÚ©Øªâ€ŒÙ‡Ø§')
+    res.status(500).send('خطا در بارگذاری تیکت‌ها')
   }
 })
 
@@ -929,14 +929,14 @@ const patchTicket = (field, allowed, errMsg) => async (req, res) => {
     const value = req.body[field]
     if (!allowed.includes(value)) {
       return wantsJson
-        ? res.status(400).json({ success: false, message: 'Ù…Ù‚Ø¯Ø§Ø± Ù†Ø§Ù…Ø¹ØªØ¨Ø± Ø§Ø³Øª' })
-        : res.status(400).send('Ù…Ù‚Ø¯Ø§Ø± Ù†Ø§Ù…Ø¹ØªØ¨Ø± Ø§Ø³Øª')
+        ? res.status(400).json({ success: false, message: 'مقدار نامعتبر است' })
+        : res.status(400).send('مقدار نامعتبر است')
     }
     const ticket = await Ticket.findByIdAndUpdate(req.params.id, { [field]: value }, { new: true })
     if (!ticket) {
       return wantsJson
-        ? res.status(404).json({ success: false, message: 'ØªÛŒÚ©Øª Ù¾ÛŒØ¯Ø§ Ù†Ø´Ø¯' })
-        : res.status(404).send('ØªÛŒÚ©Øª Ù¾ÛŒØ¯Ø§ Ù†Ø´Ø¯')
+        ? res.status(404).json({ success: false, message: 'تیکت پیدا نشد' })
+        : res.status(404).send('تیکت پیدا نشد')
     }
     if (wantsJson) return res.json({ success: true, [field]: value })
     res.redirect('/sw-admin/tickets')
@@ -946,20 +946,20 @@ const patchTicket = (field, allowed, errMsg) => async (req, res) => {
   }
 }
 
-app.post('/sw-admin/tickets/:id/status', requireAdminAuth, patchTicket('status', ['open', 'pending', 'closed'], 'Ø®Ø·Ø§ Ø¯Ø± ØªØºÛŒÛŒØ± ÙˆØ¶Ø¹ÛŒØª ØªÛŒÚ©Øª'))
-app.post('/sw-admin/tickets/:id/priority', requireAdminAuth, patchTicket('priority', ['urgent', 'medium', 'low'], 'Ø®Ø·Ø§ Ø¯Ø± ØªØºÛŒÛŒØ± Ø§ÙˆÙ„ÙˆÛŒØª ØªÛŒÚ©Øª'))
+app.post('/sw-admin/tickets/:id/status', requireAdminAuth, patchTicket('status', ['open', 'pending', 'closed'], 'خطا در تغییر وضعیت تیکت'))
+app.post('/sw-admin/tickets/:id/priority', requireAdminAuth, patchTicket('priority', ['urgent', 'medium', 'low'], 'خطا در تغییر اولویت تیکت'))
 
 
 app.post('/sw-admin/tickets/:id/reply', requireAdminAuth, async (req, res) => {
   try {
     const body = typeof req.body.body === 'string' ? req.body.body.trim() : ''
-    if (!body) return res.status(400).json({ success: false, message: 'Ù…ØªÙ† Ù¾Ø§Ø³Ø® Ù†Ù…ÛŒâ€ŒØªÙˆØ§Ù†Ø¯ Ø®Ø§Ù„ÛŒ Ø¨Ø§Ø´Ø¯' })
+    if (!body) return res.status(400).json({ success: false, message: 'متن پاسخ نمی‌تواند خالی باشد' })
 
     const ticket = await Ticket.findById(req.params.id)
-    if (!ticket) return res.status(404).json({ success: false, message: 'ØªÛŒÚ©Øª Ù¾ÛŒØ¯Ø§ Ù†Ø´Ø¯' })
+    if (!ticket) return res.status(404).json({ success: false, message: 'تیکت پیدا نشد' })
 
     ticket.messages.push({ sender: 'admin', body })
-    if (ticket.status === 'open') ticket.status = 'pending'   // Ù¾Ø§Ø³Ø® Ø¯Ø§Ø¯Ù‡ Ø´Ø¯ = Ø¯Ø± Ø­Ø§Ù„ Ø¨Ø±Ø±Ø³ÛŒ
+    if (ticket.status === 'open') ticket.status = 'pending'   // پاسخ داده شد = در حال بررسی
     await ticket.save()
 
     const msg = ticket.messages[ticket.messages.length - 1]
@@ -970,7 +970,7 @@ app.post('/sw-admin/tickets/:id/reply', requireAdminAuth, async (req, res) => {
     })
   } catch (err) {
     console.error('Ticket reply error:', err)
-    res.status(500).json({ success: false, message: 'Ø®Ø·Ø§ Ø¯Ø± Ø§Ø±Ø³Ø§Ù„ Ù¾Ø§Ø³Ø®' })
+    res.status(500).json({ success: false, message: 'خطا در ارسال پاسخ' })
   }
 })
 app.post('/sw-admin/tickets', requireAdminAuth, async (req, res) => {
@@ -978,7 +978,7 @@ app.post('/sw-admin/tickets', requireAdminAuth, async (req, res) => {
     const { client, name, email, subject, body, department, priority } = req.body
 
     if (!subject || !subject.trim() || !body || !body.trim()) {
-      return res.redirect('/sw-admin/tickets?error=Ù…ÙˆØ¶ÙˆØ¹ Ùˆ Ù…ØªÙ† ØªÛŒÚ©Øª Ø§Ù„Ø²Ø§Ù…ÛŒ Ø§Ø³Øª')
+      return res.redirect('/sw-admin/tickets?error=موضوع و متن تیکت الزامی است')
     }
 
     let requester = { requesterName: name, requesterEmail: email, requesterPhone: '' }
@@ -993,7 +993,7 @@ app.post('/sw-admin/tickets', requireAdminAuth, async (req, res) => {
     }
 
     if (!requester.requesterName) {
-      return res.redirect('/sw-admin/tickets?error=Ù…Ø´ØªØ±ÛŒ ÛŒØ§ Ù†Ø§Ù… Ø¯Ø±Ø®ÙˆØ§Ø³Øªâ€ŒØ¯Ù‡Ù†Ø¯Ù‡ Ø±Ø§ Ù…Ø´Ø®Øµ Ú©Ù†ÛŒØ¯')
+      return res.redirect('/sw-admin/tickets?error=مشتری یا نام درخواست‌دهنده را مشخص کنید')
     }
 
     const ticket = await Ticket.create({
@@ -1009,15 +1009,15 @@ app.post('/sw-admin/tickets', requireAdminAuth, async (req, res) => {
 
     await Activity.create({
       type: 'ticket_created',
-      title: `ØªÛŒÚ©Øª Ø¬Ø¯ÛŒØ¯ Ø¨Ø±Ø§ÛŒ ${requester.requesterName}`,
+      title: `تیکت جدید برای ${requester.requesterName}`,
       icon: 'bi-ticket-detailed-fill',
       colorVariant: 'warning'
     })
 
-    res.redirect('/sw-admin/tickets?success=ØªÛŒÚ©Øª Ø¨Ø§ Ù…ÙˆÙÙ‚ÛŒØª Ø§ÛŒØ¬Ø§Ø¯ Ø´Ø¯#' + ticket._id)
+    res.redirect('/sw-admin/tickets?success=تیکت با موفقیت ایجاد شد#' + ticket._id)
   } catch (err) {
     console.error('Ticket create error:', err)
-    res.redirect('/sw-admin/tickets?error=Ø®Ø·Ø§ Ø¯Ø± Ø§ÛŒØ¬Ø§Ø¯ ØªÛŒÚ©Øª')
+    res.redirect('/sw-admin/tickets?error=خطا در ایجاد تیکت')
   }
 })
 app.post('/sw-admin/tickets/:id/delete', requireAdminAuth, async (req, res) => {
@@ -1025,13 +1025,13 @@ app.post('/sw-admin/tickets/:id/delete', requireAdminAuth, async (req, res) => {
     await Ticket.findByIdAndDelete(req.params.id)
     res.redirect('/sw-admin/tickets')
   } catch (err) {
-    res.status(500).send('Ø®Ø·Ø§ Ø¯Ø± Ø­Ø°Ù ØªÛŒÚ©Øª')
+    res.status(500).send('خطا در حذف تیکت')
   }
 })
 
-// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-//  ADMIN â€” INVOICES
-// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ─────────────────────────────────────────
+//  ADMIN — INVOICES
+// ─────────────────────────────────────────
 app.post('/sw-admin/invoices/:id/status', requireAdminAuth, async (req, res) => {
   try {
     const { id } = req.params
@@ -1039,14 +1039,14 @@ app.post('/sw-admin/invoices/:id/status', requireAdminAuth, async (req, res) => 
     const allowedStatuses = ['draft', 'sent', 'paid', 'overdue', 'cancelled']
 
     if (!allowedStatuses.includes(status)) {
-      return res.status(400).json({ success: false, message: 'ÙˆØ¶Ø¹ÛŒØª ÙØ§Ú©ØªÙˆØ± Ù†Ø§Ù…Ø¹ØªØ¨Ø± Ø§Ø³Øª' })
+      return res.status(400).json({ success: false, message: 'وضعیت فاکتور نامعتبر است' })
     }
 
     if (!mongoose.Types.ObjectId.isValid(id)) {
-      return res.status(400).json({ success: false, message: 'Ø´Ù†Ø§Ø³Ù‡ ÙØ§Ú©ØªÙˆØ± Ù†Ø§Ù…Ø¹ØªØ¨Ø± Ø§Ø³Øª' })
+      return res.status(400).json({ success: false, message: 'شناسه فاکتور نامعتبر است' })
     }
 
-    // Ø§Ù†ØªÙ‚Ø§Ù„â€ŒÙ‡Ø§ÛŒ Ù…Ø¬Ø§Ø² (Ø³Ù…Øª Ú†Ù¾ = ÙˆØ¶Ø¹ÛŒØª ÙØ¹Ù„ÛŒ)
+    // انتقال‌های مجاز (سمت چپ = وضعیت فعلی)
     const flow = {
       draft: ['sent', 'cancelled'],
       sent: ['draft', 'paid', 'cancelled'],
@@ -1057,11 +1057,11 @@ app.post('/sw-admin/invoices/:id/status', requireAdminAuth, async (req, res) => 
 
     const invoice = await Invoice.findById(id)
     if (!invoice) {
-      return res.status(404).json({ success: false, message: 'ÙØ§Ú©ØªÙˆØ± Ù¾ÛŒØ¯Ø§ Ù†Ø´Ø¯' })
+      return res.status(404).json({ success: false, message: 'فاکتور پیدا نشد' })
     }
 
     if (!(flow[invoice.status] || []).includes(status)) {
-      return res.status(400).json({ success: false, message: 'Ø§ÛŒÙ† ØªØºÛŒÛŒØ± ÙˆØ¶Ø¹ÛŒØª Ù…Ø¬Ø§Ø² Ù†ÛŒØ³Øª' })
+      return res.status(400).json({ success: false, message: 'این تغییر وضعیت مجاز نیست' })
     }
 
     invoice.status = status
@@ -1071,7 +1071,7 @@ app.post('/sw-admin/invoices/:id/status', requireAdminAuth, async (req, res) => 
     res.json({ success: true, status: invoice.status })
   } catch (err) {
     console.error('Invoice status error:', err)
-    res.status(500).json({ success: false, message: 'Ø®Ø·Ø§ Ø¯Ø± ØªØºÛŒÛŒØ± ÙˆØ¶Ø¹ÛŒØª ÙØ§Ú©ØªÙˆØ±' })
+    res.status(500).json({ success: false, message: 'خطا در تغییر وضعیت فاکتور' })
   }
 })
 
@@ -1108,7 +1108,7 @@ app.get('/sw-admin/invoices/export/pdf', requireAdminAuth, async (req, res) => {
     const html = await ejs.renderFile(
       path.join(__dirname, 'views', 'admin', 'invoices-pdf.ejs'),
       {
-        title: 'Ú¯Ø²Ø§Ø±Ø´ ÙØ§Ú©ØªÙˆØ±Ù‡Ø§',
+        title: 'گزارش فاکتورها',
         invoices,
         invoiceStats
       }
@@ -1148,7 +1148,7 @@ app.get('/sw-admin/invoices/export/pdf', requireAdminAuth, async (req, res) => {
     }
 
     console.error('Invoices PDF export error:', err)
-    res.status(500).send('Ø®Ø·Ø§ Ø¯Ø± ØªÙˆÙ„ÛŒØ¯ Ø®Ø±ÙˆØ¬ÛŒ PDF ÙØ§Ú©ØªÙˆØ±Ù‡Ø§')
+    res.status(500).send('خطا در تولید خروجی PDF فاکتورها')
   }
 })
 
@@ -1159,7 +1159,7 @@ app.get('/sw-admin/invoices/:id/pdf', requireAdminAuth, async (req, res) => {
     const { id } = req.params
 
     if (!mongoose.Types.ObjectId.isValid(id)) {
-      return res.status(400).send('Ø´Ù†Ø§Ø³Ù‡ ÙØ§Ú©ØªÙˆØ± Ù†Ø§Ù…Ø¹ØªØ¨Ø± Ø§Ø³Øª')
+      return res.status(400).send('شناسه فاکتور نامعتبر است')
     }
 
     const invoice = await Invoice.findById(id)
@@ -1168,11 +1168,11 @@ app.get('/sw-admin/invoices/:id/pdf', requireAdminAuth, async (req, res) => {
       .lean()
 
     if (!invoice) {
-      return res.status(404).send('ÙØ§Ú©ØªÙˆØ± Ù¾ÛŒØ¯Ø§ Ù†Ø´Ø¯')
+      return res.status(404).send('فاکتور پیدا نشد')
     }
 
     const escapeHtml = (value) => {
-      return String(value ?? 'â€”')
+      return String(value ?? '—')
         .replace(/&/g, '&amp;')
         .replace(/</g, '&lt;')
         .replace(/>/g, '&gt;')
@@ -1186,10 +1186,10 @@ app.get('/sw-admin/invoices/:id/pdf', requireAdminAuth, async (req, res) => {
     }
 
     const formatDate = (date) => {
-      if (!date) return 'â€”'
+      if (!date) return '—'
 
       const parsedDate = new Date(date)
-      if (Number.isNaN(parsedDate.getTime())) return 'â€”'
+      if (Number.isNaN(parsedDate.getTime())) return '—'
 
       return parsedDate.toLocaleDateString('fa-IR', {
         year: 'numeric',
@@ -1199,34 +1199,34 @@ app.get('/sw-admin/invoices/:id/pdf', requireAdminAuth, async (req, res) => {
     }
 
     const getClientName = (client) => {
-      if (!client) return 'Ø¨Ø¯ÙˆÙ† Ù…Ø´ØªØ±ÛŒ'
-      return escapeHtml(client.company || client.name || 'Ø¨Ø¯ÙˆÙ† Ù†Ø§Ù…')
+      if (!client) return 'بدون مشتری'
+      return escapeHtml(client.company || client.name || 'بدون نام')
     }
 
     const getProjectTitle = (project) => {
-      if (!project) return 'Ø¨Ø¯ÙˆÙ† Ù¾Ø±ÙˆÚ˜Ù‡'
-      return escapeHtml(project.title || 'Ø¨Ø¯ÙˆÙ† Ø¹Ù†ÙˆØ§Ù†')
+      if (!project) return 'بدون پروژه'
+      return escapeHtml(project.title || 'بدون عنوان')
     }
 
     const getStatusLabel = (status) => {
       const map = {
-        draft: 'Ù¾ÛŒØ´â€ŒÙ†ÙˆÛŒØ³',
-        sent: 'Ø§Ø±Ø³Ø§Ù„â€ŒØ´Ø¯Ù‡',
-        paid: 'Ù¾Ø±Ø¯Ø§Ø®Øªâ€ŒØ´Ø¯Ù‡',
-        overdue: 'Ù…Ø¹ÙˆÙ‚',
-        cancelled: 'Ù„ØºÙˆØ´Ø¯Ù‡'
+        draft: 'پیش‌نویس',
+        sent: 'ارسال‌شده',
+        paid: 'پرداخت‌شده',
+        overdue: 'معوق',
+        cancelled: 'لغوشده'
       }
 
-      return map[status] || 'Ù†Ø§Ù…Ø´Ø®Øµ'
+      return map[status] || 'نامشخص'
     }
 
     const buildItemsRows = (items) => {
       if (!Array.isArray(items) || !items.length) {
         return `
           <tr>
-            <td>Ø®Ø¯Ù…Ø§Øª Ø§Ù†Ø¬Ø§Ù…â€ŒØ´Ø¯Ù‡</td>
+            <td>خدمات انجام‌شده</td>
             <td>Û±</td>
-            <td>${formatMoney(invoice.total)} ØªÙˆÙ…Ø§Ù†</td>
+            <td>${formatMoney(invoice.total)} تومان</td>
           </tr>
         `
       }
@@ -1237,9 +1237,9 @@ app.get('/sw-admin/invoices/:id/pdf', requireAdminAuth, async (req, res) => {
 
         return `
           <tr>
-            <td>${escapeHtml(item.description || 'â€”')}</td>
+            <td>${escapeHtml(item.description || '—')}</td>
             <td>${qty.toLocaleString('fa-IR')}</td>
-            <td>${formatMoney(lineTotal)} ØªÙˆÙ…Ø§Ù†</td>
+            <td>${formatMoney(lineTotal)} تومان</td>
           </tr>
         `
       }).join('')
@@ -1400,57 +1400,57 @@ app.get('/sw-admin/invoices/:id/pdf', requireAdminAuth, async (req, res) => {
         <div class="invoice-box">
           <div class="header">
             <div class="brand">
-              <h1>ÙØ§Ú©ØªÙˆØ±</h1>
-              <p>Ø³ÛŒØ³ØªÙ… Ù…Ø¯ÛŒØ±ÛŒØª SoulWeb</p>
+              <h1>فاکتور</h1>
+              <p>سیستم مدیریت SoulWeb</p>
             </div>
 
             <div class="invoice-meta">
-              <div><strong>Ø´Ù…Ø§Ø±Ù‡ ÙØ§Ú©ØªÙˆØ±:</strong> ${escapeHtml(invoice.invoiceNumber || 'â€”')}</div>
-              <div><strong>ØªØ§Ø±ÛŒØ® ØµØ¯ÙˆØ±:</strong> ${formatDate(invoice.issueDate || invoice.createdAt)}</div>
-              <div><strong>Ø³Ø±Ø±Ø³ÛŒØ¯:</strong> ${formatDate(invoice.dueDate)}</div>
-              <div><strong>ÙˆØ¶Ø¹ÛŒØª:</strong> ${getStatusLabel(invoice.status)}</div>
+              <div><strong>شماره فاکتور:</strong> ${escapeHtml(invoice.invoiceNumber || '—')}</div>
+              <div><strong>تاریخ صدور:</strong> ${formatDate(invoice.issueDate || invoice.createdAt)}</div>
+              <div><strong>سررسید:</strong> ${formatDate(invoice.dueDate)}</div>
+              <div><strong>وضعیت:</strong> ${getStatusLabel(invoice.status)}</div>
             </div>
           </div>
 
           <div class="section">
-            <div class="section-title">Ø§Ø·Ù„Ø§Ø¹Ø§Øª ÙØ§Ú©ØªÙˆØ±</div>
+            <div class="section-title">اطلاعات فاکتور</div>
 
             <div class="grid">
               <div class="card">
                 <div class="row">
-                  <span class="label">Ù…Ø´ØªØ±ÛŒ</span>
+                  <span class="label">مشتری</span>
                   <span class="value">${getClientName(invoice.client)}</span>
                 </div>
 
                 <div class="row">
-                  <span class="label">Ù¾Ø±ÙˆÚ˜Ù‡</span>
+                  <span class="label">پروژه</span>
                   <span class="value">${getProjectTitle(invoice.project)}</span>
                 </div>
               </div>
 
               <div class="card">
                 <div class="row">
-                  <span class="label">Ø´Ù…Ø§Ø±Ù‡</span>
-                  <span class="value">${escapeHtml(invoice.invoiceNumber || 'â€”')}</span>
+                  <span class="label">شماره</span>
+                  <span class="value">${escapeHtml(invoice.invoiceNumber || '—')}</span>
                 </div>
 
                 <div class="row">
-                  <span class="label">Ù…Ø¨Ù„Øº Ú©Ù„</span>
-                  <span class="value">${formatMoney(invoice.total)} ØªÙˆÙ…Ø§Ù†</span>
+                  <span class="label">مبلغ کل</span>
+                  <span class="value">${formatMoney(invoice.total)} تومان</span>
                 </div>
               </div>
             </div>
           </div>
 
           <div class="section">
-            <div class="section-title">Ø¬Ø²Ø¦ÛŒØ§Øª</div>
+            <div class="section-title">جزئیات</div>
 
             <table>
               <thead>
                 <tr>
-                  <th>Ø´Ø±Ø­</th>
-                  <th>ØªØ¹Ø¯Ø§Ø¯</th>
-                  <th>Ù…Ø¨Ù„Øº</th>
+                  <th>شرح</th>
+                  <th>تعداد</th>
+                  <th>مبلغ</th>
                 </tr>
               </thead>
 
@@ -1462,13 +1462,13 @@ app.get('/sw-admin/invoices/:id/pdf', requireAdminAuth, async (req, res) => {
 
           <div class="total-box">
             <div class="total-row">
-              <span>Ø¬Ù…Ø¹ Ú©Ù„</span>
-              <span>${formatMoney(invoice.total)} ØªÙˆÙ…Ø§Ù†</span>
+              <span>جمع کل</span>
+              <span>${formatMoney(invoice.total)} تومان</span>
             </div>
           </div>
 
           <div class="footer">
-            Ø§ÛŒÙ† ÙØ§Ú©ØªÙˆØ± Ø¨Ù‡â€ŒØµÙˆØ±Øª Ø³ÛŒØ³ØªÙ…ÛŒ ØªÙˆÙ„ÛŒØ¯ Ø´Ø¯Ù‡ Ø§Ø³Øª.
+            این فاکتور به‌صورت سیستمی تولید شده است.
           </div>
         </div>
       </body>
@@ -1510,7 +1510,7 @@ app.get('/sw-admin/invoices/:id/pdf', requireAdminAuth, async (req, res) => {
     }
 
     console.error('Invoice PDF Error:', err)
-    return res.status(500).send('Ø®Ø·Ø§ Ø¯Ø± Ø³Ø§Ø®Øª PDF ÙØ§Ú©ØªÙˆØ±')
+    return res.status(500).send('خطا در ساخت PDF فاکتور')
   }
 })
 
@@ -1549,14 +1549,14 @@ app.get('/sw-admin/invoices', requireAdminAuth, async (req, res) => {
 
     res.render('admin/Invoices', {
       layout: 'layouts/sw-admin',
-      title: 'Ù…Ø¯ÛŒØ±ÛŒØª ÙØ§Ú©ØªÙˆØ±Ù‡Ø§',
+      title: 'مدیریت فاکتورها',
       invoices,
       clients,
       invoiceStats
     })
   } catch (err) {
     console.error('Invoices page error:', err)
-    res.status(500).send('Ø®Ø·Ø§ Ø¯Ø± Ø¯Ø±ÛŒØ§ÙØª ÙØ§Ú©ØªÙˆØ±Ù‡Ø§')
+    res.status(500).send('خطا در دریافت فاکتورها')
   }
 })
 
@@ -1569,7 +1569,7 @@ app.get('/sw-admin/clients/:clientId/projects' , requireAdminAuth , async (req, 
 
     if (!mongoose.Types.ObjectId.isValid(clientId)) {
       return res.status(400).json({
-        message: 'Ø´Ù†Ø§Ø³Ù‡ Ù…Ø´ØªØ±ÛŒ Ù…Ø¹ØªØ¨Ø± Ù†ÛŒØ³Øª'
+        message: 'شناسه مشتری معتبر نیست'
       })
     }
 
@@ -1583,7 +1583,7 @@ app.get('/sw-admin/clients/:clientId/projects' , requireAdminAuth , async (req, 
   } catch (err) {
     console.error('Client projects fetch error:', err)
     res.status(500).json({
-      message: 'Ø®Ø·Ø§ Ø¯Ø± Ø¯Ø±ÛŒØ§ÙØª Ù¾Ø±ÙˆÚ˜Ù‡â€ŒÙ‡Ø§ÛŒ Ù…Ø´ØªØ±ÛŒ'
+      message: 'خطا در دریافت پروژه‌های مشتری'
     })
   }
 })
@@ -1604,21 +1604,21 @@ app.post('/sw-admin/invoices/add' , requireAdminAuth , async (req, res) => {
     } = req.body
 
     if (!client) {
-      return res.status(400).send('Ø§Ù†ØªØ®Ø§Ø¨ Ù…Ø´ØªØ±ÛŒ Ø§Ù„Ø²Ø§Ù…ÛŒ Ø§Ø³Øª')
+      return res.status(400).send('انتخاب مشتری الزامی است')
     }
 
     if (!mongoose.Types.ObjectId.isValid(client)) {
-      return res.status(400).send('Ø´Ù†Ø§Ø³Ù‡ Ù…Ø´ØªØ±ÛŒ Ù…Ø¹ØªØ¨Ø± Ù†ÛŒØ³Øª')
+      return res.status(400).send('شناسه مشتری معتبر نیست')
     }
 
     if (project && !mongoose.Types.ObjectId.isValid(project)) {
-      return res.status(400).send('Ø´Ù†Ø§Ø³Ù‡ Ù¾Ø±ÙˆÚ˜Ù‡ Ù…Ø¹ØªØ¨Ø± Ù†ÛŒØ³Øª')
+      return res.status(400).send('شناسه پروژه معتبر نیست')
     }
 
     const foundClient = await Client.findById(client).lean()
 
     if (!foundClient) {
-      return res.status(404).send('Ù…Ø´ØªØ±ÛŒ Ù¾ÛŒØ¯Ø§ Ù†Ø´Ø¯')
+      return res.status(404).send('مشتری پیدا نشد')
     }
 
     let foundProject = null
@@ -1630,7 +1630,7 @@ app.post('/sw-admin/invoices/add' , requireAdminAuth , async (req, res) => {
       }).lean()
 
       if (!foundProject) {
-        return res.status(400).send('Ù¾Ø±ÙˆÚ˜Ù‡ Ø§Ù†ØªØ®Ø§Ø¨â€ŒØ´Ø¯Ù‡ Ù…ØªØ¹Ù„Ù‚ Ø¨Ù‡ Ø§ÛŒÙ† Ù…Ø´ØªØ±ÛŒ Ù†ÛŒØ³Øª')
+        return res.status(400).send('پروژه انتخاب‌شده متعلق به این مشتری نیست')
       }
     }
 
@@ -1649,9 +1649,9 @@ app.post('/sw-admin/invoices/add' , requireAdminAuth , async (req, res) => {
 
       const normalized = String(value)
         .replace(/[Û°-Û¹]/g, d => 'Û°Û±Û²Û³Û´ÛµÛ¶Û·Û¸Û¹'.indexOf(d))
-        .replace(/[Ù -Ù©]/g, d => 'Ù Ù¡Ù¢Ù£Ù¤Ù¥Ù¦Ù§Ù¨Ù©'.indexOf(d))
+        .replace(/[٠-٩]/g, d => '٠١٢٣٤٥٦٧٨٩'.indexOf(d))
         .replace(/,/g, '')
-        .replace(/ØŒ/g, '')
+        .replace(/،/g, '')
         .trim()
 
       const num = Number(normalized)
@@ -1679,7 +1679,7 @@ app.post('/sw-admin/invoices/add' , requireAdminAuth , async (req, res) => {
       .filter(item => item.description && item.unitPrice > 0)
 
     if (!items.length) {
-      return res.status(400).send('Ø­Ø¯Ø§Ù‚Ù„ ÛŒÚ© Ø¢ÛŒØªÙ… Ù…Ø¹ØªØ¨Ø± Ø¨Ø±Ø§ÛŒ ÙØ§Ú©ØªÙˆØ± Ù„Ø§Ø²Ù… Ø§Ø³Øª')
+      return res.status(400).send('حداقل ÛŒÚ© آیتم معتبر برای فاکتور لازم است')
     }
 
 const moment = require('jalali-moment')
@@ -1687,10 +1687,10 @@ const moment = require('jalali-moment')
 const toEnglishDigits = (str) => {
   if (!str) return str
   const persianDigits = 'Û°Û±Û²Û³Û´ÛµÛ¶Û·Û¸Û¹'
-  const arabicDigits  = 'Ù Ù¡Ù¢Ù£Ù¤Ù¥Ù¦Ù§Ù¨Ù©'
+  const arabicDigits  = '٠١٢٣٤٥٦٧٨٩'
   return String(str)
     .replace(/[Û°-Û¹]/g, d => persianDigits.indexOf(d))
-    .replace(/[Ù -Ù©]/g, d => arabicDigits.indexOf(d))
+    .replace(/[٠-٩]/g, d => arabicDigits.indexOf(d))
 }
 
 const normalizeDate = (value) => {
@@ -1723,10 +1723,10 @@ const parsedIssueDate = normalizeDate(issue_date)
 const parsedDueDate   = normalizeDate(due_date)
 
 if (issue_date && !parsedIssueDate) {
-  return res.status(400).send('ØªØ§Ø±ÛŒØ® ØµØ¯ÙˆØ± Ù†Ø§Ù…Ø¹ØªØ¨Ø± Ø§Ø³Øª')
+  return res.status(400).send('تاریخ صدور نامعتبر است')
 }
 if (due_date && !parsedDueDate) {
-  return res.status(400).send('ØªØ§Ø±ÛŒØ® Ø³Ø±Ø±Ø³ÛŒØ¯ Ù†Ø§Ù…Ø¹ØªØ¨Ø± Ø§Ø³Øª')
+  return res.status(400).send('تاریخ سررسید نامعتبر است')
 }
 
 await Invoice.create({
@@ -1746,14 +1746,14 @@ await Invoice.create({
 
   } catch (err) {
     console.error('Invoice create error:', err)
-    res.status(500).send('Ø®Ø·Ø§ Ø¯Ø± Ø«Ø¨Øª ÙØ§Ú©ØªÙˆØ±')
+    res.status(500).send('خطا در ثبت فاکتور')
   }
 })
 
 
 // app.post('/sw-admin/invoices' , requireAdminAuth , async (req, res) => {
 //   try {
-//     // items Ø§Ø² ÙØ±Ù… Ø¨Ù‡ ØµÙˆØ±Øª JSON string Ù…ÛŒØ§Ø¯
+//     // items از فرم به صورت JSON string میاد
 //     const items = JSON.parse(req.body.items || '[]')
 //     const lastInvoice = await Invoice.findOne().sort({ createdAt: -1 })
 //     const lastNum = lastInvoice
@@ -1776,7 +1776,7 @@ await Invoice.create({
 //     res.redirect('/sw-admin/invoices')
 //   } catch (err) {
 //     console.error(err)
-//     res.status(500).send('Ø®Ø·Ø§ Ø¯Ø± Ø«Ø¨Øª ÙØ§Ú©ØªÙˆØ±')
+//     res.status(500).send('خطا در ثبت فاکتور')
 //   }
 // })
 
@@ -1790,7 +1790,7 @@ await Invoice.create({
 //     const inv = await Invoice.findById(req.params.id)
 //     await Activity.create({
 //       type        : 'invoice_paid',
-//       title       : `ÙØ§Ú©ØªÙˆØ± #${inv.invoiceNumber} Ù¾Ø±Ø¯Ø§Ø®Øª Ø´Ø¯`,
+//       title       : `فاکتور #${inv.invoiceNumber} پرداخت شد`,
 //       icon        : 'bi-receipt-cutoff',
 //       colorVariant: 'success',
 //       relatedModel: 'Invoice',
@@ -1799,34 +1799,34 @@ await Invoice.create({
 
 //     res.redirect('/sw-admin/invoices')
 //   } catch (err) {
-//     res.status(500).send('Ø®Ø·Ø§')
+//     res.status(500).send('خطا')
 //   }
 // })
 
-// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ─────────────────────────────────────────────────────────────
 //  PORTFOLIO ROUTES
-//  Ø¯Ø± server.js Ø¬Ø§ÛŒÚ¯Ø²ÛŒÙ† Ø¨Ù„ÙˆÚ© Ù‚Ø¨Ù„ÛŒ portfolio Ø¨Ú©Ù†
-// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+//  در server.js جایگزین بلوک قبلی portfolio بکن
+// ─────────────────────────────────────────────────────────────
 
-// GET â€” list
+// GET — list
 app.get('/sw-admin/portfolio' , requireAdminAuth , async (req, res) => {
   try {
 
     const [items, clients, categories, mediaItems] = await Promise.all([
 
-      // Ù¾ÙˆØ±ØªÙÙˆÙ„ÛŒÙˆÙ‡Ø§
+      // پورتفولیوها
       Portfolio.find()
         .populate('client', 'name company')
         .populate('project', 'title')
         .sort({ order: 1, createdAt: -1 })
         .lean(),
 
-      // Ù„ÛŒØ³Øª Ù…Ø´ØªØ±ÛŒâ€ŒÙ‡Ø§ Ø¨Ø±Ø§ÛŒ select
+      // لیست مشتری‌ها برای select
       Client.find({ isActive: true })
         .sort({ name: 1 })
         .lean(),
 
-      // Ø¯Ø³ØªÙ‡â€ŒÙ‡Ø§ÛŒ Ù…Ø®ØµÙˆØµ Ù¾ÙˆØ±ØªÙÙˆÙ„ÛŒÙˆ
+      // دسته‌های مخصوص پورتفولیو
       Category.find({
         type: 'portfolio',
         isActive: true
@@ -1846,30 +1846,30 @@ app.get('/sw-admin/portfolio' , requireAdminAuth , async (req, res) => {
 
   } catch (err) {
     console.error('Portfolio Load Error:', err)
-    res.status(500).send('Ø®Ø·Ø§ Ø¯Ø± Ø¨Ø§Ø±Ú¯Ø°Ø§Ø±ÛŒ Ù¾ÙˆØ±ØªÙÙˆÙ„ÛŒÙˆ')
+    res.status(500).send('خطا در بارگذاری پورتفولیو')
   }
 })
 
 
-// GET â€” ÙØ±Ù… ÙˆØ§Ø­Ø¯ Ø§ÙØ²ÙˆØ¯Ù†/ÙˆÛŒØ±Ø§ÛŒØ´ Ù†Ù…ÙˆÙ†Ù‡ Ú©Ø§Ø±
-// Ø§Ú¯Ø± ?id=... Ø§Ø±Ø³Ø§Ù„ Ø´ÙˆØ¯ ÛŒØ¹Ù†ÛŒ Ø­Ø§Ù„Øª ÙˆÛŒØ±Ø§ÛŒØ´ØŒ Ø¯Ø± ØºÛŒØ± Ø§ÛŒÙ†â€ŒØµÙˆØ±Øª Ø­Ø§Ù„Øª Ø§ÙØ²ÙˆØ¯Ù† Ø¬Ø¯ÛŒØ¯
+// GET — فرم واحد افزودن/ویرایش نمونه کار
+// اگر ?id=... ارسال شود یعنی حالت ویرایش، در غیر این‌صورت حالت افزودن جدید
 app.get('/sw-admin/portfolio/form' , requireAdminAuth , async (req, res) => {
   try {
 
     const { id } = req.query
 
     if (id && !mongoose.Types.ObjectId.isValid(id)) {
-      return res.status(400).send('Ø´Ù†Ø§Ø³Ù‡ Ù†Ù…ÙˆÙ†Ù‡ Ú©Ø§Ø± Ù…Ø¹ØªØ¨Ø± Ù†ÛŒØ³Øª')
+      return res.status(400).send('شناسه نمونه کار معتبر نیست')
     }
 
     const [clients, categories, foundItem, mediaItems] = await Promise.all([
 
-      // Ù„ÛŒØ³Øª Ù…Ø´ØªØ±ÛŒâ€ŒÙ‡Ø§ Ø¨Ø±Ø§ÛŒ select
+      // لیست مشتری‌ها برای select
       Client.find({ isActive: true })
         .sort({ name: 1 })
         .lean(),
 
-      // Ø¯Ø³ØªÙ‡â€ŒÙ‡Ø§ÛŒ Ù…Ø®ØµÙˆØµ Ù¾ÙˆØ±ØªÙÙˆÙ„ÛŒÙˆ
+      // دسته‌های مخصوص پورتفولیو
       Category.find({
         type: 'portfolio',
         isActive: true
@@ -1877,7 +1877,7 @@ app.get('/sw-admin/portfolio/form' , requireAdminAuth , async (req, res) => {
         .sort({ order: 1 })
         .lean(),
 
-      // Ø§Ú¯Ø± id Ø§Ø±Ø³Ø§Ù„ Ø´Ø¯Ù‡ Ø¨ÙˆØ¯ØŒ Ù†Ù…ÙˆÙ†Ù‡ Ú©Ø§Ø± Ù…Ø±Ø¨ÙˆØ·Ù‡ Ø±Ø§ Ø¨Ø®ÙˆØ§Ù†Ø› ÙˆÚ¯Ø±Ù†Ù‡ null
+      // اگر id ارسال شده بود، نمونه کار مربوطه را بخوان؛ وگرنه null
       id
         ? Portfolio.findById(id)
             .populate('client', 'name company')
@@ -1887,12 +1887,12 @@ app.get('/sw-admin/portfolio/form' , requireAdminAuth , async (req, res) => {
       Media.find().sort({ createdAt: -1 }).lean()
     ])
 
-    // Ø§Ú¯Ø± id Ø§Ø±Ø³Ø§Ù„ Ø´Ø¯Ù‡ Ø¨ÙˆØ¯ ÙˆÙ„ÛŒ Ø¢ÛŒØªÙ…ÛŒ Ù¾ÛŒØ¯Ø§ Ù†Ø´Ø¯ â†’ Ø®Ø·Ø§ÛŒ Û´Û°Û´
+    // اگر id ارسال شده بود ولی آیتمی پیدا نشد → خطای Û´Û°Û´
     if (id && !foundItem) {
-      return res.status(404).send('Ù†Ù…ÙˆÙ†Ù‡ Ú©Ø§Ø± Ù…ÙˆØ±Ø¯ Ù†Ø¸Ø± Ù¾ÛŒØ¯Ø§ Ù†Ø´Ø¯')
+      return res.status(404).send('نمونه کار مورد نظر پیدا نشد')
     }
 
-    // Ø´ÛŒØ¡ Ù¾ÛŒØ´â€ŒÙØ±Ø¶/Ø®Ø§Ù„ÛŒ Ø¨Ø±Ø§ÛŒ Ø­Ø§Ù„Øª Â«Ø§ÙØ²ÙˆØ¯Ù† Ø¬Ø¯ÛŒØ¯Â» ØªØ§ EJS Ø¨Ø§ Ù…Ù‚Ø¯Ø§Ø± undefined Ø®Ø·Ø§ Ù†Ø¯Ù‡Ø¯
+    // شیء پیش‌فرض/خالی برای حالت «افزودن جدید» تا EJS با مقدار undefined خطا ندهد
     const emptyItem = {
       _id            : null,
       title          : '',
@@ -1920,12 +1920,12 @@ app.get('/sw-admin/portfolio/form' , requireAdminAuth , async (req, res) => {
 
   } catch (err) {
     console.error('Portfolio Form Page Error:', err)
-    res.status(500).send('Ø®Ø·Ø§ Ø¯Ø± Ø¨Ø§Ø±Ú¯Ø°Ø§Ø±ÛŒ ÙØ±Ù… Ù†Ù…ÙˆÙ†Ù‡ Ú©Ø§Ø±')
+    res.status(500).send('خطا در بارگذاری فرم نمونه کار')
   }
 })
 
 
-// POST â€” create new
+// POST — create new
 app.post('/sw-admin/portfolio' , requireAdminAuth , upload.single('coverImage'), async (req, res) => {
   try {
     const {
@@ -1936,8 +1936,8 @@ app.post('/sw-admin/portfolio' , requireAdminAuth , upload.single('coverImage'),
 
     const coverImage = req.file ? `/uploads/portfolio/${req.file.filename}` : (req.body.coverImage || '')
 
-    // techStack Ø§Ø² Ú†Ú©â€ŒØ¨Ø§Ú©Ø³â€ŒÙ‡Ø§ÛŒ name="techStack[]" Ø¨Ù‡ ØµÙˆØ±Øª Ø¢Ø±Ø§ÛŒÙ‡ Ø§Ø±Ø³Ø§Ù„ Ù…ÛŒâ€ŒØ´ÙˆØ¯
-    // Ø¨Ø±Ø§ÛŒ Ø³Ø§Ø²Ú¯Ø§Ø±ÛŒØŒ Ø­Ø§Ù„Øª Ø±Ø´ØªÙ‡ Ø¬Ø¯Ø§â€ŒØ´Ø¯Ù‡ Ø¨Ø§ Ú©Ø§Ù…Ø§ Ù†ÛŒØ² Ù¾Ø´ØªÛŒØ¨Ø§Ù†ÛŒ Ù…ÛŒâ€ŒØ´ÙˆØ¯
+    // techStack از چک‌باکس‌های name="techStack[]" به صورت آرایه ارسال می‌شود
+    // برای سازگاری، حالت رشته جدا‌شده با کاما نیز پشتیبانی می‌شود
     const techStackArr = Array.isArray(techStack)
       ? techStack.map(t => t.trim()).filter(Boolean)
       : (techStack ? techStack.split(',').map(t => t.trim()).filter(Boolean) : [])
@@ -1960,7 +1960,7 @@ app.post('/sw-admin/portfolio' , requireAdminAuth , upload.single('coverImage'),
 
     await Activity.create({
       type        : 'project_created',
-      title       : `Ù†Ù…ÙˆÙ†Ù‡ Ú©Ø§Ø± Â«${(title || '').trim()}Â» Ø¨Ù‡ Ù¾ÙˆØ±ØªÙÙˆÙ„ÛŒÙˆ Ø§Ø¶Ø§ÙÙ‡ Ø´Ø¯`,
+      title       : `نمونه کار «${(title || '').trim()}» به پورتفولیو اضافه شد`,
       icon        : 'bi-collection-fill',
       colorVariant: 'accent'
     })
@@ -1968,7 +1968,7 @@ app.post('/sw-admin/portfolio' , requireAdminAuth , upload.single('coverImage'),
     res.redirect('/sw-admin/portfolio')
   } catch (err) {
     console.error(err)
-    res.status(500).send('Ø®Ø·Ø§ Ø¯Ø± Ø«Ø¨Øª Ù†Ù…ÙˆÙ†Ù‡ Ú©Ø§Ø±')
+    res.status(500).send('خطا در ثبت نمونه کار')
   }
 })
 
@@ -1993,7 +1993,7 @@ app.post('/sw-admin/portfolio/:id/status', requireAdminAuth, async (req, res) =>
   }
 })
 
-// POST â€” update existing
+// POST — update existing
 app.post('/sw-admin/portfolio/:id/update' , requireAdminAuth , upload.single('coverImage'), async (req, res) => {
 
   try {
@@ -2001,7 +2001,7 @@ app.post('/sw-admin/portfolio/:id/update' , requireAdminAuth , upload.single('co
     const portfolio = await Portfolio.findById(req.params.id)
 
     if(!portfolio){
-      return res.status(404).send('Ù¾Ø±ÙˆÚ˜Ù‡ Ù¾ÛŒØ¯Ø§ Ù†Ø´Ø¯')
+      return res.status(404).send('پروژه پیدا نشد')
     }
 
     const {
@@ -2012,10 +2012,10 @@ app.post('/sw-admin/portfolio/:id/update' , requireAdminAuth , upload.single('co
 
     const coverImage = req.file
       ? '/uploads/portfolio/' + req.file.filename
-      : portfolio.coverImage   // Ø§Ú¯Ø± Ø¹Ú©Ø³ Ø¬Ø¯ÛŒØ¯ Ù†Ø¨ÙˆØ¯ Ù‚Ø¨Ù„ÛŒ Ø¨Ù…Ø§Ù†Ø¯
+      : portfolio.coverImage   // اگر عکس جدید نبود قبلی بماند
 
-    // techStack Ø§Ø² Ú†Ú©â€ŒØ¨Ø§Ú©Ø³â€ŒÙ‡Ø§ÛŒ name="techStack[]" Ø¨Ù‡ ØµÙˆØ±Øª Ø¢Ø±Ø§ÛŒÙ‡ Ø§Ø±Ø³Ø§Ù„ Ù…ÛŒâ€ŒØ´ÙˆØ¯
-    // Ø¨Ø±Ø§ÛŒ Ø³Ø§Ø²Ú¯Ø§Ø±ÛŒØŒ Ø­Ø§Ù„Øª Ø±Ø´ØªÙ‡ Ø¬Ø¯Ø§â€ŒØ´Ø¯Ù‡ Ø¨Ø§ Ú©Ø§Ù…Ø§ Ù†ÛŒØ² Ù¾Ø´ØªÛŒØ¨Ø§Ù†ÛŒ Ù…ÛŒâ€ŒØ´ÙˆØ¯
+    // techStack از چک‌باکس‌های name="techStack[]" به صورت آرایه ارسال می‌شود
+    // برای سازگاری، حالت رشته جدا‌شده با کاما نیز پشتیبانی می‌شود
     const techStackArr = Array.isArray(techStack)
       ? techStack.map(t => t.trim()).filter(Boolean)
       : (techStack ? techStack.split(',').map(t=>t.trim()).filter(Boolean) : [])
@@ -2039,52 +2039,52 @@ app.post('/sw-admin/portfolio/:id/update' , requireAdminAuth , upload.single('co
 
   } catch(err){
     console.error(err)
-    res.status(500).send('Ø®Ø·Ø§ Ø¯Ø± ÙˆÛŒØ±Ø§ÛŒØ´')
+    res.status(500).send('خطا در ویرایش')
   }
 
 })
 
 
-// POST â€” publish (toggle draft â†’ published)
+// POST — publish (toggle draft → published)
 app.post('/sw-admin/portfolio/:id/publish' , requireAdminAuth ,  async (req, res) => {
   try {
     await Portfolio.findByIdAndUpdate(req.params.id, { isPublished: true })
     res.redirect('/sw-admin/portfolio')
   } catch (err) {
     console.error(err)
-    res.status(500).send('Ø®Ø·Ø§ Ø¯Ø± Ø§Ù†ØªØ´Ø§Ø±')
+    res.status(500).send('خطا در انتشار')
   }
 })
 
-// POST â€” delete
+// POST — delete
 app.post('/sw-admin/portfolio/:id/delete' , requireAdminAuth , async (req, res) => {
   try {
     await Portfolio.findByIdAndDelete(req.params.id)
     res.redirect('/sw-admin/portfolio')
   } catch (err) {
     console.error(err)
-    res.status(500).send('Ø®Ø·Ø§ Ø¯Ø± Ø­Ø°Ù Ù†Ù…ÙˆÙ†Ù‡ Ú©Ø§Ø±')
+    res.status(500).send('خطا در حذف نمونه کار')
   }
 })
 
-// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-//  ADMIN â€” PACKAGES
-// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ─────────────────────────────────────────
+//  ADMIN — PACKAGES
+// ─────────────────────────────────────────
 app.get('/sw-admin/packages' , requireAdminAuth , async (req, res) => {
   try {
-    // Ù‡Ù…Ù‡ Ù¾Ú©ÛŒØ¬â€ŒÙ‡Ø§ Ø±Ø§ Ø¨Ø± Ø§Ø³Ø§Ø³ ÙÛŒÙ„Ø¯ order Ù…Ø±ØªØ¨ Ù…ÛŒâ€ŒÚ©Ù†ÛŒÙ… (Ù…Ø«Ù„ ØªØ±ØªÛŒØ¨ Ù¾Ø§ÛŒÙ‡/Ø§Ù‚ØªØµØ§Ø¯ÛŒ/Ø­Ø±ÙÙ‡â€ŒØ§ÛŒ/Ø³Ø§Ø²Ù…Ø§Ù†ÛŒ)
+    // همه پکیج‌ها را بر اساس فیلد order مرتب می‌کنیم (مثل ترتیب پایه/اقتصادی/حرفه‌ای/سازمانی)
     const packages = await Package.find().sort({ order: 1, createdAt: 1 });
  
-    // ØªØ¹Ø¯Ø§Ø¯ Ù¾Ú©ÛŒØ¬â€ŒÙ‡Ø§ÛŒ ÙØ¹Ø§Ù„
+    // تعداد پکیج‌های فعال
     const activeCount = packages.filter(p => p.isActive).length;
  
-    // Ù¾Ø±ÙØ±ÙˆØ´â€ŒØªØ±ÛŒÙ† Ù¾Ú©ÛŒØ¬ (Ø¨Ø± Ø§Ø³Ø§Ø³ ÙÛŒÙ„Ø¯ sales)
+    // پرفروش‌ترین پکیج (بر اساس فیلد sales)
     let bestSeller = null;
     if (packages.length > 0) {
       bestSeller = packages.reduce((max, p) => (p.sales > (max ? max.sales : -1) ? p : max), null);
     }
  
-    // Ù…Ø¬Ù…ÙˆØ¹ Ø®Ø±ÛŒØ¯ Ø§ÛŒÙ† Ù…Ø§Ù‡ Ùˆ Ø¯Ø±Ø¢Ù…Ø¯ Ù¾Ú©ÛŒØ¬â€ŒÙ‡Ø§ ÙØ¹Ù„Ø§Ù‹ Ú†ÙˆÙ† Ù…Ø¯Ù„ Ø³ÙØ§Ø±Ø´/Ø®Ø±ÛŒØ¯ Ø¬Ø¯Ø§Ú¯Ø§Ù†Ù‡â€ŒØ§ÛŒ Ù†Ø¯Ø§Ø±ÛŒÙ… ØµÙØ± Ø§Ø³Øª
+    // مجموع خرید این ماه و درآمد پکیج‌ها فعلاً چون مدل سفارش/خرید جداگانه‌ای نداریم صفر است
     const monthlyPurchases = 0;
     const totalRevenue = 0;
  
@@ -2093,13 +2093,13 @@ app.get('/sw-admin/packages' , requireAdminAuth , async (req, res) => {
       stats: {
         activeCount,
         monthlyPurchases,
-        bestSellerName: bestSeller ? bestSeller.name : 'â€”',
+        bestSellerName: bestSeller ? bestSeller.name : '—',
         totalRevenue
       }
     });
   } catch (err) {
-    console.error('Ø®Ø·Ø§ Ø¯Ø± Ø¯Ø±ÛŒØ§ÙØª Ù¾Ú©ÛŒØ¬â€ŒÙ‡Ø§:', err);
-    res.status(500).send('Ø®Ø·Ø§ Ø¯Ø± Ø¨Ø§Ø±Ú¯Ø°Ø§Ø±ÛŒ ØµÙØ­Ù‡ Ù¾Ú©ÛŒØ¬â€ŒÙ‡Ø§');
+    console.error('خطا در دریافت پکیج‌ها:', err);
+    res.status(500).send('خطا در بارگذاری صفحه پکیج‌ها');
   }
 });
 
@@ -2120,13 +2120,13 @@ app.post('/sw-admin/packages' , requireAdminAuth , async (req, res) => {
     })
     res.redirect('/sw-admin/packages')
   } catch (err) {
-    res.status(500).send('Ø®Ø·Ø§ Ø¯Ø± Ø«Ø¨Øª Ù¾Ú©ÛŒØ¬')
+    res.status(500).send('خطا در ثبت پکیج')
   }
 })
 
-// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-//  ADMIN â€” REVIEWS
-// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ─────────────────────────────────────────
+//  ADMIN — REVIEWS
+// ─────────────────────────────────────────
 app.get('/sw-admin/reviews' , requireAdminAuth , async (req, res) => {
   try {
     const reviews = await Review.find()
@@ -2135,7 +2135,7 @@ app.get('/sw-admin/reviews' , requireAdminAuth , async (req, res) => {
       .sort({ createdAt: -1 })
     res.render('admin/Reviews', { reviews })
   } catch (err) {
-    res.status(500).send('Ø®Ø·Ø§ Ø¯Ø± Ø¨Ø§Ø±Ú¯Ø°Ø§Ø±ÛŒ Ù†Ø¸Ø±Ø§Øª')
+    res.status(500).send('خطا در بارگذاری نظرات')
   }
 })
 
@@ -2195,20 +2195,20 @@ app.post('/sw-admin/reviews/:id/delete', requireAdminAuth, async (req, res) => {
     await Review.findByIdAndDelete(req.params.id)
     res.redirect('/sw-admin/reviews')
   } catch (err) {
-    res.status(500).send('Ø®Ø·Ø§')
+    res.status(500).send('خطا')
   }
 })
 
-// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-//  ADMIN â€” BLOG
-// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ─────────────────────────────────────────
+//  ADMIN — BLOG
+// ─────────────────────────────────────────
 app.get('/sw-admin/blog' , requireAdminAuth , async (req, res) => {
   try {
     const posts = await BlogPost.find()
       .sort({ createdAt: -1 })
     res.render('admin/Blog', { posts })
   } catch (err) {
-    res.status(500).send('Ø®Ø·Ø§ Ø¯Ø± Ø¨Ø§Ø±Ú¯Ø°Ø§Ø±ÛŒ ÙˆØ¨Ù„Ø§Ú¯')
+    res.status(500).send('خطا در بارگذاری وبلاگ')
   }
 })
 
@@ -2240,13 +2240,13 @@ app.post('/sw-admin/blog/:id/delete' , requireAdminAuth , async (req, res) => {
     await BlogPost.findByIdAndDelete(req.params.id)
     res.redirect('/sw-admin/blog')
   } catch (err) {
-    res.status(500).send('Ø®Ø·Ø§')
+    res.status(500).send('خطا')
   }
 })
 
-// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-//  ADMIN â€” TASKS (AJAX-friendly)
-// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ─────────────────────────────────────────
+//  ADMIN — TASKS (AJAX-friendly)
+// ─────────────────────────────────────────
 app.get('/sw-admin/tasks' , requireAdminAuth , async (req, res) => {
   try {
     const [tasks, projects] = await Promise.all([
@@ -2255,7 +2255,7 @@ app.get('/sw-admin/tasks' , requireAdminAuth , async (req, res) => {
     ])
     res.render('admin/Tasks', { tasks, projects })
   } catch (err) {
-    res.status(500).send('Ø®Ø·Ø§')
+    res.status(500).send('خطا')
   }
 })
 
@@ -2295,11 +2295,11 @@ app.post('/sw-admin/tasks', requireAdminAuth, async (req, res) => {
 
     res.redirect(req.get('Referer') || '/sw-admin/tasks')
   } catch (err) {
-    res.status(500).send('Ø®Ø·Ø§ Ø¯Ø± Ø«Ø¨Øª ÙˆØ¸ÛŒÙÙ‡')
+    res.status(500).send('خطا در ثبت وظیفه')
   }
 })
 
-// toggle done â€” returns JSON for fetch calls from dashboard
+// toggle done — returns JSON for fetch calls from dashboard
 app.post('/sw-admin/tasks/:id/toggle' , requireAdminAuth , async (req, res) => {
   try {
     const task   = await Task.findById(req.params.id)
@@ -2317,13 +2317,13 @@ app.post('/sw-admin/tasks/:id/delete' , requireAdminAuth , async (req, res) => {
     await Task.findByIdAndDelete(req.params.id)
     res.redirect(req.get('Referer') || '/sw-admin')
   } catch (err) {
-    res.status(500).send('Ø®Ø·Ø§')
+    res.status(500).send('خطا')
   }
 })
 
-// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-//  ADMIN â€” REPORTS
-// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ─────────────────────────────────────────
+//  ADMIN — REPORTS
+// ─────────────────────────────────────────
 app.get('/sw-admin/reports' , requireAdminAuth , async (req, res) => {
   try {
     const RANGES = {
@@ -2453,13 +2453,13 @@ app.get('/sw-admin/reports' , requireAdminAuth , async (req, res) => {
       invoiceStatus
     })
   } catch (err) {
-    res.status(500).send('Ø®Ø·Ø§ Ø¯Ø± Ø¨Ø§Ø±Ú¯Ø°Ø§Ø±ÛŒ Ú¯Ø²Ø§Ø±Ø´â€ŒÙ‡Ø§')
+    res.status(500).send('خطا در بارگذاری گزارش‌ها')
   }
 })
 
-// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-//  ADMIN â€” SETTINGS
-// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ─────────────────────────────────────────
+//  ADMIN — SETTINGS
+// ─────────────────────────────────────────
 app.get('/sw-admin/settings' , requireAdminAuth , async (req, res) => {
   try {
     const setting = (await Setting.findOne()) || (await Setting.create({}))
@@ -2471,7 +2471,7 @@ app.get('/sw-admin/settings' , requireAdminAuth , async (req, res) => {
 
     res.render('admin/Settings', { setting, me, users })
   } catch (err) {
-    res.status(500).send('Ø®Ø·Ø§ Ø¯Ø± Ø¨Ø§Ø±Ú¯Ø°Ø§Ø±ÛŒ ØªÙ†Ø¸ÛŒÙ…Ø§Øª')
+    res.status(500).send('خطا در بارگذاری تنظیمات')
   }
 })
 
@@ -2556,13 +2556,13 @@ app.post('/sw-admin/settings' , requireAdminAuth , async (req, res) => {
     )
     res.redirect('/sw-admin/settings')
   } catch (err) {
-    res.status(500).send('Ø®Ø·Ø§ Ø¯Ø± Ø°Ø®ÛŒØ±Ù‡ ØªÙ†Ø¸ÛŒÙ…Ø§Øª')
+    res.status(500).send('خطا در ذخیره تنظیمات')
   }
 })
 
-// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ─────────────────────────────────────────
 //  PUBLIC CONTACT FORM (from front-end site)
-// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ─────────────────────────────────────────
 app.post('/contact' , async (req, res) => {
   try {
     const { name, email, phone, subject, body, department } = req.body
@@ -2570,7 +2570,7 @@ app.post('/contact' , async (req, res) => {
       requesterName : name,
       requesterEmail: email,
       requesterPhone: phone  || '',
-      subject       : subject || 'Ø¨Ø¯ÙˆÙ† Ù…ÙˆØ¶ÙˆØ¹',
+      subject       : subject || 'بدون موضوع',
       department    : department || 'general',
       priority      : 'medium',
       status        : 'open',
@@ -2583,14 +2583,14 @@ app.post('/contact' , async (req, res) => {
 
     await Activity.create({
       type        : 'ticket_created',
-      title       : `ØªÛŒÚ©Øª Ø¬Ø¯ÛŒØ¯ Ø§Ø² ${name}`,
+      title       : `تیکت جدید از ${name}`,
       icon        : 'bi-ticket-detailed-fill',
       colorVariant: 'warning'
     })
 
-    res.json({ success: true, message: 'ØªÛŒÚ©Øª Ø´Ù…Ø§ Ø¨Ø§ Ù…ÙˆÙÙ‚ÛŒØª Ø«Ø¨Øª Ø´Ø¯' })
+    res.json({ success: true, message: 'تیکت شما با موفقیت ثبت شد' })
   } catch (err) {
-    res.status(500).json({ success: false, message: 'Ø®Ø·Ø§ Ø¯Ø± Ø«Ø¨Øª ØªÛŒÚ©Øª' })
+    res.status(500).json({ success: false, message: 'خطا در ثبت تیکت' })
   }
 })
 
@@ -2604,20 +2604,20 @@ app.post('/sw-admin/projects/add', requireAdminAuth, async (req, res) => {
       deadline,
       techStack,
       description,
-      progress          // â† Ø§Ø¶Ø§ÙÙ‡ Ø´Ø¯
+      progress          // ← اضافه شد
     } = req.body
 
     if (!title || !client || !category) {
-      return res.status(400).send('Ù†Ø§Ù… Ù¾Ø±ÙˆÚ˜Ù‡ØŒ Ù…Ø´ØªØ±ÛŒ Ùˆ Ù†ÙˆØ¹ Ù¾Ø±ÙˆÚ˜Ù‡ Ø§Ù„Ø²Ø§Ù…ÛŒ Ù‡Ø³ØªÙ†Ø¯')
+      return res.status(400).send('نام پروژه، مشتری و نوع پروژه الزامی هستند')
     }
 
     const toEnglishDigits = (str) => {
       if (!str) return str
       const persianDigits = 'Û°Û±Û²Û³Û´ÛµÛ¶Û·Û¸Û¹'
-      const arabicDigits  = 'Ù Ù¡Ù¢Ù£Ù¤Ù¥Ù¦Ù§Ù¨Ù©'
+      const arabicDigits  = '٠١٢٣٤٥٦٧٨٩'
       return String(str)
         .replace(/[Û°-Û¹]/g, d => persianDigits.indexOf(d))
-        .replace(/[Ù -Ù©]/g, d => arabicDigits.indexOf(d))
+        .replace(/[٠-٩]/g, d => arabicDigits.indexOf(d))
     }
 
     const normalizeDate = (value) => {
@@ -2643,7 +2643,7 @@ app.post('/sw-admin/projects/add', requireAdminAuth, async (req, res) => {
       }
 
       return String(value)
-        .split(/[,ØŒÂ·|]/)
+        .split(/[,،·|]/)
         .map(item => item.trim())
         .filter(Boolean)
     }
@@ -2660,10 +2660,10 @@ app.post('/sw-admin/projects/add', requireAdminAuth, async (req, res) => {
     const parsedDeadline  = normalizeDate(deadline)
 
     if (startDate && !parsedStartDate) {
-      return res.status(400).send('ØªØ§Ø±ÛŒØ® Ø´Ø±ÙˆØ¹ Ù†Ø§Ù…Ø¹ØªØ¨Ø± Ø§Ø³Øª')
+      return res.status(400).send('تاریخ شروع نامعتبر است')
     }
     if (deadline && !parsedDeadline) {
-      return res.status(400).send('ØªØ§Ø±ÛŒØ® Ø¯Ø¯Ù„Ø§ÛŒÙ† Ù†Ø§Ù…Ø¹ØªØ¨Ø± Ø§Ø³Øª')
+      return res.status(400).send('تاریخ ددلاین نامعتبر است')
     }
 
     await Project.create({
@@ -2675,21 +2675,21 @@ app.post('/sw-admin/projects/add', requireAdminAuth, async (req, res) => {
       techStack: normalizeTechStack(techStack),
       description: description ? description.trim() : '',
       status: 'active',
-      progress: normalizeProgress(progress),   // â† Ø¯ÛŒÚ¯Ù‡ Ù‡Ø§Ø±Ø¯Ú©Ø¯ Ù†ÛŒØ³Øª
+      progress: normalizeProgress(progress),   // ← دیگه هاردکد نیست
       createdBy: '000000000000000000000001'
     })
 
     res.redirect('/sw-admin/projects')
   } catch (err) {
     console.error('Project create error:', err)
-    res.status(500).send('Ø®Ø·Ø§ Ø¯Ø± Ø«Ø¨Øª Ù¾Ø±ÙˆÚ˜Ù‡')
+    res.status(500).send('خطا در ثبت پروژه')
   }
 })
 
 
 
 
-// Ø®Ø±Ø¬ÛŒ Ø§Ú©Ø³Ù„ Ù¾Ø±ÙˆÚ˜Ù‡ Ù‡Ø§
+// خرجی اکسل پروژه ها
 app.get('/sw-admin/projects/export' , requireAdminAuth , async (req, res) => {
   try {
 
@@ -2703,21 +2703,21 @@ app.get('/sw-admin/projects/export' , requireAdminAuth , async (req, res) => {
     const sheet = workbook.addWorksheet('Projects')
 
     sheet.columns = [
-      { header: 'Ù†Ø§Ù… Ù¾Ø±ÙˆÚ˜Ù‡', key: 'title', width: 30 },
-      { header: 'Ù…Ø´ØªØ±ÛŒ', key: 'client', width: 25 },
-      { header: 'Ù†ÙˆØ¹ Ù¾Ø±ÙˆÚ˜Ù‡', key: 'category', width: 25 },
-      { header: 'ÙˆØ¶Ø¹ÛŒØª', key: 'status', width: 18 },
-      { header: 'Ù¾ÛŒØ´Ø±ÙØª', key: 'progress', width: 12 },
-      { header: 'Ø¯Ø¯Ù„Ø§ÛŒÙ†', key: 'deadline', width: 18 },
-      { header: 'ØªÚ©Ù†ÙˆÙ„ÙˆÚ˜ÛŒ', key: 'tech', width: 35 }
+      { header: 'نام پروژه', key: 'title', width: 30 },
+      { header: 'مشتری', key: 'client', width: 25 },
+      { header: 'نوع پروژه', key: 'category', width: 25 },
+      { header: 'وضعیت', key: 'status', width: 18 },
+      { header: 'پیشرفت', key: 'progress', width: 12 },
+      { header: 'ددلاین', key: 'deadline', width: 18 },
+      { header: 'تکنولوژی', key: 'tech', width: 35 }
     ]
 
     const statusMap = {
-      active: 'Ø¯Ø± Ø­Ø§Ù„ Ø§Ù†Ø¬Ø§Ù…',
-      review: 'Ø¯Ø± Ø±ÛŒÙˆÛŒÙˆ',
-      done: 'ØªØ­ÙˆÛŒÙ„ Ø´Ø¯Ù‡',
-      hold: 'Ù…ØªÙˆÙ‚Ù',
-      cancelled: 'Ù„ØºÙˆ Ø´Ø¯Ù‡'
+      active: 'در حال انجام',
+      review: 'در ریویو',
+      done: 'تحویل شده',
+      hold: 'متوقف',
+      cancelled: 'لغو شده'
     }
 
     projects.forEach(p => {
@@ -2725,15 +2725,15 @@ app.get('/sw-admin/projects/export' , requireAdminAuth , async (req, res) => {
       const clientName =
         p.client?.company ||
         p.client?.name ||
-        'Ø¨Ø¯ÙˆÙ† Ù…Ø´ØªØ±ÛŒ'
+        'بدون مشتری'
 
       const categoryTitle =
         p.category?.title ||
-        'Ø¨Ø¯ÙˆÙ† Ù†ÙˆØ¹'
+        'بدون نوع'
 
       const tech =
         Array.isArray(p.techStack)
-          ? p.techStack.join(' Â· ')
+          ? p.techStack.join(' · ')
           : ''
 
       sheet.addRow({
@@ -2768,7 +2768,7 @@ app.get('/sw-admin/projects/export' , requireAdminAuth , async (req, res) => {
 
   } catch (err) {
     console.error(err)
-    res.status(500).send('Ø®Ø·Ø§ Ø¯Ø± Ø®Ø±ÙˆØ¬ÛŒ Excel')
+    res.status(500).send('خطا در خروجی Excel')
   }
 })
 
@@ -2881,7 +2881,7 @@ app.post('/sw-admin/login', async (req, res) => {
   try {
     if (typeof email !== 'string' || typeof password !== 'string' || !email || !password) {
       return res.status(400).render('admin/Login', {
-        error: 'Ø§ÛŒÙ…ÛŒÙ„ Ùˆ Ø±Ù…Ø² Ø¹Ø¨ÙˆØ± Ø§Ù„Ø²Ø§Ù…ÛŒ Ù‡Ø³ØªÙ†Ø¯',
+        error: 'ایمیل و رمز عبور الزامی هستند',
         email: typeof email === 'string' ? email : ''
       });
     }
@@ -2892,14 +2892,14 @@ app.post('/sw-admin/login', async (req, res) => {
 
     if (!user) {
       return res.status(401).render('admin/Login', {
-        error: 'Ø§ÛŒÙ…ÛŒÙ„ ÛŒØ§ Ø±Ù…Ø² Ø¹Ø¨ÙˆØ± Ø§Ø´ØªØ¨Ø§Ù‡ Ø§Ø³Øª',
+        error: 'ایمیل یا رمز عبور اشتباه است',
         email
       });
     }
 
     if (!user.isActive) {
       return res.status(403).render('admin/Login', {
-        error: 'Ø­Ø³Ø§Ø¨ Ú©Ø§Ø±Ø¨Ø±ÛŒ Ø´Ù…Ø§ ØºÛŒØ±ÙØ¹Ø§Ù„ Ø´Ø¯Ù‡ Ø§Ø³Øª',
+        error: 'حساب کاربری شما غیرفعال شده است',
         email
       });
     }
@@ -2908,7 +2908,7 @@ app.post('/sw-admin/login', async (req, res) => {
 
     if (!isMatch) {
       return res.status(401).render('admin/Login', {
-        error: 'Ø§ÛŒÙ…ÛŒÙ„ ÛŒØ§ Ø±Ù…Ø² Ø¹Ø¨ÙˆØ± Ø§Ø´ØªØ¨Ø§Ù‡ Ø§Ø³Øª',
+        error: 'ایمیل یا رمز عبور اشتباه است',
         email
       });
     }
@@ -2920,14 +2920,14 @@ app.post('/sw-admin/login', async (req, res) => {
       role: user.role
     };
 
-    // Â«Ù…Ø±Ø§ Ø¨Ù‡ Ø®Ø§Ø·Ø± Ø¨Ø³Ù¾Ø§Ø±Â»: Û³Û° Ø±ÙˆØ²ØŒ ÙˆÚ¯Ø±Ù†Ù‡ Ù‡Ù…Ø§Ù† Û± Ø±ÙˆØ² Ù¾ÛŒØ´â€ŒÙØ±Ø¶
+    // «مرا به خاطر بسپار»: Û³Û° روز، وگرنه همان Û± روز پیش‌فرض
     if (remember) req.session.cookie.maxAge = 1000 * 60 * 60 * 24 * 30;
 
     res.redirect('/sw-admin');
   } catch (err) {
     console.error(err);
     res.status(500).render('admin/Login', {
-      error: 'Ø®Ø·Ø§ Ø¯Ø± ÙˆØ±ÙˆØ¯ Ø¨Ù‡ Ù¾Ù†Ù„',
+      error: 'خطا در ورود به پنل',
       email: typeof email === 'string' ? email : ''
     });
   }
@@ -2946,7 +2946,7 @@ app.post('/sw-admin/categories/add', requireAdminAuth, async (req, res) => {
     const { title } = req.body
 
     if (!title) {
-      return res.status(400).json({ error: 'Ø¹Ù†ÙˆØ§Ù† Ø§Ù„Ø²Ø§Ù…ÛŒ Ø§Ø³Øª' })
+      return res.status(400).json({ error: 'عنوان الزامی است' })
     }
 
     const slug = title
@@ -2970,7 +2970,7 @@ app.post('/sw-admin/categories/add', requireAdminAuth, async (req, res) => {
     console.error(err)
 
     res.status(500).json({
-      error: 'Ø®Ø·Ø§ Ø¯Ø± Ø³Ø§Ø®Øª Ø¯Ø³ØªÙ‡â€ŒØ¨Ù†Ø¯ÛŒ'
+      error: 'خطا در ساخت دسته‌بندی'
     })
 
   }
@@ -2987,10 +2987,10 @@ app.post('/sw-admin/categories/add', requireAdminAuth, async (req, res) => {
 
 app.post('/sw-admin/service-categories/add', requireAdminAuth, async (req, res) => {
   try {
-    const { title, type } = req.body   // â† type Ù‡Ù… Ø§Ø¶Ø§ÙÙ‡ Ø´Ø¯
+    const { title, type } = req.body   // ← type هم اضافه شد
 
     if (!title || !title.trim()) {
-      return res.status(400).json({ ok: false, message: 'Ø¹Ù†ÙˆØ§Ù† Ø¯Ø³ØªÙ‡â€ŒØ¨Ù†Ø¯ÛŒ Ø§Ù„Ø²Ø§Ù…ÛŒ Ø§Ø³Øª' })
+      return res.status(400).json({ ok: false, message: 'عنوان دسته‌بندی الزامی است' })
     }
 
     const categoryType = ['service', 'project', 'portfolio', 'blog'].includes(type) ? type : 'service'
@@ -3009,7 +3009,7 @@ app.post('/sw-admin/service-categories/add', requireAdminAuth, async (req, res) 
     })
   } catch (err) {
     console.error('Category create error:', err)
-    res.status(500).json({ ok: false, message: 'Ø®Ø·Ø§ Ø¯Ø± Ø«Ø¨Øª Ù†ÙˆØ¹ Ù¾Ø±ÙˆÚ˜Ù‡' })
+    res.status(500).json({ ok: false, message: 'خطا در ثبت نوع پروژه' })
   }
 })
 
@@ -3024,28 +3024,28 @@ app.get('/sw-admin/blog-form', requireAdminAuth, async (req, res) => {
     const categoriesRaw = await BlogPost.distinct('category');
     const categories = categoriesRaw
       .filter(Boolean)
-      .map(c => ({ slug: c, title: c })); // Ú†ÙˆÙ† ØªÙˆ schema category ÙÙ‚Ø· ÛŒÙ‡ Ø±Ø´ØªÙ‡â€ŒØ³Øª
+      .map(c => ({ slug: c, title: c })); // چون تو schema category فقط یه رشته‌ست
 
     const mediaItems = await Media.find().sort({ createdAt: -1 }).lean()
     res.render('admin/blog-form', {
       isEdit: false,
-      item: {},   // Ø¢Ø¨Ø¬Ú©Øª Ø®Ø§Ù„ÛŒ ØªØ§ item.title Ùˆ Ø¨Ù‚ÛŒÙ‡ Ø®Ø·Ø§ Ù†Ø¯Ù†
+      item: {},   // آبجکت خالی تا item.title و بقیه خطا ندن
       authors,
       categories, mediaItems
     });
   } catch (err) {
     console.error(err);
-    res.status(500).send('Ø®Ø·Ø§ Ø¯Ø± Ø¨Ø§Ø±Ú¯Ø°Ø§Ø±ÛŒ ÙØ±Ù… Ù…Ù‚Ø§Ù„Ù‡');
+    res.status(500).send('خطا در بارگذاری فرم مقاله');
   }
 });
 
-// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-// GET  ÙØ±Ù… ÙˆÛŒØ±Ø§ÛŒØ´ Ù…Ù‚Ø§Ù„Ù‡
-// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ─────────────────────────────────────
+// GET  فرم ویرایش مقاله
+// ─────────────────────────────────────
 app.get('/sw-admin/blog-form/:id', requireAdminAuth, async (req, res) => {
   try {
     const post = await BlogPost.findById(req.params.id).lean();
-    if (!post) return res.status(404).send('Ù…Ù‚Ø§Ù„Ù‡ ÛŒØ§ÙØª Ù†Ø´Ø¯');
+    if (!post) return res.status(404).send('مقاله یافت نشد');
 
     const authors = await User.find().select('name').lean()   // به‌جای BlogPost.distinct('author')
     const categoriesRaw = await BlogPost.distinct('category');
@@ -3063,18 +3063,18 @@ app.get('/sw-admin/blog-form/:id', requireAdminAuth, async (req, res) => {
     });
   } catch (err) {
     console.error(err);
-    res.status(500).send('Ø®Ø·Ø§ Ø¯Ø± Ø¨Ø§Ø±Ú¯Ø°Ø§Ø±ÛŒ ÙØ±Ù… ÙˆÛŒØ±Ø§ÛŒØ´ Ù…Ù‚Ø§Ù„Ù‡');
+    res.status(500).send('خطا در بارگذاری فرم ویرایش مقاله');
   }
 });
 
-// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-// POST  Ø§ÛŒØ¬Ø§Ø¯ Ù…Ù‚Ø§Ù„Ù‡ Ø¬Ø¯ÛŒØ¯
-// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ─────────────────────────────────────
+// POST  ایجاد مقاله جدید
+// ─────────────────────────────────────
 app.post('/sw-admin/blog', requireAdminAuth, blogUpload.single('coverImage'), async (req, res) => {
   try {
     const { title, slug, excerpt, content, category, author, readTime, publish } = req.body;
 
-    // Ú†Ú©â€ŒØ¨Ø§Ú©Ø³â€ŒÙ‡Ø§ÛŒ ØªÚ¯: Ø§Ú¯Ù‡ ÙÙ‚Ø· ÛŒÚ©ÛŒ Ø§Ù†ØªØ®Ø§Ø¨ Ø¨Ø´Ù‡ string Ù…ÛŒØ§Ø¯ Ù†Ù‡ Ø¢Ø±Ø§ÛŒÙ‡
+    // چک‌باکس‌های تگ: اگه فقط ÛŒÚ©ÛŒ انتخاب بشه string میاد نه آرایه
     let tags = req.body['tags[]'] || req.body.tags || [];
     if (!Array.isArray(tags)) tags = [tags];
 
@@ -3082,7 +3082,7 @@ app.post('/sw-admin/blog', requireAdminAuth, blogUpload.single('coverImage'), as
       title,
       slug,
       excerpt,
-      body: content,              // ØªÙˆØ¬Ù‡: content ØªÙˆ ÙØ±Ù… â†’ body ØªÙˆ schema
+      body: content,              // توجه: content تو فرم → body تو schema
       category,
       author,
       tags,
@@ -3096,7 +3096,7 @@ app.post('/sw-admin/blog', requireAdminAuth, blogUpload.single('coverImage'), as
     res.redirect('/sw-admin/blog');
   } catch (err) {
     console.error(err);
-    res.status(500).send('Ø®Ø·Ø§ Ø¯Ø± Ø°Ø®ÛŒØ±Ù‡ Ù…Ù‚Ø§Ù„Ù‡');
+    res.status(500).send('خطا در ذخیره مقاله');
   }
 });
 
@@ -3107,7 +3107,7 @@ app.post('/clients/:id', requireAdminAuth, async (req, res) => {
     const { name, company, email, phone, address, notes } = req.body;
 
     if (!name || !name.trim()) {
-      return res.redirect('/sw-admin/clients?error=Ù†Ø§Ù… Ù…Ø´ØªØ±ÛŒ Ø§Ù„Ø²Ø§Ù…ÛŒ Ø§Ø³Øª');
+      return res.redirect('/sw-admin/clients?error=نام مشتری الزامی است');
     }
 
     const updateData = {
@@ -3119,7 +3119,7 @@ app.post('/clients/:id', requireAdminAuth, async (req, res) => {
       notes: notes ? notes.trim() : ''
     };
 
-    // Ø§Ú¯Ù‡ Ø§ÛŒÙ…ÛŒÙ„ Ø®Ø§Ù„ÛŒ ÙØ±Ø³ØªØ§Ø¯Ù‡ Ø¨Ø´Ù‡ØŒ Ø­Ø°ÙØ´ Ú©Ù† Ú©Ù‡ unique index Ø±Ùˆ Ø®Ø±Ø§Ø¨ Ù†Ú©Ù†Ù‡
+    // اگه ایمیل خالی فرستاده بشه، حذفش کن که unique index رو خراب نکنه
     if (!updateData.email) {
       delete updateData.email;
       await Client.findByIdAndUpdate(req.params.id, { $unset: { email: 1 } });
@@ -3132,24 +3132,24 @@ app.post('/clients/:id', requireAdminAuth, async (req, res) => {
     );
 
     if (!client) {
-      return res.redirect('/sw-admin/clients?error=Ù…Ø´ØªØ±ÛŒ Ù¾ÛŒØ¯Ø§ Ù†Ø´Ø¯');
+      return res.redirect('/sw-admin/clients?error=مشتری پیدا نشد');
     }
 
-    res.redirect('/sw-admin/clients?success=Ø§Ø·Ù„Ø§Ø¹Ø§Øª Ù…Ø´ØªØ±ÛŒ Ø¨Ø§ Ù…ÙˆÙÙ‚ÛŒØª Ø¨Ù‡â€ŒØ±ÙˆØ²Ø±Ø³Ø§Ù†ÛŒ Ø´Ø¯');
+    res.redirect('/sw-admin/clients?success=اطلاعات مشتری با موفقیت به‌روزرسانی شد');
   } catch (err) {
     console.error('Edit client error:', err);
 
     if (err.code === 11000) {
-      return res.redirect('/sw-admin/clients?error=Ø§ÛŒÙ† Ø§ÛŒÙ…ÛŒÙ„ Ù‚Ø¨Ù„Ø§Ù‹ Ø¨Ø±Ø§ÛŒ Ù…Ø´ØªØ±ÛŒ Ø¯ÛŒÚ¯Ø±ÛŒ Ø«Ø¨Øª Ø´Ø¯Ù‡');
+      return res.redirect('/sw-admin/clients?error=این ایمیل قبلاً برای مشتری دیگری ثبت شده');
     }
 
-    res.redirect('/sw-admin/clients?error=Ø®Ø·Ø§ Ø¯Ø± Ø¨Ù‡â€ŒØ±ÙˆØ²Ø±Ø³Ø§Ù†ÛŒ Ø§Ø·Ù„Ø§Ø¹Ø§Øª Ù…Ø´ØªØ±ÛŒ');
+    res.redirect('/sw-admin/clients?error=خطا در به‌روزرسانی اطلاعات مشتری');
   }
 });
 
-// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-// POST  ÙˆÛŒØ±Ø§ÛŒØ´ Ù…Ù‚Ø§Ù„Ù‡
-// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ─────────────────────────────────────
+// POST  ویرایش مقاله
+// ─────────────────────────────────────
 app.post('/sw-admin/blog/:id/update', requireAdminAuth, blogUpload.single('coverImage'), async (req, res) => {
   try {
     const { title, slug, excerpt, content, category, author, readTime, publish } = req.body;
@@ -3158,7 +3158,7 @@ app.post('/sw-admin/blog/:id/update', requireAdminAuth, blogUpload.single('cover
     if (!Array.isArray(tags)) tags = [tags];
 
     const post = await BlogPost.findById(req.params.id);
-    if (!post) return res.status(404).send('Ù…Ù‚Ø§Ù„Ù‡ ÛŒØ§ÙØª Ù†Ø´Ø¯');
+    if (!post) return res.status(404).send('مقاله یافت نشد');
 
     post.title = title;
     post.slug = slug;
@@ -3178,16 +3178,16 @@ app.post('/sw-admin/blog/:id/update', requireAdminAuth, blogUpload.single('cover
     }
     post.coverImageAlt = req.body.coverImageAlt || '';
 
-    await post.save(); // pre('save') hook Ø¨Ø±Ø§ÛŒ publishedAt Ù‡Ù…ÛŒÙ†Ø¬Ø§ ÙØ¹Ø§Ù„ Ù…ÛŒâ€ŒÙ…ÙˆÙ†Ù‡
+    await post.save(); // pre('save') hook برای publishedAt همینجا فعال می‌مونه
     res.redirect('/sw-admin/blog');
   } catch (err) {
     console.error(err);
-    res.status(500).send('Ø®Ø·Ø§ Ø¯Ø± Ø¨Ù‡â€ŒØ±ÙˆØ²Ø±Ø³Ø§Ù†ÛŒ Ù…Ù‚Ø§Ù„Ù‡');
+    res.status(500).send('خطا در به‌روزرسانی مقاله');
   }
 });
 
 
-//Ù„ÙˆØ¯ Ú©Ø±Ø¯Ù† ØµÙØ­Ø§Øª Ø§Ø³ØªØ§ØªÛŒÚ© Ø³Ø§ÛŒØª
+//لود کردن صفحات استاتیک سایت
 
 
 app.get('/services', async (req, res) => {
@@ -3209,9 +3209,9 @@ app.get('/about', async (req, res) => {
 app.get('/contact', async (req, res) => {
     res.render('contact', { siteSetting: await Setting.findOne().lean() });
 });
-// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ─────────────────────────────────────────
 //  404
-// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ─────────────────────────────────────────
 app.use((req, res) => {
   res.status(404).render('404')
 })

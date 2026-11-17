@@ -79,7 +79,7 @@
 
             <a class="port-thumb" href="/sw-admin/portfolio/form?id=<%= item._id %>" aria-label="ویرایش «<%= item.title %>»">
               <% if (item.coverImage) { %>
-                <img src="<%= item.coverImage %>" alt="<%= item.title %>" class="port-thumb-img" loading="lazy" decoding="async">
+                <img src="<%= item.coverImage %>" alt="<%= item.coverImageAlt || item.title %>" class="port-thumb-img" loading="lazy" decoding="async">
               <% } else { %>
                 <span class="port-thumb-fallback g-<%= index % 6 + 1 %>"><i class="bi <%= ICONS[index % ICONS.length] %>"></i></span>
               <% } %>

@@ -4,6 +4,7 @@ const portfolioSchema = new mongoose.Schema({
   title:       { type: String, required: true, trim: true },
   description: { type: String },
   coverImage:  { type: String, required: true },  // URL
+  coverImageAlt: { type: String, trim: true, maxlength: 200 },
   images:      [{ type: String }],                // additional gallery URLs
   category: {
     type: String,

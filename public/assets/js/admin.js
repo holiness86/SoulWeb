@@ -111,13 +111,14 @@
     var th = e.target.closest('#themeToggle'); if (th) { switchTheme(th); return; }
     if (e.target.closest('#sidebarToggle')) {
       if (mobile()) body.classList.toggle('sidebar-open');
-      else { body.classList.toggle('sidebar-collapsed'); store('sw-sidebar', body.classList.contains('sidebar-collapsed') ? 'collapsed' : 'open'); }
+      else { body.classList.toggle('sidebar-collapsed'); var collapsed=body.classList.contains('sidebar-collapsed'); store('sw-sidebar', collapsed ? 'collapsed' : 'open'); d.dispatchEvent(new CustomEvent('sw-sidebar-pref-change',{detail:collapsed})); }
       syncNav();
     } else if (e.target.closest('#sidebarOverlay') || (mobile() && e.target.closest('.nav-item-sol'))) closeDrawer();
     if (e.target.closest('#fullscreenBtn')) { if (!d.fullscreenElement) root.requestFullscreen && root.requestFullscreen(); else d.exitFullscreen && d.exitFullscreen(); }
   });
   d.addEventListener('keydown', function (e) { if (e.key === 'Escape' && body.classList.contains('sidebar-open')) closeDrawer(); });
   addEventListener('resize', function () { if (!mobile()) body.classList.remove('sidebar-open'); syncNav(); });
+  d.addEventListener('sw-sidebar-pref-change', function(e){ if(!mobile())body.classList.toggle('sidebar-collapsed',!!e.detail); syncNav(); });
 
   /* ═══════════ Modal: [data-modal-open="id"] / [data-modal-close] / openModal(id) / closeModal(id) ═══════════ */
   var MODAL_CLS = ['active', 'show', 'open'];

@@ -2,6 +2,7 @@ const express    = require('express')
 const mongoose   = require('mongoose')
 const bcrypt     = require('bcryptjs')
 const path       = require('path')
+const fs         = require('fs')
 const multer     = require('multer')
 const ExcelJS    = require('exceljs')
 const puppeteer  = require('puppeteer-core')
@@ -107,6 +108,7 @@ const Package   = require('./models/package.model')
 const BlogPost  = require('./models/blogPost.model')
 const Setting   = require('./models/setting.model')
 const Category  = require('./models/category')
+const Media     = require('./models/media.model')
 
 
 // ─────────────────────────────────────────
@@ -218,21 +220,75 @@ const storage = multer.diskStorage({
   }
 })
 
-const upload = multer({ storage })
+const mediaStorage = multer.diskStorage({
+  destination: function (req, file, cb) {
+    const dir = path.join(__dirname, 'public/uploads/media')
+    fs.mkdir(dir, { recursive: true }, err => cb(err, dir))
+  },
+  filename: function (req, file, cb) {
+    const ext = path.extname(file.originalname).toLowerCase()
+    cb(null, `${Date.now()}-${require('crypto').randomBytes(5).toString('hex')}${ext}`)
+  }
+})
+const imageOnly = (req, file, cb) => cb(null, /^image\/(jpeg|png|webp|gif)$/.test(file.mimetype))
+const upload = multer({ storage, limits: { fileSize: 10 * 1024 * 1024 }, fileFilter: imageOnly })
+const mediaUpload = multer({ storage: mediaStorage, limits: { fileSize: 10 * 1024 * 1024 }, fileFilter: imageOnly })
+
+app.get('/sw-admin/media', requireAdminAuth, async (req, res) => {
+  const items = await Media.find().sort({ createdAt: -1 }).lean()
+  res.render('admin/Media', { items })
+})
+
+app.get('/sw-admin/api/media', requireAdminAuth, async (req, res) => {
+  try { res.json(await Media.find().sort({ createdAt: -1 }).lean()) }
+  catch (err) { res.status(500).json({ message: 'خطا در دریافت رسانه‌ها' }) }
+})
+
+app.post('/sw-admin/api/media', requireAdminAuth, mediaUpload.single('file'), async (req, res) => {
+  try {
+    if (!req.file) return res.status(400).json({ message: 'یک تصویر معتبر انتخاب کنید' })
+    const item = await Media.create({ url: `/uploads/media/${req.file.filename}`, filename: req.file.filename,
+      originalName: req.file.originalname, mimeType: req.file.mimetype, size: req.file.size,
+      alt: String(req.body.alt || '').slice(0, 200), description: String(req.body.description || '').slice(0, 500) })
+    res.status(201).json(item)
+  } catch (err) { console.error(err); res.status(500).json({ message: 'بارگذاری رسانه انجام نشد' }) }
+})
+
+app.patch('/sw-admin/api/media/:id', requireAdminAuth, async (req, res) => {
+  try {
+    const item = await Media.findByIdAndUpdate(req.params.id,
+      { alt: String(req.body.alt || '').slice(0, 200), description: String(req.body.description || '').slice(0, 500) },
+      { new: true, runValidators: true })
+    if (!item) return res.status(404).json({ message: 'رسانه پیدا نشد' })
+    res.json(item)
+  } catch (err) { res.status(400).json({ message: 'ذخیرهٔ اطلاعات رسانه انجام نشد' }) }
+})
 
 // ─────────────────────────────────────────
 //  PUBLIC ROUTES
 // ─────────────────────────────────────────
+app.get('/robots.txt', (req, res) => {
+  res.type('text/plain').send(`User-agent: *\nAllow: /\nDisallow: /sw-admin/\nSitemap: ${req.protocol}://${req.get('host')}/sitemap.xml`)
+})
+
+app.get('/sitemap.xml', async (req, res) => {
+  const base = (await Setting.findOne().select('siteUrl').lean())?.siteUrl?.replace(/\/$/, '') || `${req.protocol}://${req.get('host')}`
+  const urls = ['', '/services', '/about', '/contact'].map(route => `<url><loc>${base}${route || '/'}</loc></url>`).join('')
+  res.type('application/xml').send(`<?xml version="1.0" encoding="UTF-8"?><urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">${urls}</urlset>`)
+})
+
 app.get('/', async (req, res) => {
   try {
-    const [portfolio, packages] = await Promise.all([
+    const [portfolio, packages, siteSetting] = await Promise.all([
       Portfolio.find().sort({ order: 1 }),
-      Package.find({ isActive: true }).sort({ order: 1, createdAt: -1 })
+      Package.find({ isActive: true }).sort({ order: 1, createdAt: -1 }),
+      Setting.findOne().lean()
     ]);
 
     res.render('index', {
       portfolio,
-      packages
+      packages,
+      siteSetting
     });
 
   } catch (err) {
@@ -1704,7 +1760,7 @@ await Invoice.create({
 app.get('/sw-admin/portfolio' , requireAdminAuth , async (req, res) => {
   try {
 
-    const [items, clients, categories] = await Promise.all([
+    const [items, clients, categories, mediaItems] = await Promise.all([
 
       // پورتفولیوها
       Portfolio.find()
@@ -1725,13 +1781,15 @@ app.get('/sw-admin/portfolio' , requireAdminAuth , async (req, res) => {
         isActive: true
       })
         .sort({ order: 1 })
-        .lean()
+        .lean(),
+      Media.find().sort({ createdAt: -1 }).lean()
     ])
 
     res.render('admin/Portfolio', {
       items,
       clients,
       categories,
+      mediaItems,
       flash: req.flash ? req.flash() : {}
     })
 
@@ -1753,7 +1811,7 @@ app.get('/sw-admin/portfolio/form' , requireAdminAuth , async (req, res) => {
       return res.status(400).send('شناسه نمونه کار معتبر نیست')
     }
 
-    const [clients, categories, foundItem] = await Promise.all([
+    const [clients, categories, foundItem, mediaItems] = await Promise.all([
 
       // لیست مشتری‌ها برای select
       Client.find({ isActive: true })
@@ -1775,7 +1833,8 @@ app.get('/sw-admin/portfolio/form' , requireAdminAuth , async (req, res) => {
             .populate('project', 'title')
             .populate('category', 'title slug')
             .lean()
-        : Promise.resolve(null)
+        : Promise.resolve(null),
+      Media.find().sort({ createdAt: -1 }).lean()
     ])
 
     // اگر id ارسال شده بود ولی آیتمی پیدا نشد → خطای ۴۰۴
@@ -1805,6 +1864,7 @@ app.get('/sw-admin/portfolio/form' , requireAdminAuth , async (req, res) => {
       isEdit   : !!foundItem,
       clients,
       categories,
+      mediaItems,
       flash    : req.flash ? req.flash() : {}
     })
 
@@ -1824,7 +1884,7 @@ app.post('/sw-admin/portfolio' , requireAdminAuth , upload.single('coverImage'),
       seoKeywords, metaDescription
     } = req.body
 
-    const coverImage = req.file ? `/uploads/portfolio/${req.file.filename}` : ''
+    const coverImage = req.file ? `/uploads/portfolio/${req.file.filename}` : (req.body.coverImage || '')
 
     // techStack از چک‌باکس‌های name="techStack[]" به صورت آرایه ارسال می‌شود
     // برای سازگاری، حالت رشته جدا‌شده با کاما نیز پشتیبانی می‌شود
@@ -1836,6 +1896,7 @@ app.post('/sw-admin/portfolio' , requireAdminAuth , upload.single('coverImage'),
       title          : (title || '').trim(),
       description    : description || '',
       coverImage     : coverImage,
+      coverImageAlt  : req.body.coverImageAlt || '',
       category       : category || 'web',
       techStack      : techStackArr,
       liveUrl        : liveUrl || '',
@@ -1901,7 +1962,7 @@ app.post('/sw-admin/portfolio/:id/update' , requireAdminAuth , upload.single('co
 
     const coverImage = req.file
       ? '/uploads/portfolio/' + req.file.filename
-      : portfolio.coverImage   // اگر عکس جدید نبود قبلی بماند
+      : (req.body.coverImage || portfolio.coverImage)
 
     // techStack از چک‌باکس‌های name="techStack[]" به صورت آرایه ارسال می‌شود
     // برای سازگاری، حالت رشته جدا‌شده با کاما نیز پشتیبانی می‌شود
@@ -1912,6 +1973,7 @@ app.post('/sw-admin/portfolio/:id/update' , requireAdminAuth , upload.single('co
     portfolio.title = (title || '').trim()
     portfolio.description = description || ''
     portfolio.coverImage = coverImage
+    portfolio.coverImageAlt = req.body.coverImageAlt || ''
     portfolio.category = category || 'web'
     portfolio.techStack = techStackArr
     portfolio.liveUrl = liveUrl || ''
@@ -2158,15 +2220,16 @@ app.post('/sw-admin/reviews/save', requireAdminAuth, async (req, res) => {
     }
 
     const data = {
-      name: name.trim(),
-      company: company ? company.trim() : '',
+      authorName: name.trim(),
+      authorRole: company ? company.trim() : '',
       rating: Math.min(5, Math.max(1, parseInt(rating, 10) || 5)),
       text: text.trim(),
       isPublished: isPublished === 'on'
     }
 
     if (id) {
-      await Review.findByIdAndUpdate(id, data)
+      const updated = await Review.findByIdAndUpdate(id, data, { new: true, runValidators: true })
+      if (!updated) return res.status(404).send('نظر پیدا نشد')
     } else {
       // نظری که مدیر خودش اضافه می‌کند همان لحظه تأییدشده است
       await Review.create({ ...data, isApproved: true })
@@ -2554,14 +2617,15 @@ app.post('/sw-admin/settings' , requireAdminAuth , async (req, res) => {
             'social.linkedin' : linkedin,
             'social.github'   : github,
             'seo.metaTitle'   : metaTitle,
-            'seo.metaDescription': metaDescription } = req.body
+            'seo.metaDescription': metaDescription,
+            'seo.keywords': keywords } = req.body
 
     await Setting.findOneAndUpdate(
       {},
       {
         siteName, siteUrl, email, phone, address,
         socialLinks: { instagram, telegram, linkedin, github },
-        seo        : { metaTitle, metaDescription }
+        seo        : { metaTitle, metaDescription, keywords: String(keywords || '').split(/[,،]/).map(v => v.trim()).filter(Boolean) }
       },
       { upsert: true, new: true }
     )
@@ -3023,11 +3087,12 @@ app.get('/sw-admin/blog-form', requireAdminAuth, async (req, res) => {
       .filter(Boolean)
       .map(c => ({ slug: c, title: c })); // چون تو schema category فقط یه رشته‌ست
 
+    const mediaItems = await Media.find().sort({ createdAt: -1 }).lean()
     res.render('admin/blog-form', {
       isEdit: false,
       item: {},   // آبجکت خالی تا item.title و بقیه خطا ندن
       authors,
-      categories
+      categories, mediaItems
     });
   } catch (err) {
     console.error(err);
@@ -3050,11 +3115,12 @@ app.get('/sw-admin/blog-form/:id', requireAdminAuth, async (req, res) => {
       .filter(Boolean)
       .map(c => ({ slug: c, title: c }));
 
+    const mediaItems = await Media.find().sort({ createdAt: -1 }).lean()
     res.render('admin/blog-form', {
       isEdit: true,
       item: post,
       authors,
-      categories
+      categories, mediaItems
     });
   } catch (err) {
     console.error(err);
@@ -3083,7 +3149,8 @@ app.post('/sw-admin/blog', requireAdminAuth, upload.single('coverImage'), async 
       tags,
       readingTime: readTime ? parseInt(readTime, 10) : undefined,
       status: publish === '1' ? 'published' : 'draft',
-      coverImage: req.file ? '/uploads/' + req.file.filename : undefined
+      coverImage: req.file ? '/uploads/portfolio/' + req.file.filename : (req.body.coverImage || undefined),
+      coverImageAlt: req.body.coverImageAlt || ''
     });
 
     await newPost.save();
@@ -3163,9 +3230,12 @@ app.post('/sw-admin/blog/:id/update', requireAdminAuth, upload.single('coverImag
     post.tags = tags;
     post.readingTime = readTime ? parseInt(readTime, 10) : undefined;
     post.status = publish === '1' ? 'published' : 'draft';
+    post.coverImageAlt = req.body.coverImageAlt || '';
 
     if (req.file) {
-      post.coverImage = '/uploads/' + req.file.filename;
+      post.coverImage = '/uploads/portfolio/' + req.file.filename;
+    } else if (req.body.coverImage) {
+      post.coverImage = req.body.coverImage;
     }
 
     await post.save(); // pre('save') hook برای publishedAt همینجا فعال می‌مونه
@@ -3180,8 +3250,8 @@ app.post('/sw-admin/blog/:id/update', requireAdminAuth, upload.single('coverImag
 //لود کردن صفحات استاتیک سایت
 
 
-app.get('/services', (req, res) => {
-    res.render('services'); 
+app.get('/services', async (req, res) => {
+    res.render('services', { siteSetting: await Setting.findOne().lean() });
 });
 
 app.get('/portfolio', (req, res) => {
@@ -3192,12 +3262,12 @@ app.get('/packages', (req, res) => {
     res.render('packages');
 });
 
-app.get('/about', (req, res) => {
-    res.render('about');
+app.get('/about', async (req, res) => {
+    res.render('about', { siteSetting: await Setting.findOne().lean() });
 });
 
-app.get('/contact', (req, res) => {
-    res.render('contact');
+app.get('/contact', async (req, res) => {
+    res.render('contact', { siteSetting: await Setting.findOne().lean() });
 });
 // ─────────────────────────────────────────
 //  404

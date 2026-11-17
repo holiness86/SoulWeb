@@ -83,7 +83,7 @@
                   <td>
                     <div class="blog-cell">
                       <a class="blog-thumb" href="/sw-admin/blog-form/<%= p._id %>" tabindex="-1" aria-hidden="true">
-                        <% if (p.coverImage) { %><img src="<%= p.coverImage %>" alt="" loading="lazy" decoding="async"><% } else { %><i class="bi bi-journal-richtext"></i><% } %>
+                        <% if (p.coverImage) { %><img src="<%= p.coverImage %>" alt="<%= p.coverImageAlt || p.title || '' %>" loading="lazy" decoding="async"><% } else { %><i class="bi bi-journal-richtext"></i><% } %>
                       </a>
                       <div class="blog-cell-text">
                         <a class="cell-title blog-title-link" href="/sw-admin/blog-form/<%= p._id %>"><%= p.title || 'بدون عنوان' %></a>

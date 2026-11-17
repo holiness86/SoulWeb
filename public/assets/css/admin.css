@@ -549,6 +549,54 @@ body.sw-ios{
 :root.sw-theme-vt::view-transition-old(root),:root.sw-theme-vt::view-transition-new(root){animation:none;mix-blend-mode:normal}
 :root.sw-theme-vt::view-transition-old(root){z-index:1}:root.sw-theme-vt::view-transition-new(root){z-index:2}
 :root.sw-theme-vt :is(.sidebar,.admin-header){view-transition-name:none}
+
+/* یکپارچگی کنترل‌ها و فوکوس قابل مشاهده */
+body.sw-ios :is(.sol-input,.sol-select,textarea,input[type="text"],input[type="email"],input[type="tel"],input[type="password"],input[type="search"]){max-width:100%;min-width:0}
+body.sw-ios :is(.sol-input,.sol-select,textarea){transition:border-color .16s var(--sw-ease),box-shadow .16s var(--sw-ease),background-color .16s var(--sw-ease)}
+body.sw-ios :is(.sol-input,.sol-select,textarea):focus-visible{outline:0;border-color:var(--main-400);box-shadow:var(--ring)}
+body.sw-ios :is(button,.btn-sol-sm,.btn-ghost-sm,.btn-danger-sm,.btn-icon,a.nav-item-sol):focus-visible{outline:2px solid var(--main-400);outline-offset:2px}
+body.sw-ios :is(input,select,textarea,button):disabled{opacity:.55;cursor:not-allowed}
+body.sw-ios .sw-field [aria-invalid="true"],body.sw-ios .sw-field .is-invalid{border-color:var(--danger)!important;box-shadow:0 0 0 3px var(--danger-bg)!important}
+body.sw-ios .sol-select{appearance:none;padding-inline-end:2.5rem;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' fill='%236d6e94' viewBox='0 0 16 16'%3E%3Cpath d='m2 5 6 6 6-6' fill='none' stroke='%236d6e94' stroke-width='1.7' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:left .85rem center;background-size:14px}
+body.sw-ios :is(.sol-input,.sol-select,textarea){min-height:var(--sw-hit)}
+body.sw-ios .media-upload-panel{padding:1rem;margin:1.25rem 0}
+body.sw-ios .media-upload-form{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:.85rem;align-items:end}
+body.sw-ios .media-upload-form .media-message{grid-column:1/-1;margin:0;color:var(--color-text-muted);font-size:var(--sw-t-sm)}
+body.sw-ios .media-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:1rem}
+body.sw-ios .media-card{min-width:0;overflow:hidden;background:var(--color-surface);border:1px solid var(--color-border);border-radius:var(--radius-lg);box-shadow:var(--shadow-sm)}
+body.sw-ios .media-card>img{display:block;width:100%;height:190px;object-fit:cover;background:var(--color-bg-muted)}
+body.sw-ios .media-card-body{display:grid;gap:.6rem;padding:.85rem}
+body.sw-ios .media-card-body .sw-field{margin:0;min-width:0}
+@media(max-width:767.98px){body.sw-ios .media-upload-form{grid-template-columns:minmax(0,1fr)}body.sw-ios .media-grid{grid-template-columns:repeat(auto-fill,minmax(min(100%,220px),1fr))}}
+
+/* در موبایل، ردیف‌های پرتراکم به کارت‌های خوانا تبدیل می‌شوند */
+@media(max-width:767.98px){
+ body.sw-ios :is(#clientsTable,#invTable,.dash-panel .sol-table) thead{display:none}
+ body.sw-ios :is(#clientsTable,#invTable,.dash-panel .sol-table){display:block}
+ body.sw-ios :is(#clientsTable,#invTable,.dash-panel .sol-table) tbody{display:grid;gap:.7rem;padding:.7rem}
+ body.sw-ios :is(#clientsTable,#invTable,.dash-panel .sol-table) tbody>tr:not([hidden]){display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:.45rem .75rem;padding:.8rem;background:var(--color-surface);border:1px solid var(--color-border);border-radius:var(--radius-md)}
+ body.sw-ios :is(#clientsTable,#invTable,.dash-panel .sol-table) tbody>tr>td{display:block;min-width:0;padding:.25rem!important;border:0!important;overflow-wrap:anywhere}
+ body.sw-ios #clientsTable tbody>tr>td:first-child,body.sw-ios #invTable tbody>tr>td:first-child{grid-column:1/-1}
+ body.sw-ios #clientsTable tbody>tr>td:last-child,body.sw-ios #invTable tbody>tr>td:last-child{grid-column:1/-1}
+ body.sw-ios #invTable tbody>tr>td:nth-child(4){font-weight:800;color:var(--main-500)}
+ body.sw-ios #clientsTable tbody>tr>td:nth-child(2)::before{content:'تماس';display:block;font-size:.68rem;color:var(--color-text-muted);font-weight:600}
+ body.sw-ios #clientsTable tbody>tr>td:nth-child(3)::before{content:'دسته';display:block;font-size:.68rem;color:var(--color-text-muted);font-weight:600}
+ body.sw-ios #clientsTable tbody>tr>td:nth-child(4)::before{content:'پروژه‌ها';display:block;font-size:.68rem;color:var(--color-text-muted);font-weight:600}
+ body.sw-ios #clientsTable tbody>tr>td:nth-child(5)::before{content:'وضعیت';display:block;font-size:.68rem;color:var(--color-text-muted);font-weight:600}
+ body.sw-ios #invTable tbody>tr>td:nth-child(2)::before{content:'مشتری';display:block;font-size:.68rem;color:var(--color-text-muted);font-weight:600}
+ body.sw-ios #invTable tbody>tr>td:nth-child(3)::before{content:'پروژه';display:block;font-size:.68rem;color:var(--color-text-muted);font-weight:600}
+ body.sw-ios #invTable tbody>tr>td:nth-child(4)::before{content:'مبلغ';display:block;font-size:.68rem;color:var(--color-text-muted);font-weight:600}
+ body.sw-ios #invTable tbody>tr>td:nth-child(5)::before{content:'تاریخ صدور';display:block;font-size:.68rem;color:var(--color-text-muted);font-weight:600}
+ body.sw-ios #invTable tbody>tr>td:nth-child(6)::before{content:'سررسید';display:block;font-size:.68rem;color:var(--color-text-muted);font-weight:600}
+ body.sw-ios #invTable tbody>tr>td:nth-child(7)::before{content:'وضعیت';display:block;font-size:.68rem;color:var(--color-text-muted);font-weight:600}
+ body.sw-ios .dash-panel .sol-table tbody>tr>td:first-child{grid-column:1/-1}
+ body.sw-ios .dash-panel .sol-table tbody>tr>td:last-child{grid-column:1/-1}
+ body.sw-ios #clientsTable tbody>tr[data-empty],body.sw-ios #clientsTable tbody>tr:has([colspan]),body.sw-ios #invTable tbody>tr:has([colspan]),body.sw-ios .dash-panel .sol-table tbody>tr:has([colspan]){display:block}
+ body.sw-ios .sw-tw{overflow:visible}
+ body.sw-ios .row-actions{flex-wrap:wrap}
+}
+@media(max-width:575.98px){body.sw-ios .page-content{padding:.75rem}body.sw-ios .admin-header{min-height:58px}body.sw-ios .header-breadcrumb .current{overflow:hidden;text-overflow:ellipsis}body.sw-ios .task-add-main{flex-wrap:wrap}body.sw-ios .task-add-main input{flex:1 1 100%;min-height:var(--sw-hit)}body.sw-ios .task-add-opts>*{min-width:0;max-width:100%}}
+@media(prefers-reduced-motion:reduce){body.sw-ios .sidebar,body.sw-ios .sidebar-overlay,body.sw-ios .modal-overlay{transition:none!important}}
 body.sw-ios .header-search:focus-within kbd{display:none}
 @media (max-width:767.98px){body.sw-ios .header-search kbd{display:none}}
 

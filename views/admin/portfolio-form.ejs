@@ -171,8 +171,11 @@
                       <div class="upload-hint">PNG, JPG, WebP — حداکثر ۱۰ مگابایت</div>
                     <% } %>
                   </div>
+                  <input type="hidden" name="coverImage" id="selectedMedia" value="<%= safeItem.coverImage || '' %>">
                   <input type="file" accept="image/*" id="imgUpload" name="coverImage" hidden>
                 </div>
+                <div class="sw-field"><label class="sol-label" for="coverImageAlt">متن جایگزین تصویر</label><input class="sol-input" name="coverImageAlt" id="coverImageAlt" maxlength="200" value="<%= safeItem.coverImageAlt || '' %>" placeholder="شرح کوتاه تصویر"></div>
+                <% if (mediaItems && mediaItems.length) { %><div class="sw-field"><label class="sol-label" for="mediaPicker">انتخاب از کتابخانه رسانه</label><select class="sol-select" id="mediaPicker"><option value="">بدون تغییر / انتخاب فایل جدید</option><% mediaItems.forEach(function(m){ %><option value="<%= m.url %>" data-alt="<%= m.alt || '' %>" <%= safeItem.coverImage === m.url ? 'selected' : '' %>><%= m.originalName || m.filename %></option><% }); %></select></div><% } %>
               </div>
             </div>
 
@@ -254,6 +257,8 @@ document.addEventListener('DOMContentLoaded', function () {
 
   /* ───────── تصویر شاخص: انتخاب / کشیدن‌ورها کردن / پیش‌نمایش ───────── */
   var area = $('#uploadArea'), areaContent = $('#uploadAreaContent'), file = $('#imgUpload');
+  var mediaPicker = $('#mediaPicker'), mediaValue = $('#selectedMedia');
+  if (mediaPicker) mediaPicker.addEventListener('change', function () { if (this.value) { mediaValue.value = this.value; var opt=this.options[this.selectedIndex]; var alt=$('#coverImageAlt'); if(alt && !alt.value) alt.value=opt.getAttribute('data-alt')||''; } });
   var origHTML = areaContent.innerHTML, origPreview = area.classList.contains('has-preview'), objectUrl = null;
   var MAX = 10 * 1024 * 1024;
 
@@ -279,7 +284,7 @@ document.addEventListener('DOMContentLoaded', function () {
   }
   area.addEventListener('click', function (e) { if (!e.target.closest('.upload-remove-btn')) file.click(); });
   area.addEventListener('keydown', function (e) { if ((e.key === 'Enter' || e.key === ' ') && e.target === area) { e.preventDefault(); file.click(); } });
-  file.addEventListener('change', function () { if (file.files && file.files[0]) preview(file.files[0]); });
+  file.addEventListener('change', function () { if (file.files && file.files[0]) { mediaValue.value=''; if(mediaPicker)mediaPicker.value=''; preview(file.files[0]); } });
   area.addEventListener('dragover', function (e) { e.preventDefault(); area.classList.add('dragover'); });
   area.addEventListener('dragleave', function () { area.classList.remove('dragover'); });
   area.addEventListener('drop', function (e) {

@@ -90,6 +90,7 @@
                   <label class="sol-label" for="seoDesc">توضیحات متا <span class="feat-count" data-count-for="seoDesc" data-max="160">۰ / ۱۶۰</span></label>
                   <textarea class="sol-input" name="seo.metaDescription" id="seoDesc" rows="3" maxlength="200"><%= seo.metaDescription || '' %></textarea>
                 </div>
+                <div class="sw-field"><label class="sol-label" for="seoKeywords">کلیدواژه‌های پیش‌فرض (با ویرگول جدا شوند)</label><input class="sol-input" type="text" name="seo.keywords" id="seoKeywords" value="<%= Array.isArray(seo.keywords) ? seo.keywords.join('، ') : '' %>" placeholder="طراحی وب، توسعه وب‌سایت"></div>
               </div>
 
               <div class="set-foot"><button type="submit" class="btn-sol-sm"><i class="bi bi-check-lg"></i> ذخیره اطلاعات سایت</button></div>
@@ -295,7 +296,9 @@ document.addEventListener('DOMContentLoaded', function () {
   prefSidebar.addEventListener('change', function () {
     store('sw-sidebar', prefSidebar.checked ? 'collapsed' : 'open');
     if (matchMedia('(min-width:992px)').matches) document.body.classList.toggle('sidebar-collapsed', prefSidebar.checked);
+    document.dispatchEvent(new CustomEvent('sw-sidebar-pref-change', { detail: prefSidebar.checked }));
   });
+  document.addEventListener('sw-sidebar-pref-change', function(e){prefSidebar.checked=!!e.detail;});
 
   /* ───────── اعلان‌ها ───────── */
   var prefNotify = $('#prefNotify'), prefHaptic = $('#prefHaptic');

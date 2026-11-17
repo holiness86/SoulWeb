@@ -102,7 +102,7 @@
             >
               <i class="bi bi-pencil"></i> ویرایش
             </button>
-            <form action="/sw-admin/packages/delete/<%= pkg._id %>" method="POST" onsubmit="return confirm('آیا از حذف این پکیج مطمئن هستید؟');" style="display:inline;">
+            <form action="/sw-admin/packages/<%= pkg._id %>/delete" method="POST" onsubmit="return confirm('آیا از حذف این پکیج مطمئن هستید؟');" style="display:inline;">
               <button type="submit" class="btn-danger-sm" style="padding:.42rem .7rem;"><i class="bi bi-trash"></i></button>
             </form>
           </div>

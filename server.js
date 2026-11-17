@@ -152,6 +152,55 @@ app.use('/sw-admin', async (req, res, next) => {
 // ADMIN â€” LIVE NOTIFICATIONS API
 // â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
+app.get('/sw-admin/media', requireAdminAuth, async (req, res) => {
+  try {
+    const items = await Media.find().sort({ createdAt: -1 }).lean()
+    res.render('admin/Media', { items })
+  } catch (err) {
+    console.error('Media page error:', err)
+    res.status(500).send('خطا در بارگذاری کتابخانه رسانه')
+  }
+})
+
+app.post('/sw-admin/api/media', requireAdminAuth, (req, res, next) => {
+  mediaUpload.single('file')(req, res, err => {
+    if (err) return res.status(400).json({ message: err.message || 'فایل تصویر نامعتبر است' })
+    next()
+  })
+}, async (req, res) => {
+  try {
+    if (!req.file) return res.status(400).json({ message: 'فایل تصویر انتخاب نشده یا نوع فایل پشتیبانی نمی‌شود' })
+    const item = await Media.create({
+      url: `/uploads/media/${req.file.filename}`,
+      filename: req.file.filename,
+      originalName: req.file.originalname,
+      mimeType: req.file.mimetype,
+      size: req.file.size,
+      alt: String(req.body.alt || '').trim(),
+      description: String(req.body.description || '').trim()
+    })
+    res.status(201).json(item)
+  } catch (err) {
+    console.error('Media upload error:', err)
+    res.status(500).json({ message: 'خطا در ذخیره تصویر' })
+  }
+})
+
+app.patch('/sw-admin/api/media/:id', requireAdminAuth, async (req, res) => {
+  try {
+    if (!mongoose.Types.ObjectId.isValid(req.params.id)) return res.status(400).json({ message: 'شناسه نامعتبر است' })
+    const item = await Media.findByIdAndUpdate(req.params.id, {
+      alt: String(req.body.alt || '').trim(),
+      description: String(req.body.description || '').trim()
+    }, { new: true, runValidators: true })
+    if (!item) return res.status(404).json({ message: 'رسانه پیدا نشد' })
+    res.json(item)
+  } catch (err) {
+    console.error('Media update error:', err)
+    res.status(500).json({ message: 'خطا در ذخیره توضیحات رسانه' })
+  }
+})
+
 app.get('/sw-admin/api/notifications', requireAdminAuth, async (req, res) => {
     try {
         const [tickets, latest] = await Promise.all([
@@ -229,7 +278,10 @@ const upload = multer({
   }
 })
 const blogStorage = multer.diskStorage({
-  destination: (req, file, cb) => cb(null, path.join(__dirname, 'public/uploads/blog')),
+  destination: (req, file, cb) => {
+    const dir = path.join(__dirname, 'public/uploads/blog')
+    fs.mkdir(dir, { recursive: true }, err => cb(err, dir))
+  },
   filename: (req, file, cb) => cb(null, Date.now() + path.extname(file.originalname).toLowerCase())
 })
 const blogUpload = multer({
@@ -239,6 +291,18 @@ const blogUpload = multer({
     if (!file.mimetype || !file.mimetype.startsWith('image/')) return cb(new Error('Only image files are allowed'));
     cb(null, true);
   }
+})
+const mediaStorage = multer.diskStorage({
+  destination: (req, file, cb) => {
+    const dir = path.join(__dirname, 'public/uploads/media')
+    fs.mkdir(dir, { recursive: true }, err => cb(err, dir))
+  },
+  filename: (req, file, cb) => cb(null, `${Date.now()}-${Math.random().toString(36).slice(2, 8)}${path.extname(file.originalname).toLowerCase()}`)
+})
+const mediaUpload = multer({
+  storage: mediaStorage,
+  limits: { fileSize: 8 * 1024 * 1024 },
+  fileFilter: (req, file, cb) => cb(null, ['image/jpeg', 'image/png', 'image/webp', 'image/gif', 'image/svg+xml'].includes(file.mimetype))
 })
 
 // â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
@@ -293,7 +357,11 @@ app.get('/sw-admin', requireAdminAuth, async (req, res) => {
       projectsData,
       ticketsData,
       todayTasksData,
-      chartProjects
+      chartProjects,
+      paidRevenueData,
+      pendingInvoices,
+      pendingRevenueData,
+      reviewsForRating
     ] = await Promise.all([
       Project.countDocuments({ status: 'active' }),
       Project.countDocuments({ status: 'review' }),
@@ -314,7 +382,11 @@ app.get('/sw-admin', requireAdminAuth, async (req, res) => {
       Task.find().sort({ createdAt: -1 }).limit(7).lean(),
       Project.find({ createdAt: { $gte: chartStart } })
         .select('createdAt')
-        .lean()
+        .lean(),
+      Invoice.aggregate([{ $match: { status: 'paid' } }, { $group: { _id: null, total: { $sum: '$total' } } }]),
+      Invoice.countDocuments({ status: { $in: ['draft', 'sent', 'overdue'] } }),
+      Invoice.aggregate([{ $match: { status: { $in: ['draft', 'sent', 'overdue'] } } }, { $group: { _id: null, total: { $sum: '$total' } } }]),
+      Review.aggregate([{ $match: { isApproved: true, rating: { $gt: 0 } } }, { $group: { _id: null, avg: { $avg: '$rating' }, count: { $sum: 1 } } }])
     ]);
 
     // Ø¢Ù…Ø§Ø± Ø§ØµÙ„ÛŒ Ø¯Ø§Ø´Ø¨ÙˆØ±Ø¯
@@ -334,11 +406,11 @@ app.get('/sw-admin', requireAdminAuth, async (req, res) => {
 
     // Ú©Ø§Ø±Øª Ù‡Ø§ÛŒ Ú©ÙˆÚ†Ú©
     const minis = {
-      paidAmount: 0,
-      pendingCount: 0,
-      pendingAmount: 0,
-      ratingAvg: 0,
-      ratingCount: 0
+      paidAmount: paidRevenueData[0]?.total || 0,
+      pendingCount: pendingInvoices || 0,
+      pendingAmount: pendingRevenueData[0]?.total || 0,
+      ratingAvg: Math.round((reviewsForRating[0]?.avg || 0) * 10) / 10,
+      ratingCount: reviewsForRating[0]?.count || 0
     };
 
     // Ù†Ù…ÙˆØ¯Ø§Ø± Û¶ Ù…Ø§Ù‡ Ø§Ø®ÛŒØ±
@@ -741,14 +813,16 @@ app.post('/sw-admin/clients' , requireAdminAuth , async (req, res) => {
   try {
     const { name, company, email, phone, address, notes, avatar, category } = req.body
 
+    if (!String(name || '').trim()) return res.status(400).send('نام مشتری الزامی است')
+
     await Client.create({
-      name,
-      company,
-      email,
-      phone,
-      address,
-      notes,
-      avatar,
+      name: String(name).trim(),
+      company: String(company || '').trim(),
+      email: String(email || '').trim() ? String(email).trim().toLowerCase() : undefined,
+      phone: String(phone || '').trim(),
+      address: String(address || '').trim(),
+      notes: String(notes || '').trim(),
+      avatar: avatar || undefined,
       category: category || null
     })
 
@@ -998,6 +1072,17 @@ app.post('/sw-admin/invoices/:id/status', requireAdminAuth, async (req, res) => 
   } catch (err) {
     console.error('Invoice status error:', err)
     res.status(500).json({ success: false, message: 'Ø®Ø·Ø§ Ø¯Ø± ØªØºÛŒÛŒØ± ÙˆØ¶Ø¹ÛŒØª ÙØ§Ú©ØªÙˆØ±' })
+  }
+})
+
+app.post('/sw-admin/invoices/:id/delete', requireAdminAuth, async (req, res) => {
+  try {
+    const invoice = await Invoice.findByIdAndDelete(req.params.id)
+    if (!invoice) return res.status(404).send('Invoice not found')
+    res.redirect('/sw-admin/invoices')
+  } catch (err) {
+    console.error('Invoice delete error:', err)
+    res.status(500).send('خطا در حذف فاکتور')
   }
 })
 
@@ -1733,7 +1818,6 @@ app.get('/sw-admin/portfolio' , requireAdminAuth , async (req, res) => {
       Portfolio.find()
         .populate('client', 'name company')
         .populate('project', 'title')
-        .populate('category', 'title slug')   // Ø§Ú¯Ø± category Ø±ÙØ±Ù†Ø³ Ø§Ø³Øª
         .sort({ order: 1, createdAt: -1 })
         .lean(),
 
@@ -1798,7 +1882,6 @@ app.get('/sw-admin/portfolio/form' , requireAdminAuth , async (req, res) => {
         ? Portfolio.findById(id)
             .populate('client', 'name company')
             .populate('project', 'title')
-            .populate('category', 'title slug')
             .lean()
         : Promise.resolve(null),
       Media.find().sort({ createdAt: -1 }).lean()
@@ -2055,6 +2138,30 @@ app.get('/sw-admin/reviews' , requireAdminAuth , async (req, res) => {
     res.status(500).send('Ø®Ø·Ø§ Ø¯Ø± Ø¨Ø§Ø±Ú¯Ø°Ø§Ø±ÛŒ Ù†Ø¸Ø±Ø§Øª')
   }
 })
+
+app.post('/sw-admin/reviews/save', requireAdminAuth, async (req, res) => {
+  try {
+    const { id, name, company, text } = req.body
+    const rating = Number(req.body.rating)
+    if (!String(name || '').trim() || !String(text || '').trim() || !Number.isInteger(rating) || rating < 1 || rating > 5) {
+      return res.status(400).send('نام، متن نظر و امتیاز معتبر لازم است')
+    }
+    let client = await Client.findOne({ name: String(name).trim(), company: String(company || '').trim() })
+    if (!client) client = await Client.create({ name: String(name).trim(), company: String(company || '').trim() })
+    const isPublished = req.body.isPublished === 'on'
+    const values = { client: client._id, authorName: client.name, authorRole: String(company || '').trim(), text: String(text).trim(), rating, isApproved: isPublished, isPublished }
+    if (id) {
+      const review = await Review.findByIdAndUpdate(id, values, { new: true, runValidators: true })
+      if (!review) return res.status(404).send('نظر پیدا نشد')
+    } else {
+      await Review.create(values)
+    }
+    res.redirect('/sw-admin/reviews')
+  } catch (err) {
+    console.error('Review save error:', err)
+    res.status(500).send('خطا در ذخیره نظر')
+  }
+})
 app.post('/sw-admin/reviews/:id/status', requireAdminAuth, async (req, res) => {
   try {
     const update = {}
@@ -2098,7 +2205,6 @@ app.post('/sw-admin/reviews/:id/delete', requireAdminAuth, async (req, res) => {
 app.get('/sw-admin/blog' , requireAdminAuth , async (req, res) => {
   try {
     const posts = await BlogPost.find()
-      .populate('author', 'name')
       .sort({ createdAt: -1 })
     res.render('admin/Blog', { posts })
   } catch (err) {
@@ -2734,11 +2840,12 @@ res.status(500).send('Package error')
 
 
 
-app.post('/sw-admin/packages/toggle/:id', requireAdminAuth, async (req, res) => {
+app.post('/sw-admin/packages/:id/toggle', requireAdminAuth, async (req, res) => {
   try {
+    if (!mongoose.Types.ObjectId.isValid(req.params.id)) return res.status(400).json({ success: false, message: 'شناسه نامعتبر است' })
     const pkg = await Package.findById(req.params.id);
     if (!pkg) return res.status(404).json({ success: false, message: 'Package not found' });
-    pkg.isActive = !pkg.isActive;
+    pkg.isActive = typeof req.body.isActive === 'boolean' ? req.body.isActive : !pkg.isActive;
     await pkg.save();
     res.json({ success: true, isActive: pkg.isActive });
   } catch (err) {
@@ -2886,10 +2993,11 @@ app.post('/sw-admin/service-categories/add', requireAdminAuth, async (req, res) 
       return res.status(400).json({ ok: false, message: 'Ø¹Ù†ÙˆØ§Ù† Ø¯Ø³ØªÙ‡â€ŒØ¨Ù†Ø¯ÛŒ Ø§Ù„Ø²Ø§Ù…ÛŒ Ø§Ø³Øª' })
     }
 
-    const newCategory = await Category.create({
-      title: title.trim(),
-      type: type || 'service'   // â† Ø§Ú¯Ù‡ ÙØ±Ø³ØªØ§Ø¯Ù‡ Ù†Ø´Ø¯ØŒ Ù…Ù‚Ø¯Ø§Ø± Ù¾ÛŒØ´â€ŒÙØ±Ø¶ service
-    })
+    const categoryType = ['service', 'project', 'portfolio', 'blog'].includes(type) ? type : 'service'
+    const cleanTitle = title.trim()
+    const baseSlug = cleanTitle.toLowerCase().replace(/[^\u0600-\u06FFa-z0-9]+/g, '-').replace(/^-|-$/g, '') || 'category'
+    const slug = baseSlug + '-' + Date.now().toString(36)
+    const newCategory = await Category.create({ title: cleanTitle, slug, type: categoryType })
 
     res.json({
       ok: true,
@@ -2980,7 +3088,8 @@ app.post('/sw-admin/blog', requireAdminAuth, blogUpload.single('coverImage'), as
       tags,
       readingTime: readTime ? parseInt(readTime, 10) : undefined,
       status: publish === '1' ? 'published' : 'draft',
-      coverImage: req.file ? '/uploads/blog/' + req.file.filename : undefined
+      coverImage: req.file ? '/uploads/blog/' + req.file.filename : (req.body.coverImage || undefined),
+      coverImageAlt: req.body.coverImageAlt || ''
     });
 
     await newPost.save();
@@ -2993,7 +3102,7 @@ app.post('/sw-admin/blog', requireAdminAuth, blogUpload.single('coverImage'), as
 
 
 
-app.post('/clients/:id', async (req, res) => {
+app.post('/clients/:id', requireAdminAuth, async (req, res) => {
   try {
     const { name, company, email, phone, address, notes } = req.body;
 
@@ -3064,7 +3173,10 @@ app.post('/sw-admin/blog/:id/update', requireAdminAuth, blogUpload.single('cover
 
     if (req.file) {
       post.coverImage = '/uploads/blog/' + req.file.filename;
+    } else if (req.body.coverImage) {
+      post.coverImage = req.body.coverImage;
     }
+    post.coverImageAlt = req.body.coverImageAlt || '';
 
     await post.save(); // pre('save') hook Ø¨Ø±Ø§ÛŒ publishedAt Ù‡Ù…ÛŒÙ†Ø¬Ø§ ÙØ¹Ø§Ù„ Ù…ÛŒâ€ŒÙ…ÙˆÙ†Ù‡
     res.redirect('/sw-admin/blog');

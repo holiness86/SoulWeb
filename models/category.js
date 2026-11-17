@@ -18,13 +18,7 @@ const categorySchema = new mongoose.Schema({
   type: {
     type: String,
     required: true,
-    enum: [
-      'service',
-      // 'service',
-      // 'project',
-      // 'blog',
-      // 'request'
-    ]
+    enum: ['service', 'project', 'portfolio', 'blog']
   },
 
   // description: {
@@ -48,6 +42,9 @@ const categorySchema = new mongoose.Schema({
     type: String,
     default: 'linear-gradient(135deg,#6447f4,#0090e8)'
   },
+
+  order: { type: Number, default: 0 },
+  isActive: { type: Boolean, default: true },
 
   // order: {
   //   type: Number,

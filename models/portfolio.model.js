@@ -8,7 +8,6 @@ const portfolioSchema = new mongoose.Schema({
   images:      [{ type: String }],                // additional gallery URLs
   category: {
     type: String,
-    enum: ['web', 'store', 'ui_ux', 'webapp', 'branding', 'other'],
     required: true
   },
   techStack: [{ type: String }],

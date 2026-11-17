@@ -13,7 +13,7 @@
   function store(k, v) { try { if (v === undefined) return localStorage.getItem(k); localStorage.setItem(k, v); } catch (_) {} return null; }
   function el(tag, cls, txt) { var e = d.createElement(tag); if (cls) e.className = cls; if (txt != null) e.textContent = txt; return e; }
   function raf2(fn) { requestAnimationFrame(function () { requestAnimationFrame(fn); }); }
-  function haptic(t) { try { if (navigator.vibrate) navigator.vibrate(t === 'error' ? [14, 40, 14] : t === 'success' ? 10 : 6); } catch (_) {} }
+  function haptic(t) { try { if (store('sw-haptic') === 'off') return; if (navigator.vibrate) navigator.vibrate(t === 'error' ? [14, 40, 14] : t === 'success' ? 10 : 6); } catch (_) {} }
   var fa = function (n) { return Number(n).toLocaleString('fa-IR'); };
   var mobile = function () { return matchMedia('(max-width:991.98px)').matches; };
   function norm(s) { return String(s == null ? '' : s).replace(/ي/g, 'ی').replace(/ك/g, 'ک').replace(/[۰-۹]/g, function (c) { return '۰۱۲۳۴۵۶۷۸۹'.indexOf(c); }).replace(/[٠-٩]/g, function (c) { return '٠١٢٣٤٥٦٧٨٩'.indexOf(c); }).toLowerCase(); }
@@ -111,13 +111,14 @@
     var th = e.target.closest('#themeToggle'); if (th) { switchTheme(th); return; }
     if (e.target.closest('#sidebarToggle')) {
       if (mobile()) body.classList.toggle('sidebar-open');
-      else { body.classList.toggle('sidebar-collapsed'); store('sw-sidebar', body.classList.contains('sidebar-collapsed') ? 'collapsed' : 'open'); }
+      else { body.classList.toggle('sidebar-collapsed'); var collapsed=body.classList.contains('sidebar-collapsed'); store('sw-sidebar', collapsed ? 'collapsed' : 'open'); d.dispatchEvent(new CustomEvent('sw-sidebar-pref-change',{detail:collapsed})); }
       syncNav();
     } else if (e.target.closest('#sidebarOverlay') || (mobile() && e.target.closest('.nav-item-sol'))) closeDrawer();
     if (e.target.closest('#fullscreenBtn')) { if (!d.fullscreenElement) root.requestFullscreen && root.requestFullscreen(); else d.exitFullscreen && d.exitFullscreen(); }
   });
   d.addEventListener('keydown', function (e) { if (e.key === 'Escape' && body.classList.contains('sidebar-open')) closeDrawer(); });
   addEventListener('resize', function () { if (!mobile()) body.classList.remove('sidebar-open'); syncNav(); });
+  d.addEventListener('sw-sidebar-pref-change', function(e){ if(!mobile())body.classList.toggle('sidebar-collapsed',!!e.detail); syncNav(); });
 
   /* ═══════════ Modal: [data-modal-open="id"] / [data-modal-close] / openModal(id) / closeModal(id) ═══════════ */
   var MODAL_CLS = ['active', 'show', 'open'];
@@ -422,7 +423,7 @@
       var items = (j.items || []).slice(), ids = items.map(function (i) { return String(i.id); });
       if (NF.seen) {
         var fresh = items.filter(function (i) { return NF.seen.indexOf(String(i.id)) < 0; });
-        if (fresh.length) {
+        if (fresh.length && store('sw-notify') !== 'off') {
           var f = fresh[0];
           island(fresh.length === 1 ? (f.title || 'اعلان جدید') : fa(fresh.length) + ' اعلان جدید', {
             type: 'info', icon: 'ticket-detailed-fill', detail: fresh.length === 1 ? (f.body || '') : (f.title || ''), ms: 7000,
@@ -564,6 +565,11 @@
     if (f.hasAttribute('data-mock')) { e.preventDefault(); e.stopImmediatePropagation(); island(f.getAttribute('data-mock-msg') || 'ذخیره شد (حالت نمایشی)', { type: 'success', detail: 'هنوز Backend متصل نیست؛ داده‌ای به سرور ارسال نشد.' }); }
   }, true);
 
-  window.SW = { toast: toast, island: island, loading: loading, confirm: confirmBox, h: h, fmt: fmt, chip: chip, csv: csv, table: table, validate: validate };
+  function setTheme(mode) {   // 'light' | 'dark' | 'auto'
+    if (mode === 'light' || mode === 'dark') { store('sol-theme', mode); applyTheme(mode); }
+    else { try { localStorage.removeItem('sol-theme'); } catch (_) {} applyTheme(matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'); }
+  }
+
+  window.SW = { setTheme: setTheme, toast: toast, island: island, loading: loading, confirm: confirmBox, h: h, fmt: fmt, chip: chip, csv: csv, table: table, validate: validate };
   window.swNotify = function (m, type) { try { island(m, { type: type || 'error' }); } catch (_) { alert(m); } };
 })();

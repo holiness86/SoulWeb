@@ -2,6 +2,7 @@ const express    = require('express')
 const mongoose   = require('mongoose')
 const bcrypt     = require('bcryptjs')
 const path       = require('path')
+const fs         = require('fs')
 const multer     = require('multer')
 const ExcelJS    = require('exceljs')
 const puppeteer  = require('puppeteer-core')
@@ -107,6 +108,7 @@ const Package   = require('./models/package.model')
 const BlogPost  = require('./models/blogPost.model')
 const Setting   = require('./models/setting.model')
 const Category  = require('./models/category')
+const Media     = require('./models/media.model')
 
 
 // â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
@@ -244,14 +246,16 @@ const blogUpload = multer({
 // â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 app.get('/', async (req, res) => {
   try {
-    const [portfolio, packages] = await Promise.all([
+    const [portfolio, packages, siteSetting] = await Promise.all([
       Portfolio.find().sort({ order: 1 }),
-      Package.find({ isActive: true }).sort({ order: 1, createdAt: -1 })
+      Package.find({ isActive: true }).sort({ order: 1, createdAt: -1 }),
+      Setting.findOne().lean()
     ]);
 
     res.render('index', {
       portfolio,
-      packages
+      packages,
+      siteSetting
     });
 
   } catch (err) {
@@ -1723,7 +1727,7 @@ await Invoice.create({
 app.get('/sw-admin/portfolio' , requireAdminAuth , async (req, res) => {
   try {
 
-    const [items, clients, categories] = await Promise.all([
+    const [items, clients, categories, mediaItems] = await Promise.all([
 
       // Ù¾ÙˆØ±ØªÙÙˆÙ„ÛŒÙˆÙ‡Ø§
       Portfolio.find()
@@ -1744,13 +1748,15 @@ app.get('/sw-admin/portfolio' , requireAdminAuth , async (req, res) => {
         isActive: true
       })
         .sort({ order: 1 })
-        .lean()
+        .lean(),
+      Media.find().sort({ createdAt: -1 }).lean()
     ])
 
     res.render('admin/Portfolio', {
       items,
       clients,
       categories,
+      mediaItems,
       flash: req.flash ? req.flash() : {}
     })
 
@@ -1772,7 +1778,7 @@ app.get('/sw-admin/portfolio/form' , requireAdminAuth , async (req, res) => {
       return res.status(400).send('Ø´Ù†Ø§Ø³Ù‡ Ù†Ù…ÙˆÙ†Ù‡ Ú©Ø§Ø± Ù…Ø¹ØªØ¨Ø± Ù†ÛŒØ³Øª')
     }
 
-    const [clients, categories, foundItem] = await Promise.all([
+    const [clients, categories, foundItem, mediaItems] = await Promise.all([
 
       // Ù„ÛŒØ³Øª Ù…Ø´ØªØ±ÛŒâ€ŒÙ‡Ø§ Ø¨Ø±Ø§ÛŒ select
       Client.find({ isActive: true })
@@ -1794,7 +1800,8 @@ app.get('/sw-admin/portfolio/form' , requireAdminAuth , async (req, res) => {
             .populate('project', 'title')
             .populate('category', 'title slug')
             .lean()
-        : Promise.resolve(null)
+        : Promise.resolve(null),
+      Media.find().sort({ createdAt: -1 }).lean()
     ])
 
     // Ø§Ú¯Ø± id Ø§Ø±Ø³Ø§Ù„ Ø´Ø¯Ù‡ Ø¨ÙˆØ¯ ÙˆÙ„ÛŒ Ø¢ÛŒØªÙ…ÛŒ Ù¾ÛŒØ¯Ø§ Ù†Ø´Ø¯ â†’ Ø®Ø·Ø§ÛŒ Û´Û°Û´
@@ -1824,6 +1831,7 @@ app.get('/sw-admin/portfolio/form' , requireAdminAuth , async (req, res) => {
       isEdit   : !!foundItem,
       clients,
       categories,
+      mediaItems,
       flash    : req.flash ? req.flash() : {}
     })
 
@@ -1843,7 +1851,7 @@ app.post('/sw-admin/portfolio' , requireAdminAuth , upload.single('coverImage'),
       seoKeywords, metaDescription
     } = req.body
 
-    const coverImage = req.file ? `/uploads/portfolio/${req.file.filename}` : ''
+    const coverImage = req.file ? `/uploads/portfolio/${req.file.filename}` : (req.body.coverImage || '')
 
     // techStack Ø§Ø² Ú†Ú©â€ŒØ¨Ø§Ú©Ø³â€ŒÙ‡Ø§ÛŒ name="techStack[]" Ø¨Ù‡ ØµÙˆØ±Øª Ø¢Ø±Ø§ÛŒÙ‡ Ø§Ø±Ø³Ø§Ù„ Ù…ÛŒâ€ŒØ´ÙˆØ¯
     // Ø¨Ø±Ø§ÛŒ Ø³Ø§Ø²Ú¯Ø§Ø±ÛŒØŒ Ø­Ø§Ù„Øª Ø±Ø´ØªÙ‡ Ø¬Ø¯Ø§â€ŒØ´Ø¯Ù‡ Ø¨Ø§ Ú©Ø§Ù…Ø§ Ù†ÛŒØ² Ù¾Ø´ØªÛŒØ¨Ø§Ù†ÛŒ Ù…ÛŒâ€ŒØ´ÙˆØ¯
@@ -1855,6 +1863,7 @@ app.post('/sw-admin/portfolio' , requireAdminAuth , upload.single('coverImage'),
       title          : (title || '').trim(),
       description    : description || '',
       coverImage     : coverImage,
+      coverImageAlt  : req.body.coverImageAlt || '',
       category       : category || 'web',
       techStack      : techStackArr,
       liveUrl        : liveUrl || '',
@@ -1880,6 +1889,26 @@ app.post('/sw-admin/portfolio' , requireAdminAuth , upload.single('coverImage'),
   }
 })
 
+app.post('/sw-admin/portfolio/:id/status', requireAdminAuth, async (req, res) => {
+  try {
+    const { isPublished } = req.body
+
+    if (typeof isPublished !== 'boolean') {
+      return res.status(400).json({ success: false, message: 'مقدار نامعتبر است' })
+    }
+
+    const item = await Portfolio.findByIdAndUpdate(req.params.id, { isPublished }, { new: true })
+
+    if (!item) {
+      return res.status(404).json({ success: false, message: 'نمونه کار پیدا نشد' })
+    }
+
+    res.json({ success: true, isPublished: item.isPublished })
+  } catch (err) {
+    console.error('Portfolio status error:', err)
+    res.status(500).json({ success: false, message: 'خطا در تغییر وضعیت نمونه کار' })
+  }
+})
 
 // POST â€” update existing
 app.post('/sw-admin/portfolio/:id/update' , requireAdminAuth , upload.single('coverImage'), async (req, res) => {
@@ -1911,6 +1940,7 @@ app.post('/sw-admin/portfolio/:id/update' , requireAdminAuth , upload.single('co
     portfolio.title = (title || '').trim()
     portfolio.description = description || ''
     portfolio.coverImage = coverImage
+    portfolio.coverImageAlt = req.body.coverImageAlt || ''
     portfolio.category = category || 'web'
     portfolio.techStack = techStackArr
     portfolio.liveUrl = liveUrl || ''
@@ -2025,13 +2055,37 @@ app.get('/sw-admin/reviews' , requireAdminAuth , async (req, res) => {
     res.status(500).send('Ø®Ø·Ø§ Ø¯Ø± Ø¨Ø§Ø±Ú¯Ø°Ø§Ø±ÛŒ Ù†Ø¸Ø±Ø§Øª')
   }
 })
-
-app.post('/sw-admin/reviews/:id/approve', requireAdminAuth , async (req, res) => {
+app.post('/sw-admin/reviews/:id/status', requireAdminAuth, async (req, res) => {
   try {
-    await Review.findByIdAndUpdate(req.params.id, {
-      isApproved : true,
-      isPublished: true
-    })
+    const update = {}
+    if (typeof req.body.isApproved === 'boolean') update.isApproved = req.body.isApproved
+    if (typeof req.body.isPublished === 'boolean') update.isPublished = req.body.isPublished
+
+    if (!Object.keys(update).length) {
+      return res.status(400).json({ success: false, message: 'مقدار نامعتبر است' })
+    }
+
+    // نظر تأییدنشده در سایت نمایش داده نمی‌شود
+    if (update.isApproved === false) update.isPublished = false
+    if (update.isPublished === true) update.isApproved = true
+
+    const review = await Review.findByIdAndUpdate(req.params.id, update, { new: true })
+
+    if (!review) {
+      return res.status(404).json({ success: false, message: 'نظر پیدا نشد' })
+    }
+
+    res.json({ success: true, isApproved: review.isApproved, isPublished: review.isPublished })
+  } catch (err) {
+    console.error('Review status error:', err)
+    res.status(500).json({ success: false, message: 'خطا در تغییر وضعیت نظر' })
+  }
+})
+
+
+app.post('/sw-admin/reviews/:id/delete', requireAdminAuth, async (req, res) => {
+  try {
+    await Review.findByIdAndDelete(req.params.id)
     res.redirect('/sw-admin/reviews')
   } catch (err) {
     res.status(500).send('Ø®Ø·Ø§')
@@ -2052,6 +2106,29 @@ app.get('/sw-admin/blog' , requireAdminAuth , async (req, res) => {
   }
 })
 
+app.post('/sw-admin/blog/:id/status', requireAdminAuth, async (req, res) => {
+  try {
+    const { status } = req.body
+
+    if (!['published', 'draft'].includes(status)) {
+      return res.status(400).json({ success: false, message: 'وضعیت نامعتبر است' })
+    }
+
+    const post = await BlogPost.findById(req.params.id)
+    if (!post) {
+      return res.status(404).json({ success: false, message: 'مقاله پیدا نشد' })
+    }
+
+    post.status = status
+    await post.save()
+
+    res.json({ success: true, status: post.status })
+  } catch (err) {
+    console.error('Blog status error:', err)
+    res.status(500).json({ success: false, message: 'خطا در تغییر وضعیت مقاله' })
+  }
+})
+
 app.post('/sw-admin/blog/:id/delete' , requireAdminAuth , async (req, res) => {
   try {
     await BlogPost.findByIdAndDelete(req.params.id)
@@ -2066,27 +2143,51 @@ app.post('/sw-admin/blog/:id/delete' , requireAdminAuth , async (req, res) => {
 // â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 app.get('/sw-admin/tasks' , requireAdminAuth , async (req, res) => {
   try {
-    const tasks = await Task.find()
-      .populate('project', 'title')
-      .sort({ createdAt: -1 })
-    res.render('admin/Tasks', { tasks })
+    const [tasks, projects] = await Promise.all([
+      Task.find().populate('project', 'title').sort({ createdAt: -1 }),
+      Project.find({ status: { $ne: 'cancelled' } }).select('title').sort({ createdAt: -1 }).lean()
+    ])
+    res.render('admin/Tasks', { tasks, projects })
   } catch (err) {
     res.status(500).send('Ø®Ø·Ø§')
   }
 })
 
-app.post('/sw-admin/tasks' , requireAdminAuth , async (req, res) => {
+app.post('/sw-admin/tasks', requireAdminAuth, async (req, res) => {
+  const wantsJson = (req.get('Accept') || '').includes('application/json')
+
   try {
     const { title, priority, dueDate, project } = req.body
-    await Task.create({
-      title,
-      priority  : priority || 'medium',
-      dueDate   : dueDate  || null,
-      project   : project  || null,
-      assignedTo: '000000000000000000000001',
-      createdBy : '000000000000000000000001'
+
+    if (!title || !title.trim()) {
+      return wantsJson
+        ? res.status(400).json({ success: false, message: 'عنوان وظیفه الزامی است' })
+        : res.status(400).send('عنوان وظیفه الزامی است')
+    }
+
+    const task = await Task.create({
+      title: title.trim(),
+      priority: ['low', 'medium', 'high'].includes(priority) ? priority : 'medium',
+      dueDate: dueDate || null,
+      project: project || null,
+      assignedTo: req.session.user.id,
+      createdBy: req.session.user.id
     })
-    res.redirect(req.get('Referer') || '/sw-admin')
+
+    if (wantsJson) {
+      return res.json({
+        success: true,
+        task: {
+          _id: task._id,
+          title: task.title,
+          priority: task.priority,
+          dueDate: task.dueDate,
+          isDone: false
+        }
+      })
+    }
+
+    res.redirect(req.get('Referer') || '/sw-admin/tasks')
   } catch (err) {
     res.status(500).send('Ø®Ø·Ø§ Ø¯Ø± Ø«Ø¨Øª ÙˆØ¸ÛŒÙÙ‡')
   }
@@ -2119,27 +2220,131 @@ app.post('/sw-admin/tasks/:id/delete' , requireAdminAuth , async (req, res) => {
 // â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 app.get('/sw-admin/reports' , requireAdminAuth , async (req, res) => {
   try {
-    const [totalProjects, totalClients, totalInvoices,
-           paidInvoices, totalReviews] = await Promise.all([
-      Project.countDocuments(),
-      Client.countDocuments(),
-      Invoice.countDocuments(),
-      Invoice.countDocuments({ status: 'paid' }),
-      Review.countDocuments({ isApproved: true })
+    const RANGES = {
+      '6m':     { label: '۶ ماه اخیر', months: 6 },
+      '12m':    { label: '۱۲ ماه اخیر', months: 12 },
+      year:     { label: 'امسال', months: 12 },
+      lastyear: { label: 'سال گذشته', months: 12 }
+    }
+    const range = RANGES[req.query.range] ? req.query.range : '6m'
+    const { label: rangeLabel, months: n } = RANGES[range]
+
+    // بازهٔ زمانی (ماه شمسی)
+    const now = moment().locale('en')
+    let start
+    if (range === '6m' || range === '12m') start = now.clone().startOf('jMonth').subtract(n - 1, 'jMonth')
+    else if (range === 'year') start = now.clone().startOf('jYear')
+    else start = now.clone().subtract(1, 'jYear').startOf('jYear')
+
+    const end = start.clone().add(n, 'jMonth').subtract(1, 'ms')
+    const prevStart = start.clone().subtract(n, 'jMonth')
+    const prevEnd = start.clone().subtract(1, 'ms')
+
+    const s = start.toDate(), e = end.toDate(), ps = prevStart.toDate(), pe = prevEnd.toDate()
+    const inRange = (d, a, b) => d && new Date(d) >= a && new Date(d) <= b
+
+    // ماه‌های بازه برای محور نمودار
+    const buckets = []
+    for (let i = 0; i < n; i++) {
+      const m = start.clone().add(i, 'jMonth')
+      buckets.push({ key: m.format('jYYYY-jMM'), label: m.clone().locale('fa').format('jMMMM'), revenue: 0, projects: 0, done: 0, clients: 0 })
+    }
+    const bucketOf = (d) => buckets.find(b => b.key === moment(d).locale('en').format('jYYYY-jMM'))
+
+    const [invoices, projects, clients, reviews] = await Promise.all([
+      Invoice.find().select('total status issueDate createdAt paidAt client').lean(),
+      Project.find().select('status createdAt updatedAt completedAt category client').populate('category', 'title').lean(),
+      Client.find().select('name company isActive createdAt').lean(),
+      Review.find({ isApproved: true }).select('rating').lean()
     ])
 
-    const revenueResult = await Invoice.aggregate([
-      { $match: { status: 'paid' } },
-      { $group: { _id: null, total: { $sum: '$total' } } }
-    ])
-    const totalRevenue = revenueResult[0]?.total || 0
+    const paidDate = (inv) => inv.paidAt || inv.issueDate || inv.createdAt
+    const doneDate = (p) => p.completedAt || p.updatedAt || p.createdAt
+
+    const paid = invoices.filter(inv => inv.status === 'paid')
+    let revenue = 0, prevRevenue = 0
+    paid.forEach(inv => {
+      const d = paidDate(inv), t = Number(inv.total) || 0
+      if (inRange(d, s, e)) { revenue += t; const b = bucketOf(d); if (b) b.revenue += t }
+      else if (inRange(d, ps, pe)) prevRevenue += t
+    })
+
+    let done = 0, prevDone = 0
+    projects.filter(p => p.status === 'done').forEach(p => {
+      const d = doneDate(p)
+      if (inRange(d, s, e)) { done++; const b = bucketOf(d); if (b) b.done++ }
+      else if (inRange(d, ps, pe)) prevDone++
+    })
+
+    projects.forEach(p => {
+      if (inRange(p.createdAt, s, e)) { const b = bucketOf(p.createdAt); if (b) b.projects++ }
+    })
+
+    let newClients = 0, prevNewClients = 0
+    clients.forEach(c => {
+      if (inRange(c.createdAt, s, e)) { newClients++; const b = bucketOf(c.createdAt); if (b) b.clients++ }
+      else if (inRange(c.createdAt, ps, pe)) prevNewClients++
+    })
+
+    // درصد تغییر نسبت به بازهٔ قبل (اگر بازهٔ قبل صفر باشد null = نمایش داده نمی‌شود)
+    const trend = (cur, prev) => prev > 0 ? Math.round(((cur - prev) / prev) * 100) : null
+
+    // میانگین امتیاز نظرات تأییدشده (اگر فیلد rating وجود نداشته باشد null می‌شود)
+    const rated = reviews.filter(r => Number(r.rating) > 0)
+    const ratingAvg = rated.length ? Math.round((rated.reduce((a, r) => a + Number(r.rating), 0) / rated.length) * 10) / 10 : null
+
+    // پروژه‌های ثبت‌شده در بازه بر اساس نوع
+    const typeMap = {}
+    projects.filter(p => inRange(p.createdAt, s, e)).forEach(p => {
+      const title = (p.category && p.category.title) || 'بدون نوع'
+      typeMap[title] = (typeMap[title] || 0) + 1
+    })
+    const types = Object.keys(typeMap).map(title => ({ title, count: typeMap[title] })).sort((a, b) => b.count - a.count).slice(0, 6)
+
+    // برترین مشتریان بر اساس درآمد فاکتورهای پرداخت‌شده در بازه
+    const byClient = {}
+    paid.filter(inv => inRange(paidDate(inv), s, e) && inv.client).forEach(inv => {
+      const id = String(inv.client)
+      byClient[id] = (byClient[id] || 0) + (Number(inv.total) || 0)
+    })
+    const projectCount = {}
+    projects.forEach(p => { if (p.client) projectCount[String(p.client)] = (projectCount[String(p.client)] || 0) + 1 })
+    const clientById = {}
+    clients.forEach(c => { clientById[String(c._id)] = c })
+    const topClients = Object.keys(byClient)
+      .map(id => ({
+        name: clientById[id] ? (clientById[id].company || clientById[id].name) : 'مشتری حذف‌شده',
+        projects: projectCount[id] || 0,
+        revenue: byClient[id]
+      }))
+      .sort((a, b) => b.revenue - a.revenue)
+      .slice(0, 5)
+
+    // وضعیت فاکتورهای صادرشده در بازه
+    const invoiceStatus = { paid: 0, sent: 0, overdue: 0, draft: 0, cancelled: 0 }
+    invoices.filter(inv => inRange(inv.issueDate || inv.createdAt, s, e)).forEach(inv => {
+      if (invoiceStatus[inv.status] !== undefined) invoiceStatus[inv.status]++
+    })
 
     res.render('admin/Reports', {
-      stats: {
-        totalProjects, totalClients,
-        totalInvoices, paidInvoices,
-        totalReviews,  totalRevenue
-      }
+      range,
+      rangeLabel,
+      months: buckets.map(b => b.label),
+      series: {
+        revenue : buckets.map(b => b.revenue),
+        projects: buckets.map(b => b.projects),
+        done    : buckets.map(b => b.done),
+        clients : buckets.map(b => b.clients)
+      },
+      kpi: {
+        revenue   : { value: revenue, trend: trend(revenue, prevRevenue) },
+        done      : { value: done, trend: trend(done, prevDone) },
+        newClients: { value: newClients, trend: trend(newClients, prevNewClients), active: clients.filter(c => c.isActive).length },
+        rating    : { avg: ratingAvg, count: rated.length }
+      },
+      types,
+      topClients,
+      invoiceStatus
     })
   } catch (err) {
     res.status(500).send('Ø®Ø·Ø§ Ø¯Ø± Ø¨Ø§Ø±Ú¯Ø°Ø§Ø±ÛŒ Ú¯Ø²Ø§Ø±Ø´â€ŒÙ‡Ø§')
@@ -2151,12 +2356,75 @@ app.get('/sw-admin/reports' , requireAdminAuth , async (req, res) => {
 // â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 app.get('/sw-admin/settings' , requireAdminAuth , async (req, res) => {
   try {
-    // getOrCreate the singleton
-    let setting = await Setting.findOne()
-    if (!setting) setting = await Setting.create({})
-    res.render('admin/Settings', { setting })
+    const setting = (await Setting.findOne()) || (await Setting.create({}))
+
+    const [me, users] = await Promise.all([
+      User.findById(req.session.user.id).select('name email role').lean(),
+      User.find().select('name email role isActive createdAt').sort({ createdAt: 1 }).lean()
+    ])
+
+    res.render('admin/Settings', { setting, me, users })
   } catch (err) {
     res.status(500).send('Ø®Ø·Ø§ Ø¯Ø± Ø¨Ø§Ø±Ú¯Ø°Ø§Ø±ÛŒ ØªÙ†Ø¸ÛŒÙ…Ø§Øª')
+  }
+})
+
+app.post('/sw-admin/settings/profile', requireAdminAuth, async (req, res) => {
+  try {
+    const { name, email } = req.body
+
+    if (!name || !name.trim() || !email || !email.trim()) {
+      return res.redirect('/sw-admin/settings?tab=account&error=نام و ایمیل الزامی است')
+    }
+
+    const user = await User.findById(req.session.user.id)
+    if (!user) return res.redirect('/sw-admin/login')
+
+    user.name = name.trim()
+    user.email = email.trim().toLowerCase()
+    await user.save()
+
+    // نام و ایمیل داخل session هم به‌روز شود
+    req.session.user.name = user.name
+    req.session.user.email = user.email
+
+    res.redirect('/sw-admin/settings?tab=account&success=پروفایل با موفقیت به‌روزرسانی شد')
+  } catch (err) {
+    console.error('Profile update error:', err)
+
+    if (err.code === 11000) {
+      return res.redirect('/sw-admin/settings?tab=account&error=این ایمیل برای کاربر دیگری ثبت شده است')
+    }
+
+    res.redirect('/sw-admin/settings?tab=account&error=خطا در به‌روزرسانی پروفایل')
+  }
+})
+
+app.post('/sw-admin/settings/password', requireAdminAuth, async (req, res) => {
+  try {
+    const { currentPassword, newPassword } = req.body
+
+    if (typeof currentPassword !== 'string' || typeof newPassword !== 'string') {
+      return res.status(400).json({ success: false, message: 'اطلاعات ارسالی نامعتبر است' })
+    }
+
+    if (newPassword.length < 8) {
+      return res.status(400).json({ success: false, message: 'رمز عبور جدید باید حداقل ۸ کاراکتر باشد' })
+    }
+
+    const user = await User.findById(req.session.user.id).select('+password')
+
+    if (!user || !(await user.comparePassword(currentPassword))) {
+      return res.status(400).json({ success: false, message: 'رمز عبور فعلی اشتباه است' })
+    }
+
+    user.password = newPassword
+    await user.save()
+
+    res.json({ success: true })
+  } catch (err) {
+    console.error('Password change error:', err)
+    res.status(500).json({ success: false, message: 'خطا در تغییر رمز عبور' })
   }
 })
 
@@ -2168,14 +2436,15 @@ app.post('/sw-admin/settings' , requireAdminAuth , async (req, res) => {
             'social.linkedin' : linkedin,
             'social.github'   : github,
             'seo.metaTitle'   : metaTitle,
-            'seo.metaDescription': metaDescription } = req.body
+            'seo.metaDescription': metaDescription,
+            'seo.keywords': keywords } = req.body
 
     await Setting.findOneAndUpdate(
       {},
       {
         siteName, siteUrl, email, phone, address,
         socialLinks: { instagram, telegram, linkedin, github },
-        seo        : { metaTitle, metaDescription }
+        seo        : { metaTitle, metaDescription, keywords: String(keywords || '').split(/[,،]/).map(v => v.trim()).filter(Boolean) }
       },
       { upsert: true, new: true }
     )
@@ -2643,17 +2912,18 @@ app.post('/sw-admin/service-categories/add', requireAdminAuth, async (req, res) 
 
 app.get('/sw-admin/blog-form', requireAdminAuth, async (req, res) => {
   try {
-    const authors = await BlogPost.distinct('author');
+    const authors = await User.find().select('name').lean()   // به‌جای BlogPost.distinct('author')
     const categoriesRaw = await BlogPost.distinct('category');
     const categories = categoriesRaw
       .filter(Boolean)
       .map(c => ({ slug: c, title: c })); // Ú†ÙˆÙ† ØªÙˆ schema category ÙÙ‚Ø· ÛŒÙ‡ Ø±Ø´ØªÙ‡â€ŒØ³Øª
 
+    const mediaItems = await Media.find().sort({ createdAt: -1 }).lean()
     res.render('admin/blog-form', {
       isEdit: false,
       item: {},   // Ø¢Ø¨Ø¬Ú©Øª Ø®Ø§Ù„ÛŒ ØªØ§ item.title Ùˆ Ø¨Ù‚ÛŒÙ‡ Ø®Ø·Ø§ Ù†Ø¯Ù†
       authors,
-      categories
+      categories, mediaItems
     });
   } catch (err) {
     console.error(err);
@@ -2669,17 +2939,19 @@ app.get('/sw-admin/blog-form/:id', requireAdminAuth, async (req, res) => {
     const post = await BlogPost.findById(req.params.id).lean();
     if (!post) return res.status(404).send('Ù…Ù‚Ø§Ù„Ù‡ ÛŒØ§ÙØª Ù†Ø´Ø¯');
 
-    const authors = await BlogPost.distinct('author');
+    const authors = await User.find().select('name').lean()   // به‌جای BlogPost.distinct('author')
     const categoriesRaw = await BlogPost.distinct('category');
     const categories = categoriesRaw
+
       .filter(Boolean)
       .map(c => ({ slug: c, title: c }));
 
+    const mediaItems = await Media.find().sort({ createdAt: -1 }).lean()
     res.render('admin/blog-form', {
       isEdit: true,
       item: post,
       authors,
-      categories
+      categories, mediaItems
     });
   } catch (err) {
     console.error(err);
@@ -2788,6 +3060,7 @@ app.post('/sw-admin/blog/:id/update', requireAdminAuth, blogUpload.single('cover
     post.tags = tags;
     post.readingTime = readTime ? parseInt(readTime, 10) : undefined;
     post.status = publish === '1' ? 'published' : 'draft';
+    post.coverImageAlt = req.body.coverImageAlt || '';
 
     if (req.file) {
       post.coverImage = '/uploads/blog/' + req.file.filename;
@@ -2805,8 +3078,8 @@ app.post('/sw-admin/blog/:id/update', requireAdminAuth, blogUpload.single('cover
 //Ù„ÙˆØ¯ Ú©Ø±Ø¯Ù† ØµÙØ­Ø§Øª Ø§Ø³ØªØ§ØªÛŒÚ© Ø³Ø§ÛŒØª
 
 
-app.get('/services', (req, res) => {
-    res.render('services'); 
+app.get('/services', async (req, res) => {
+    res.render('services', { siteSetting: await Setting.findOne().lean() });
 });
 
 app.get('/portfolio', (req, res) => {
@@ -2817,12 +3090,12 @@ app.get('/packages', (req, res) => {
     res.render('packages');
 });
 
-app.get('/about', (req, res) => {
-    res.render('about');
+app.get('/about', async (req, res) => {
+    res.render('about', { siteSetting: await Setting.findOne().lean() });
 });
 
-app.get('/contact', (req, res) => {
-    res.render('contact');
+app.get('/contact', async (req, res) => {
+    res.render('contact', { siteSetting: await Setting.findOne().lean() });
 });
 // â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 //  404

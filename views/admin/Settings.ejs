@@ -1,443 +1,364 @@
-<%# views/sw-admin/settings.ejs %>
+<%# views/admin/Settings.ejs — تنظیمات
+    ورودی‌ها از server.js: setting (مدل Setting)؛ اختیاری: me ({name,email,role}) و users (لیست کاربران؛ اگر ندهید تب «اعضای تیم» نمایش داده نمی‌شود)
+    روت‌ها: POST /sw-admin/settings (اطلاعات سایت) · POST /sw-admin/settings/profile (پروفایل) · POST /sw-admin/settings/password (JSON) · POST /sw-admin/logout
+    تب از آدرس انتخاب می‌شود: /sw-admin/settings?tab=general|account|appearance|notifications|team|security  (profile همان account است) %>
+<%
+  const S = (typeof setting !== 'undefined' && setting) ? setting : {};
+  const social = S.socialLinks || {};
+  const seo = S.seo || {};
+  const meUser = (typeof me !== 'undefined' && me) ? me : { name: (locals.adminUser && locals.adminUser.name) || '', email: '', role: '' };
+  const team = (typeof users !== 'undefined' && Array.isArray(users)) ? users : null;
+  const fa = (n) => Number(n || 0).toLocaleString('fa-IR');
+  const ROLE = { admin: 'مدیر کل سیستم' };
+  const initials = (n) => (n || '؟').trim().split(/\s+/).slice(0, 2).map((w) => w[0]).join('‌');
+  const avClass = (id) => 'av-' + ((parseInt(String(id).slice(-2), 16) || 0) % 6 + 1);
+  const fmtDate = (d) => d ? new Date(d).toLocaleDateString('fa-IR', { year: 'numeric', month: 'long', day: 'numeric' }) : '—';
+%>
 <%- include('partials/_head', { title: 'تنظیمات' }) %>
 
 <div class="sidebar-overlay" id="sidebarOverlay"></div>
+
 <div class="admin-shell">
 
-<%- include('partials/_sidebar', { activePage: 'settings', adminUser: { name: 'علی مدیری', role: 'مدیر کل سیستم', initials: 'ادم' } }) %>
+  <%- include('partials/_sidebar', { activePage: 'settings' }) %>
 
-<div class="main-content" id="mainContent">
-<%- include('partials/_header', {
-  breadcrumbs: [{ label: 'داشبورد', href: '/sw-admin' }, { label: 'تنظیمات' }],
-  searchPlaceholder: 'جستجو در تنظیمات…'
-}) %>
+  <div class="main-content" id="mainContent">
 
-<main class="page-content">
+    <%- include('partials/_header', {
+      breadcrumbs: [{ label: 'داشبورد', href: '/sw-admin' }, { label: 'تنظیمات' }],
+      searchPlaceholder: 'جستجو در پنل…'
+    }) %>
 
-  <div class="page-header fade-up fade-up-1">
-    <div>
-      <h1 class="page-title">تنظیمات سیستم</h1>
-      <p class="page-subtitle">مدیریت اطلاعات وب‌سایت، حساب کاربری و تنظیمات عمومی پنل</p>
-    </div>
-    <button class="btn-sol-sm"><i class="bi bi-check-lg"></i> ذخیره همه تغییرات</button>
+    <main class="page-content" id="setPage">
+
+      <div class="page-header fade-up fade-up-1">
+        <div>
+          <h1 class="page-title">تنظیمات سیستم</h1>
+          <p class="page-subtitle">اطلاعات وب‌سایت، حساب کاربری و ترجیحات پنل — هر بخش دکمهٔ ذخیرهٔ مخصوص خودش را دارد</p>
+        </div>
+      </div>
+
+      <div class="settings-layout fade-up fade-up-2">
+
+        <!-- تب‌ها -->
+        <div class="settings-tabs" role="tablist" aria-label="بخش‌های تنظیمات">
+          <button type="button" class="stab active" data-tab="general" role="tab" aria-selected="true" aria-controls="tab-general"><i class="bi bi-building"></i> اطلاعات سایت</button>
+          <button type="button" class="stab" data-tab="account" role="tab" aria-selected="false" aria-controls="tab-account"><i class="bi bi-person-circle"></i> حساب کاربری</button>
+          <button type="button" class="stab" data-tab="appearance" role="tab" aria-selected="false" aria-controls="tab-appearance"><i class="bi bi-palette-fill"></i> ظاهر و تم</button>
+          <button type="button" class="stab" data-tab="notifications" role="tab" aria-selected="false" aria-controls="tab-notifications"><i class="bi bi-bell-fill"></i> اعلان‌ها</button>
+          <% if (team) { %><button type="button" class="stab" data-tab="team" role="tab" aria-selected="false" aria-controls="tab-team"><i class="bi bi-people-fill"></i> اعضای تیم</button><% } %>
+          <button type="button" class="stab" data-tab="security" role="tab" aria-selected="false" aria-controls="tab-security"><i class="bi bi-shield-lock-fill"></i> امنیت</button>
+        </div>
+
+        <div class="settings-content">
+
+          <!-- ═════ اطلاعات سایت (ذخیره در دیتابیس) ═════ -->
+          <section class="tab-pane-sol" id="tab-general" role="tabpanel">
+            <form class="dash-panel" action="/sw-admin/settings" method="POST" data-validate novalidate>
+              <div class="panel-header"><h2 class="panel-title"><i class="bi bi-building" style="color:var(--main-500);"></i> اطلاعات کلی وب‌سایت</h2></div>
+              <div class="set-body">
+                <div class="form-row two">
+                  <div class="sw-field"><label class="sol-label" for="siteName">نام وب‌سایت</label><input class="sol-input" type="text" name="siteName" id="siteName" value="<%= S.siteName || '' %>" data-rule="required" autocomplete="off"></div>
+                  <div class="sw-field"><label class="sol-label" for="siteUrl">آدرس سایت</label><input class="sol-input" type="text" name="siteUrl" id="siteUrl" value="<%= S.siteUrl || '' %>" dir="ltr" placeholder="solweb.ir" autocomplete="off"></div>
+                </div>
+                <div class="form-row two">
+                  <div class="sw-field"><label class="sol-label" for="siteEmail">ایمیل تماس</label><input class="sol-input" type="email" name="email" id="siteEmail" value="<%= S.email || '' %>" dir="ltr" data-rule="email" autocomplete="off"></div>
+                  <div class="sw-field"><label class="sol-label" for="sitePhone">شماره تماس</label><input class="sol-input" type="tel" name="phone" id="sitePhone" value="<%= S.phone || '' %>" dir="ltr" inputmode="tel" data-rule="phone" autocomplete="off"></div>
+                </div>
+                <div class="sw-field"><label class="sol-label" for="siteAddress">آدرس</label><input class="sol-input" type="text" name="address" id="siteAddress" value="<%= S.address || '' %>" autocomplete="off"></div>
+              </div>
+
+              <div class="set-sub"><i class="bi bi-share"></i> شبکه‌های اجتماعی</div>
+              <div class="set-body">
+                <div class="form-row two">
+                  <div class="sw-field"><label class="sol-label" for="socIg">اینستاگرام</label><input class="sol-input" type="text" name="social.instagram" id="socIg" value="<%= social.instagram || '' %>" dir="ltr" placeholder="instagram.com/…" autocomplete="off"></div>
+                  <div class="sw-field"><label class="sol-label" for="socTg">تلگرام</label><input class="sol-input" type="text" name="social.telegram" id="socTg" value="<%= social.telegram || '' %>" dir="ltr" placeholder="t.me/…" autocomplete="off"></div>
+                </div>
+                <div class="form-row two">
+                  <div class="sw-field"><label class="sol-label" for="socLi">لینکدین</label><input class="sol-input" type="text" name="social.linkedin" id="socLi" value="<%= social.linkedin || '' %>" dir="ltr" placeholder="linkedin.com/…" autocomplete="off"></div>
+                  <div class="sw-field"><label class="sol-label" for="socGh">گیت‌هاب</label><input class="sol-input" type="text" name="social.github" id="socGh" value="<%= social.github || '' %>" dir="ltr" placeholder="github.com/…" autocomplete="off"></div>
+                </div>
+              </div>
+
+              <div class="set-sub"><i class="bi bi-graph-up-arrow"></i> سئو (متای پیش‌فرض سایت)</div>
+              <div class="set-body">
+                <div class="sw-field">
+                  <label class="sol-label" for="seoTitle">عنوان متا <span class="feat-count" data-count-for="seoTitle" data-max="60">۰ / ۶۰</span></label>
+                  <input class="sol-input" type="text" name="seo.metaTitle" id="seoTitle" value="<%= seo.metaTitle || '' %>" maxlength="70" autocomplete="off">
+                </div>
+                <div class="sw-field">
+                  <label class="sol-label" for="seoDesc">توضیحات متا <span class="feat-count" data-count-for="seoDesc" data-max="160">۰ / ۱۶۰</span></label>
+                  <textarea class="sol-input" name="seo.metaDescription" id="seoDesc" rows="3" maxlength="200"><%= seo.metaDescription || '' %></textarea>
+                </div>
+                <div class="sw-field"><label class="sol-label" for="seoKeywords">کلیدواژه‌های پیش‌فرض (با ویرگول جدا شوند)</label><input class="sol-input" type="text" name="seo.keywords" id="seoKeywords" value="<%= Array.isArray(seo.keywords) ? seo.keywords.join('، ') : '' %>" placeholder="طراحی وب، توسعه وب‌سایت"></div>
+              </div>
+
+              <div class="set-foot"><button type="submit" class="btn-sol-sm"><i class="bi bi-check-lg"></i> ذخیره اطلاعات سایت</button></div>
+            </form>
+          </section>
+
+          <!-- ═════ حساب کاربری ═════ -->
+          <section class="tab-pane-sol" id="tab-account" role="tabpanel" hidden>
+            <form class="dash-panel" action="/sw-admin/settings/profile" method="POST" data-validate novalidate>
+              <div class="panel-header"><h2 class="panel-title"><i class="bi bi-person-circle" style="color:var(--main-500);"></i> اطلاعات حساب کاربری</h2></div>
+              <div class="set-body">
+                <div class="set-me">
+                  <div class="cl-av cl-av-lg"><%= initials(meUser.name) %></div>
+                  <div>
+                    <div class="detail-name"><%= meUser.name || '—' %></div>
+                    <div class="detail-meta"><%= ROLE[meUser.role] || meUser.role || 'مدیر' %></div>
+                  </div>
+                </div>
+                <div class="form-row two">
+                  <div class="sw-field"><label class="sol-label" for="meName">نام و نام‌خانوادگی</label><input class="sol-input" type="text" name="name" id="meName" value="<%= meUser.name || '' %>" data-rule="required" autocomplete="name"></div>
+                  <div class="sw-field"><label class="sol-label" for="meEmail">ایمیل (برای ورود)</label><input class="sol-input" type="email" name="email" id="meEmail" value="<%= meUser.email || '' %>" dir="ltr" data-rule="required|email" autocomplete="email"></div>
+                </div>
+                <p class="set-hint">با تغییر ایمیل، دفعهٔ بعد باید با ایمیل جدید وارد شوید.</p>
+              </div>
+              <div class="set-foot"><button type="submit" class="btn-sol-sm"><i class="bi bi-check-lg"></i> ذخیره پروفایل</button></div>
+            </form>
+          </section>
+
+          <!-- ═════ ظاهر و تم (فقط روی همین مرورگر ذخیره می‌شود) ═════ -->
+          <section class="tab-pane-sol" id="tab-appearance" role="tabpanel" hidden>
+            <div class="dash-panel">
+              <div class="panel-header"><h2 class="panel-title"><i class="bi bi-palette-fill" style="color:var(--main-500);"></i> ظاهر و تم</h2></div>
+              <div class="set-body">
+                <p class="set-hint" style="margin-top:0;">این ترجیحات فقط روی همین مرورگر ذخیره می‌شوند و فوری اعمال می‌شوند.</p>
+
+                <div class="set-row">
+                  <div><div class="set-title">تم پنل</div><div class="set-desc">روشن، تاریک یا هماهنگ با تنظیم دستگاه</div></div>
+                  <div class="theme-seg" id="themeSeg" role="radiogroup" aria-label="تم پنل">
+                    <button type="button" role="radio" data-theme-mode="light" aria-checked="false"><i class="bi bi-sun-fill"></i> روشن</button>
+                    <button type="button" role="radio" data-theme-mode="dark" aria-checked="false"><i class="bi bi-moon-stars-fill"></i> تاریک</button>
+                    <button type="button" role="radio" data-theme-mode="auto" aria-checked="false"><i class="bi bi-circle-half"></i> خودکار</button>
+                  </div>
+                </div>
+
+                <div class="set-row">
+                  <div><div class="set-title">منوی کناری جمع‌شده</div><div class="set-desc">در دسکتاپ فقط آیکون‌ها نمایش داده شوند</div></div>
+                  <label class="sw-toggle"><input type="checkbox" id="prefSidebar" aria-label="منوی کناری جمع‌شده"><span class="sw-slider"></span></label>
+                </div>
+              </div>
+            </div>
+          </section>
+
+          <!-- ═════ اعلان‌ها (فقط روی همین مرورگر) ═════ -->
+          <section class="tab-pane-sol" id="tab-notifications" role="tabpanel" hidden>
+            <div class="dash-panel">
+              <div class="panel-header"><h2 class="panel-title"><i class="bi bi-bell-fill" style="color:var(--main-500);"></i> اعلان‌ها</h2></div>
+              <div class="set-body">
+                <p class="set-hint" style="margin-top:0;">اعلان‌ها فقط وقتی پنل باز است و تب دیده می‌شود بررسی می‌شوند. این ترجیحات فقط روی همین مرورگر اعمال می‌شوند.</p>
+
+                <div class="set-row">
+                  <div><div class="set-title">اعلان زنده تیکت‌های جدید</div><div class="set-desc">با ثبت تیکت جدید، اعلان Dynamic Island نشان داده شود</div></div>
+                  <label class="sw-toggle"><input type="checkbox" id="prefNotify" aria-label="اعلان زنده تیکت‌ها"><span class="sw-slider"></span></label>
+                </div>
+                <div class="set-row">
+                  <div><div class="set-title">لرزش (Haptic)</div><div class="set-desc">روی موبایل هنگام نمایش اعلان‌ها لرزش کوتاه داشته باشد</div></div>
+                  <label class="sw-toggle"><input type="checkbox" id="prefHaptic" aria-label="لرزش اعلان‌ها"><span class="sw-slider"></span></label>
+                </div>
+                <div class="set-row">
+                  <div><div class="set-title">امتحان اعلان</div><div class="set-desc">نمونه‌ای از اعلان را ببینید</div></div>
+                  <button type="button" class="btn-ghost-sm" id="testIsland"><i class="bi bi-play-fill"></i> نمایش نمونه</button>
+                </div>
+              </div>
+            </div>
+          </section>
+
+          <!-- ═════ اعضای تیم (فقط اگر سرور users بفرستد) ═════ -->
+          <% if (team) { %>
+          <section class="tab-pane-sol" id="tab-team" role="tabpanel" hidden>
+            <div class="dash-panel">
+              <div class="panel-header"><h2 class="panel-title"><i class="bi bi-people-fill" style="color:var(--main-500);"></i> اعضای تیم</h2><span class="badge-status badge-inprog"><%= fa(team.length) %> کاربر</span></div>
+              <% team.forEach(function (u) { const mine = String(u._id) === String(meUser._id || ''); %>
+                <div class="team-row">
+                  <div class="cl-av <%= avClass(u._id) %>"><%= initials(u.name) %></div>
+                  <div class="team-info">
+                    <div class="cell-title"><%= u.name || '—' %> <% if (mine) { %><span class="cat-chip">شما</span><% } %></div>
+                    <div class="cell-sub" dir="ltr" style="text-align:right;"><%= u.email || '' %></div>
+                  </div>
+                  <span class="cell-sub d-none d-md-inline">عضو از <%= fmtDate(u.createdAt) %></span>
+                  <span class="badge-status badge-inprog"><%= ROLE[u.role] || u.role || 'کاربر' %></span>
+                  <span class="badge-status <%= u.isActive === false ? 'badge-hold' : 'badge-done' %>"><%= u.isActive === false ? 'غیرفعال' : 'فعال' %></span>
+                </div>
+              <% }); %>
+              <% if (!team.length) { %><div class="sw-empty"><i class="bi bi-people"></i>کاربری ثبت نشده است.</div><% } %>
+            </div>
+          </section>
+          <% } %>
+
+          <!-- ═════ امنیت ═════ -->
+          <section class="tab-pane-sol" id="tab-security" role="tabpanel" hidden>
+            <form class="dash-panel" id="pwForm" novalidate>
+              <div class="panel-header"><h2 class="panel-title"><i class="bi bi-shield-lock-fill" style="color:var(--main-500);"></i> تغییر رمز عبور</h2></div>
+              <div class="set-body">
+                <input type="text" name="username" value="<%= meUser.email || '' %>" autocomplete="username" hidden aria-hidden="true">
+
+                <div class="sw-field">
+                  <label class="sol-label" for="pwCurrent">رمز عبور فعلی</label>
+                  <div class="input-wrap"><i class="bi bi-lock" aria-hidden="true"></i>
+                    <input class="sol-input" type="password" id="pwCurrent" dir="ltr" autocomplete="current-password" data-rule="required">
+                    <button type="button" class="login-eye" data-eye="pwCurrent" aria-label="نمایش رمز عبور" aria-pressed="false"><i class="bi bi-eye" aria-hidden="true"></i></button>
+                  </div>
+                </div>
+
+                <div class="form-row two">
+                  <div class="sw-field">
+                    <label class="sol-label" for="pwNew">رمز عبور جدید</label>
+                    <div class="input-wrap"><i class="bi bi-key" aria-hidden="true"></i>
+                      <input class="sol-input" type="password" id="pwNew" dir="ltr" autocomplete="new-password" data-rule="required">
+                      <button type="button" class="login-eye" data-eye="pwNew" aria-label="نمایش رمز عبور" aria-pressed="false"><i class="bi bi-eye" aria-hidden="true"></i></button>
+                    </div>
+                    <div class="pw-meter" id="pwMeter" aria-hidden="true"><i></i><i></i><i></i><i></i></div>
+                    <div class="pw-label" id="pwLabel">حداقل ۸ کاراکتر</div>
+                  </div>
+                  <div class="sw-field">
+                    <label class="sol-label" for="pwConfirm">تکرار رمز عبور جدید</label>
+                    <div class="input-wrap"><i class="bi bi-key-fill" aria-hidden="true"></i>
+                      <input class="sol-input" type="password" id="pwConfirm" dir="ltr" autocomplete="new-password" data-rule="required">
+                      <button type="button" class="login-eye" data-eye="pwConfirm" aria-label="نمایش رمز عبور" aria-pressed="false"><i class="bi bi-eye" aria-hidden="true"></i></button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <div class="set-foot"><button type="submit" class="btn-sol-sm" id="pwSubmit"><i class="bi bi-shield-check"></i> تغییر رمز عبور</button></div>
+            </form>
+
+            <div class="dash-panel" style="margin-top:var(--sw-s3);">
+              <div class="panel-header"><h2 class="panel-title"><i class="bi bi-box-arrow-right" style="color:var(--main-500);"></i> نشست فعلی</h2></div>
+              <div class="set-body">
+                <div class="set-row" style="border:0;padding:0;">
+                  <div><div class="set-title">خروج از حساب در این دستگاه</div><div class="set-desc">نشست شما در همین مرورگر بسته می‌شود</div></div>
+                  <form action="/sw-admin/logout" method="POST" style="margin:0;"><button type="submit" class="btn-danger-sm"><i class="bi bi-box-arrow-right"></i> خروج</button></form>
+                </div>
+              </div>
+            </div>
+          </section>
+
+        </div>
+      </div>
+    </main>
   </div>
-
-  <div class="settings-layout fade-up fade-up-2">
-
-    <!-- Tabs sidebar -->
-    <div class="settings-tabs">
-      <button class="stab active" data-tab="general"><i class="bi bi-building"></i> اطلاعات سایت</button>
-      <button class="stab" data-tab="account"><i class="bi bi-person-circle"></i> حساب کاربری</button>
-      <button class="stab" data-tab="appearance"><i class="bi bi-palette-fill"></i> ظاهر و تم</button>
-      <button class="stab" data-tab="notifications"><i class="bi bi-bell-fill"></i> اعلان‌ها</button>
-      <button class="stab" data-tab="team"><i class="bi bi-people-fill"></i> اعضای تیم</button>
-      <button class="stab" data-tab="security"><i class="bi bi-shield-lock-fill"></i> امنیت</button>
-      <button class="stab" data-tab="billing"><i class="bi bi-credit-card-fill"></i> صورتحساب</button>
-    </div>
-
-    <!-- Tab content -->
-    <div class="settings-content">
-
-      <!-- General -->
-      <div class="tab-pane-sol active" id="tab-general">
-        <div class="dash-panel">
-          <div class="panel-header"><h6 class="panel-title">اطلاعات کلی وب‌سایت</h6></div>
-          <div style="padding:1.5rem;">
-            <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.25rem;">
-              <div class="form-row">
-                <label class="sol-label">نام وب‌سایت</label>
-                <input class="sol-input" type="text" value="سُل وب">
-              </div>
-              <div class="form-row">
-                <label class="sol-label">آدرس سایت</label>
-                <input class="sol-input" type="text" value="solweb.ir">
-              </div>
-            </div>
-            <div class="form-row">
-              <label class="sol-label">شعار / تگ‌لاین</label>
-              <input class="sol-input" type="text" value="تیم سُل وب روح وب‌سایت‌ها را می‌آفریند">
-            </div>
-            <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.25rem;">
-              <div class="form-row">
-                <label class="sol-label">ایمیل تماس</label>
-                <input class="sol-input" type="email" value="hello@solweb.ir">
-              </div>
-              <div class="form-row">
-                <label class="sol-label">شماره تماس</label>
-                <input class="sol-input" type="text" value="۰۲۱-۸۸۰۰۱۲۳۴">
-              </div>
-            </div>
-            <div class="form-row">
-              <label class="sol-label">آدرس</label>
-              <input class="sol-input" type="text" value="تهران، خیابان ولیعصر">
-            </div>
-            <div class="form-row">
-              <label class="sol-label">لوگوی سایت</label>
-              <div class="upload-zone">
-                <i class="bi bi-cloud-arrow-up"></i>
-                <span>برای آپلود لوگو کلیک کنید (PNG یا SVG)</span>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <div class="dash-panel" style="margin-top:1.25rem;">
-          <div class="panel-header"><h6 class="panel-title">شبکه‌های اجتماعی</h6></div>
-          <div style="padding:1.5rem;display:flex;flex-direction:column;gap:1rem;">
-            <div class="social-input-row">
-              <i class="bi bi-instagram" style="color:#e1306c;"></i>
-              <input class="sol-input" type="text" placeholder="آدرس اینستاگرام" value="instagram.com/solweb">
-            </div>
-            <div class="social-input-row">
-              <i class="bi bi-telegram" style="color:#0088cc;"></i>
-              <input class="sol-input" type="text" placeholder="آدرس تلگرام" value="t.me/solweb">
-            </div>
-            <div class="social-input-row">
-              <i class="bi bi-linkedin" style="color:#0a66c2;"></i>
-              <input class="sol-input" type="text" placeholder="آدرس لینکدین" value="">
-            </div>
-            <div class="social-input-row">
-              <i class="bi bi-whatsapp" style="color:#25d366;"></i>
-              <input class="sol-input" type="text" placeholder="شماره واتساپ" value="">
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <!-- Account -->
-      <div class="tab-pane-sol" id="tab-account">
-        <div class="dash-panel">
-          <div class="panel-header"><h6 class="panel-title">پروفایل کاربری</h6></div>
-          <div style="padding:1.5rem;">
-            <div style="display:flex;align-items:center;gap:1.25rem;margin-bottom:1.5rem;">
-              <div style="width:72px;height:72px;border-radius:var(--radius-lg);background:var(--grad-main);display:flex;align-items:center;justify-content:center;font-size:1.3rem;font-weight:800;color:#fff;flex-shrink:0;">ادم</div>
-              <div>
-                <button class="btn-ghost-sm"><i class="bi bi-upload"></i> تغییر تصویر پروفایل</button>
-                <p style="font-size:.72rem;color:var(--color-text-muted);margin:.5rem 0 0;">فرمت‌های مجاز: JPG, PNG — حداکثر ۲ مگابایت</p>
-              </div>
-            </div>
-            <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.25rem;">
-              <div class="form-row">
-                <label class="sol-label">نام کامل</label>
-                <input class="sol-input" type="text" value="علی مدیری">
-              </div>
-              <div class="form-row">
-                <label class="sol-label">نام کاربری</label>
-                <input class="sol-input" type="text" value="admin_ali">
-              </div>
-            </div>
-            <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.25rem;">
-              <div class="form-row">
-                <label class="sol-label">ایمیل</label>
-                <input class="sol-input" type="email" value="ali@solweb.ir">
-              </div>
-              <div class="form-row">
-                <label class="sol-label">شماره تماس</label>
-                <input class="sol-input" type="text" value="۰۹۱۲۰۰۰۰۰۰۰">
-              </div>
-            </div>
-            <div class="form-row">
-              <label class="sol-label">نقش سازمانی</label>
-              <input class="sol-input" type="text" value="مدیر کل سیستم" disabled style="opacity:.6;">
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <!-- Appearance -->
-      <div class="tab-pane-sol" id="tab-appearance">
-        <div class="dash-panel">
-          <div class="panel-header"><h6 class="panel-title">حالت نمایش</h6></div>
-          <div style="padding:1.5rem;">
-            <div class="theme-options">
-              <label class="theme-opt">
-                <input type="radio" name="themeMode" value="light" checked>
-                <div class="theme-preview light"><div class="tp-sidebar"></div><div class="tp-main"></div></div>
-                <span>روشن</span>
-              </label>
-              <label class="theme-opt">
-                <input type="radio" name="themeMode" value="dark">
-                <div class="theme-preview dark"><div class="tp-sidebar"></div><div class="tp-main"></div></div>
-                <span>تیره</span>
-              </label>
-              <label class="theme-opt">
-                <input type="radio" name="themeMode" value="auto">
-                <div class="theme-preview auto"><div class="tp-sidebar"></div><div class="tp-main"></div></div>
-                <span>خودکار (سیستم)</span>
-              </label>
-            </div>
-          </div>
-        </div>
-
-        <div class="dash-panel" style="margin-top:1.25rem;">
-          <div class="panel-header"><h6 class="panel-title">رنگ اصلی برند</h6></div>
-          <div style="padding:1.5rem;">
-            <div class="color-options">
-              <label class="color-opt"><input type="radio" name="brandColor" checked><span style="background:linear-gradient(135deg,#6447f4,#0090e8);"></span></label>
-              <label class="color-opt"><input type="radio" name="brandColor"><span style="background:linear-gradient(135deg,#ec4899,#f97316);"></span></label>
-              <label class="color-opt"><input type="radio" name="brandColor"><span style="background:linear-gradient(135deg,#16a34a,#0090e8);"></span></label>
-              <label class="color-opt"><input type="radio" name="brandColor"><span style="background:linear-gradient(135deg,#dc2626,#f59e0b);"></span></label>
-              <label class="color-opt"><input type="radio" name="brandColor"><span style="background:linear-gradient(135deg,#0891b2,#6447f4);"></span></label>
-            </div>
-          </div>
-        </div>
-
-        <div class="dash-panel" style="margin-top:1.25rem;">
-          <div class="panel-header"><h6 class="panel-title">سایدبار</h6></div>
-          <div style="padding:1.25rem 1.5rem;display:flex;flex-direction:column;gap:1rem;">
-            <div class="toggle-row">
-              <div><div class="tr-title">جمع‌شدگی خودکار سایدبار</div><div class="tr-sub">سایدبار به‌طور خودکار در صفحه‌نمایش‌های کوچک جمع شود</div></div>
-              <label class="sw-toggle"><input type="checkbox" checked><span class="sw-slider"></span></label>
-            </div>
-            <div class="toggle-row">
-              <div><div class="tr-title">نمایش نشان (Badge) تعداد</div><div class="tr-sub">نمایش تعداد آیتم‌های جدید کنار منوها</div></div>
-              <label class="sw-toggle"><input type="checkbox" checked><span class="sw-slider"></span></label>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <!-- Notifications -->
-      <div class="tab-pane-sol" id="tab-notifications">
-        <div class="dash-panel">
-          <div class="panel-header"><h6 class="panel-title">اعلان‌های ایمیلی</h6></div>
-          <div style="padding:1.25rem 1.5rem;display:flex;flex-direction:column;gap:1rem;">
-            <div class="toggle-row">
-              <div><div class="tr-title">پیام جدید از مشتری</div><div class="tr-sub">دریافت ایمیل هنگام ارسال پیام جدید از فرم تماس</div></div>
-              <label class="sw-toggle"><input type="checkbox" checked><span class="sw-slider"></span></label>
-            </div>
-            <div class="toggle-row">
-              <div><div class="tr-title">پروژه جدید ثبت شد</div><div class="tr-sub">اطلاع‌رسانی هنگام ثبت پروژه جدید در سیستم</div></div>
-              <label class="sw-toggle"><input type="checkbox" checked><span class="sw-slider"></span></label>
-            </div>
-            <div class="toggle-row">
-              <div><div class="tr-title">پرداخت فاکتور</div><div class="tr-sub">اطلاع‌رسانی هنگام پرداخت شدن یک فاکتور</div></div>
-              <label class="sw-toggle"><input type="checkbox" checked><span class="sw-slider"></span></label>
-            </div>
-            <div class="toggle-row">
-              <div><div class="tr-title">نظر جدید مشتری</div><div class="tr-sub">اطلاع‌رسانی هنگام ثبت نظر جدید</div></div>
-              <label class="sw-toggle"><input type="checkbox"><span class="sw-slider"></span></label>
-            </div>
-            <div class="toggle-row">
-              <div><div class="tr-title">یادآوری ددلاین پروژه</div><div class="tr-sub">یادآوری ۲۴ ساعت قبل از ددلاین پروژه‌ها</div></div>
-              <label class="sw-toggle"><input type="checkbox" checked><span class="sw-slider"></span></label>
-            </div>
-          </div>
-        </div>
-
-        <div class="dash-panel" style="margin-top:1.25rem;">
-          <div class="panel-header"><h6 class="panel-title">اعلان‌های درون‌برنامه‌ای (Push)</h6></div>
-          <div style="padding:1.25rem 1.5rem;display:flex;flex-direction:column;gap:1rem;">
-            <div class="toggle-row">
-              <div><div class="tr-title">فعال‌سازی نوتیفیکیشن لحظه‌ای</div><div class="tr-sub">نمایش زنگوله اعلان در هدر پنل</div></div>
-              <label class="sw-toggle"><input type="checkbox" checked><span class="sw-slider"></span></label>
-            </div>
-            <div class="toggle-row">
-              <div><div class="tr-title">صدای اعلان</div><div class="tr-sub">پخش صدا هنگام دریافت اعلان جدید</div></div>
-              <label class="sw-toggle"><input type="checkbox"><span class="sw-slider"></span></label>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <!-- Team -->
-      <div class="tab-pane-sol" id="tab-team">
-        <div class="dash-panel">
-          <div class="panel-header">
-            <h6 class="panel-title">اعضای تیم (۴ نفر)</h6>
-            <button class="btn-sol-sm" style="padding:.35rem .85rem;font-size:.75rem;"><i class="bi bi-person-plus"></i> دعوت عضو</button>
-          </div>
-          <div>
-            <div class="team-row">
-              <div class="cl-av" style="background:var(--grad-main);">علی</div>
-              <div style="flex:1;"><div style="font-weight:700;font-size:.85rem;">علی مدیری</div><div style="font-size:.72rem;color:var(--color-text-muted);">ali@solweb.ir</div></div>
-              <span class="role-badge owner">مدیر کل</span>
-              <button class="btn-ghost-sm" style="padding:.28rem .6rem;"><i class="bi bi-three-dots"></i></button>
-            </div>
-            <div class="team-row">
-              <div class="cl-av" style="background:linear-gradient(135deg,#a394fb,#6447f4);">سار</div>
-              <div style="flex:1;"><div style="font-weight:700;font-size:.85rem;">سارا طاهری</div><div style="font-size:.72rem;color:var(--color-text-muted);">sara@solweb.ir</div></div>
-              <span class="role-badge editor">طراح</span>
-              <button class="btn-ghost-sm" style="padding:.28rem .6rem;"><i class="bi bi-three-dots"></i></button>
-            </div>
-            <div class="team-row">
-              <div class="cl-av" style="background:linear-gradient(135deg,#0090e8,#4dc3ff);">محس</div>
-              <div style="flex:1;"><div style="font-weight:700;font-size:.85rem;">محسن مظاهر</div><div style="font-size:.72rem;color:var(--color-text-muted);">mohsen@solweb.ir</div></div>
-              <span class="role-badge editor">برنامه‌نویس</span>
-              <button class="btn-ghost-sm" style="padding:.28rem .6rem;"><i class="bi bi-three-dots"></i></button>
-            </div>
-            <div class="team-row">
-              <div class="cl-av" style="background:linear-gradient(135deg,#22c55e,#0090e8);">رضا</div>
-              <div style="flex:1;"><div style="font-weight:700;font-size:.85rem;">رضا محمدی</div><div style="font-size:.72rem;color:var(--color-text-muted);">reza@solweb.ir</div></div>
-              <span class="role-badge support">پشتیبانی</span>
-              <button class="btn-ghost-sm" style="padding:.28rem .6rem;"><i class="bi bi-three-dots"></i></button>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <!-- Security -->
-      <div class="tab-pane-sol" id="tab-security">
-        <div class="dash-panel">
-          <div class="panel-header"><h6 class="panel-title">تغییر رمز عبور</h6></div>
-          <div style="padding:1.5rem;">
-            <div class="form-row">
-              <label class="sol-label">رمز عبور فعلی</label>
-              <input class="sol-input" type="password" placeholder="••••••••">
-            </div>
-            <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.25rem;">
-              <div class="form-row">
-                <label class="sol-label">رمز عبور جدید</label>
-                <input class="sol-input" type="password" placeholder="••••••••">
-              </div>
-              <div class="form-row">
-                <label class="sol-label">تکرار رمز عبور جدید</label>
-                <input class="sol-input" type="password" placeholder="••••••••">
-              </div>
-            </div>
-            <button class="btn-sol-sm" style="margin-top:.5rem;"><i class="bi bi-shield-check"></i> به‌روزرسانی رمز عبور</button>
-          </div>
-        </div>
-
-        <div class="dash-panel" style="margin-top:1.25rem;">
-          <div class="panel-header"><h6 class="panel-title">احراز هویت دو مرحله‌ای</h6></div>
-          <div style="padding:1.25rem 1.5rem;">
-            <div class="toggle-row">
-              <div><div class="tr-title">فعال‌سازی 2FA</div><div class="tr-sub">افزایش امنیت حساب با کد تأیید پیامکی</div></div>
-              <label class="sw-toggle"><input type="checkbox"><span class="sw-slider"></span></label>
-            </div>
-          </div>
-        </div>
-
-        <div class="dash-panel" style="margin-top:1.25rem;">
-          <div class="panel-header"><h6 class="panel-title">جلسات فعال (Sessions)</h6></div>
-          <div>
-            <div class="session-row">
-              <i class="bi bi-laptop" style="font-size:1.3rem;color:var(--main-500);"></i>
-              <div style="flex:1;"><div style="font-weight:700;font-size:.83rem;">ویندوز · Chrome — تهران، ایران</div><div style="font-size:.72rem;color:var(--color-text-muted);">این جلسه · فعال الان</div></div>
-              <span class="badge-status badge-done">فعلی</span>
-            </div>
-            <div class="session-row">
-              <i class="bi bi-phone" style="font-size:1.3rem;color:var(--color-text-light);"></i>
-              <div style="flex:1;"><div style="font-weight:700;font-size:.83rem;">اندروید · Chrome — تهران، ایران</div><div style="font-size:.72rem;color:var(--color-text-muted);">۲ روز پیش</div></div>
-              <button class="btn-danger-sm" style="padding:.3rem .75rem;font-size:.73rem;">خروج</button>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <!-- Billing -->
-      <div class="tab-pane-sol" id="tab-billing">
-        <div class="dash-panel">
-          <div class="panel-header"><h6 class="panel-title">اطلاعات صورتحساب</h6></div>
-          <div style="padding:1.5rem;">
-            <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.25rem;">
-              <div class="form-row">
-                <label class="sol-label">نام شرکت / فروشنده</label>
-                <input class="sol-input" type="text" value="گروه طراحی سُل وب">
-              </div>
-              <div class="form-row">
-                <label class="sol-label">شناسه مالیاتی</label>
-                <input class="sol-input" type="text" placeholder="۱۴-۰۰۰۰۰۰۰۰۰۰۰">
-              </div>
-            </div>
-            <div class="form-row">
-              <label class="sol-label">آدرس صورتحساب</label>
-              <input class="sol-input" type="text" value="تهران، خیابان ولیعصر">
-            </div>
-            <div class="form-row">
-              <label class="sol-label">شماره شبا (برای واریز)</label>
-              <input class="sol-input" type="text" placeholder="IR-XXXXXXXXXXXXXXXXXXXXXXXX">
-            </div>
-          </div>
-        </div>
-      </div>
-
-    </div><!-- /settings-content -->
-
-  </div><!-- /settings-layout -->
-
-</main>
-</div>
 </div>
 
-<%- include('partials/_scripts', { extraScripts: `
-<style>
-.upload-zone{border:2px dashed var(--color-border);border-radius:var(--radius-md);padding:1.5rem;text-align:center;cursor:pointer;color:var(--color-text-muted);transition:all var(--dur-fast);font-size:.8rem}
-.upload-zone i{font-size:1.5rem;display:block;margin-bottom:.4rem}
-.upload-zone:hover{border-color:var(--main-400);background:var(--main-50);color:var(--main-500)}
-[data-bs-theme="dark"] .upload-zone:hover{background:rgba(100,71,244,.08)}
-
-.settings-layout{display:grid;grid-template-columns:230px 1fr;gap:1.25rem;align-items:start}
-@media(max-width:900px){.settings-layout{grid-template-columns:1fr}}
-
-.settings-tabs{background:var(--color-surface);border:1px solid var(--color-border);border-radius:var(--radius-lg);padding:.6rem;display:flex;flex-direction:column;gap:.2rem;position:sticky;top:calc(var(--header-h) + 1.25rem)}
-@media(max-width:900px){.settings-tabs{position:static;flex-direction:row;overflow-x:auto;flex-wrap:nowrap}}
-.stab{display:flex;align-items:center;gap:.65rem;padding:.65rem .85rem;border-radius:var(--radius-sm);background:transparent;border:none;color:var(--color-text-muted);font-family:var(--font-primary);font-size:.83rem;font-weight:600;cursor:pointer;transition:all var(--dur-fast);text-align:right;white-space:nowrap}
-.stab i{font-size:.95rem;width:18px;text-align:center;flex-shrink:0}
-.stab:hover{background:var(--color-bg);color:var(--color-text-primary)}
-.stab.active{background:var(--grad-main);color:#fff;box-shadow:var(--shadow-main)}
-
-.tab-pane-sol{display:none}
-.tab-pane-sol.active{display:block;animation:fadeUp .35s var(--ease-smooth)}
-
-.social-input-row{display:flex;align-items:center;gap:.75rem}
-.social-input-row i{font-size:1.2rem;width:24px;text-align:center;flex-shrink:0}
-
-.theme-options{display:grid;grid-template-columns:repeat(3,1fr);gap:1rem}
-@media(max-width:600px){.theme-options{grid-template-columns:1fr}}
-.theme-opt{cursor:pointer;text-align:center;display:flex;flex-direction:column;gap:.6rem;align-items:center}
-.theme-opt input{display:none}
-.theme-preview{width:100%;height:90px;border-radius:var(--radius-md);border:2px solid var(--color-border);display:flex;overflow:hidden;transition:all var(--dur-fast)}
-.theme-opt input:checked + .theme-preview{border-color:var(--main-500);box-shadow:0 0 0 3px rgba(100,71,244,.15)}
-.theme-preview.light{background:#f5f5fb}
-.theme-preview.light .tp-sidebar{width:30%;background:#10102a}
-.theme-preview.light .tp-main{flex:1;background:#fff;margin:8px;border-radius:6px}
-.theme-preview.dark{background:#0d0d22}
-.theme-preview.dark .tp-sidebar{width:30%;background:#000}
-.theme-preview.dark .tp-main{flex:1;background:#14142e;margin:8px;border-radius:6px}
-.theme-preview.auto{background:linear-gradient(90deg,#f5f5fb 50%,#0d0d22 50%)}
-.theme-preview.auto .tp-sidebar{width:30%;background:linear-gradient(180deg,#10102a 50%,#000 50%)}
-.theme-preview.auto .tp-main{flex:1;background:linear-gradient(90deg,#fff 50%,#14142e 50%);margin:8px;border-radius:6px}
-.theme-opt span{font-size:.8rem;font-weight:600;color:var(--color-text-muted)}
-.theme-opt input:checked ~ span{color:var(--main-500)}
-
-.color-options{display:flex;gap:.85rem;flex-wrap:wrap}
-.color-opt{cursor:pointer}
-.color-opt input{display:none}
-.color-opt span{display:block;width:42px;height:42px;border-radius:50%;border:3px solid transparent;transition:all var(--dur-fast)}
-.color-opt input:checked + span{border-color:var(--color-text-primary);transform:scale(1.1)}
-
-.toggle-row{display:flex;align-items:center;justify-content:space-between;gap:1rem}
-.tr-title{font-size:.85rem;font-weight:700}
-.tr-sub{font-size:.74rem;color:var(--color-text-muted);margin-top:.15rem}
-
-.sw-toggle{position:relative;display:inline-block;width:42px;height:23px;flex-shrink:0}
-.sw-toggle input{opacity:0;width:0;height:0}
-.sw-slider{position:absolute;cursor:pointer;inset:0;background:var(--color-border);border-radius:99px;transition:var(--dur-fast)}
-.sw-slider::before{content:'';position:absolute;width:17px;height:17px;right:3px;top:3px;background:#fff;border-radius:50%;transition:var(--dur-fast)}
-.sw-toggle input:checked + .sw-slider{background:var(--grad-main)}
-.sw-toggle input:checked + .sw-slider::before{transform:translateX(-19px)}
-
-.cl-av{width:38px;height:38px;border-radius:var(--radius-sm);display:flex;align-items:center;justify-content:center;font-size:.72rem;font-weight:800;color:#fff;flex-shrink:0}
-.team-row{display:flex;align-items:center;gap:.85rem;padding:.85rem 1.25rem;border-bottom:1px solid var(--color-border)}
-.team-row:last-child{border-bottom:none}
-.role-badge{font-size:.7rem;font-weight:700;padding:.2rem .65rem;border-radius:var(--radius-full)}
-.role-badge.owner{background:rgba(100,71,244,.12);color:var(--main-600)}
-.role-badge.editor{background:rgba(0,144,232,.12);color:var(--accent-600)}
-.role-badge.support{background:rgba(34,197,94,.12);color:#16a34a}
-
-.session-row{display:flex;align-items:center;gap:.85rem;padding:.85rem 1.25rem;border-bottom:1px solid var(--color-border)}
-.session-row:last-child{border-bottom:none}
-</style>
 <script>
-document.querySelectorAll('.stab').forEach(function(tab){
-  tab.addEventListener('click', function(){
-    document.querySelectorAll('.stab').forEach(function(t){ t.classList.remove('active'); });
-    document.querySelectorAll('.tab-pane-sol').forEach(function(p){ p.classList.remove('active'); });
-    tab.classList.add('active');
-    document.getElementById('tab-' + tab.dataset.tab).classList.add('active');
+document.addEventListener('DOMContentLoaded', function () {
+  function $(s, c) { return (c || document).querySelector(s); }
+  function $$(s, c) { return Array.prototype.slice.call((c || document).querySelectorAll(s)); }
+  function fa(v) { return Number(v).toLocaleString('fa-IR'); }
+  function en(v) { return String(v == null ? '' : v).replace(/[۰-۹]/g, function (d) { return '۰۱۲۳۴۵۶۷۸۹'.indexOf(d); }).replace(/[٠-٩]/g, function (d) { return '٠١٢٣٤٥٦٧٨٩'.indexOf(d); }); }
+  function store(k, v) { try { if (v === undefined) return localStorage.getItem(k); if (v === null) localStorage.removeItem(k); else localStorage.setItem(k, v); } catch (e) {} return null; }
+  function toast(m, o) { if (window.SW) SW.island(m, o); }
+
+  /* ───────── تب‌ها (با ?tab= و hash، ARIA و کلیدهای جهت‌دار) ───────── */
+  var tabs = $$('.stab'), panes = $$('.tab-pane-sol');
+  var ALIAS = { profile: 'account' };
+  function show(key, push) {
+    key = ALIAS[key] || key;
+    if (!tabs.some(function (t) { return t.dataset.tab === key; })) key = 'general';
+    tabs.forEach(function (t) { var on = t.dataset.tab === key; t.classList.toggle('active', on); t.setAttribute('aria-selected', String(on)); t.tabIndex = on ? 0 : -1; });
+    panes.forEach(function (p) { p.hidden = p.id !== 'tab-' + key; });
+    if (push) { try { var u = new URL(location.href); u.searchParams.set('tab', key); history.replaceState(null, '', u.pathname + u.search + u.hash); } catch (e) {} }
+  }
+  tabs.forEach(function (t, i) {
+    t.addEventListener('click', function () { show(t.dataset.tab, true); });
+    t.addEventListener('keydown', function (e) {
+      var d = e.key === 'ArrowDown' || e.key === 'ArrowLeft' ? 1 : e.key === 'ArrowUp' || e.key === 'ArrowRight' ? -1 : 0; if (!d) return;
+      e.preventDefault(); var n = tabs[(i + d + tabs.length) % tabs.length]; n.focus(); show(n.dataset.tab, true);
+    });
   });
+  var initial = new URLSearchParams(location.search).get('tab') || (location.hash || '').slice(1) || 'general';
+  show(initial, false);
+
+  /* ───────── شمارندهٔ کاراکتر سئو ───────── */
+  $$('[data-count-for]').forEach(function (badge) {
+    var input = document.getElementById(badge.dataset.countFor), max = Number(badge.dataset.max);
+    function upd() { var n = input.value.length; badge.textContent = fa(n) + ' / ' + fa(max); badge.classList.toggle('over', n > max); }
+    input.addEventListener('input', upd); upd();
+  });
+
+  // ارقام فارسی شمارهٔ تماس هنگام تایپ به انگلیسی تبدیل می‌شود
+  var ph = $('#sitePhone');
+  ph.addEventListener('input', function () { var p = ph.selectionStart; ph.value = en(ph.value); try { ph.setSelectionRange(p, p); } catch (e) {} });
+
+  /* ───────── ظاهر: تم و منوی کناری (localStorage) ───────── */
+  var seg = $('#themeSeg');
+  function themeMode() { var s = store('sol-theme'); return s === 'light' || s === 'dark' ? s : 'auto'; }
+  function paintTheme() { $$('button', seg).forEach(function (b) { b.setAttribute('aria-checked', String(b.dataset.themeMode === themeMode())); b.classList.toggle('on', b.dataset.themeMode === themeMode()); }); }
+  seg.addEventListener('click', function (e) {
+    var b = e.target.closest('[data-theme-mode]'); if (!b) return;
+    if (window.SW && SW.setTheme) SW.setTheme(b.dataset.themeMode); paintTheme();
+  });
+  paintTheme();
+
+  var prefSidebar = $('#prefSidebar'); prefSidebar.checked = store('sw-sidebar') === 'collapsed';
+  prefSidebar.addEventListener('change', function () {
+    store('sw-sidebar', prefSidebar.checked ? 'collapsed' : 'open');
+    if (matchMedia('(min-width:992px)').matches) document.body.classList.toggle('sidebar-collapsed', prefSidebar.checked);
+    document.dispatchEvent(new CustomEvent('sw-sidebar-pref-change', { detail: prefSidebar.checked }));
+  });
+  document.addEventListener('sw-sidebar-pref-change', function(e){prefSidebar.checked=!!e.detail;});
+
+  /* ───────── اعلان‌ها ───────── */
+  var prefNotify = $('#prefNotify'), prefHaptic = $('#prefHaptic');
+  prefNotify.checked = store('sw-notify') !== 'off'; prefHaptic.checked = store('sw-haptic') !== 'off';
+  prefNotify.addEventListener('change', function () { store('sw-notify', prefNotify.checked ? null : 'off'); });
+  prefHaptic.addEventListener('change', function () { store('sw-haptic', prefHaptic.checked ? null : 'off'); });
+  $('#testIsland').addEventListener('click', function () {
+    toast('تیکت جدید از محسن رضایی', { type: 'info', icon: 'ticket-detailed-fill', detail: 'مشکل در درگاه پرداخت — این فقط یک نمونه است.', ms: 6000, actions: [{ label: 'مشاهده', primary: true }, { label: 'بعداً', ghost: true }] });
+  });
+
+  /* ───────── امنیت: نمایش رمز، قدرت رمز، تغییر رمز با JSON ───────── */
+  $$('[data-eye]').forEach(function (btn) {
+    btn.addEventListener('click', function () {
+      var input = document.getElementById(btn.dataset.eye), show = input.type === 'password';
+      input.type = show ? 'text' : 'password'; btn.setAttribute('aria-pressed', String(show));
+      btn.setAttribute('aria-label', show ? 'مخفی کردن رمز عبور' : 'نمایش رمز عبور'); btn.firstElementChild.className = 'bi ' + (show ? 'bi-eye-slash' : 'bi-eye');
+    });
+  });
+  var pwNew = $('#pwNew'), meter = $('#pwMeter'), pwLabel = $('#pwLabel');
+  var LABELS = ['حداقل ۸ کاراکتر', 'ضعیف', 'متوسط', 'خوب', 'عالی'];
+  function strength(v) {
+    if (v.length < 8) return 0;
+    var s = 1; if (/[a-z]/.test(v) && /[A-Z]/.test(v)) s++; if (/\d/.test(v)) s++; if (/[^A-Za-z0-9]/.test(v) || v.length >= 14) s++; return s;
+  }
+  pwNew.addEventListener('input', function () {
+    var s = strength(pwNew.value); meter.dataset.level = String(s); pwLabel.textContent = pwNew.value ? LABELS[s] : LABELS[0];
+  });
+
+  var pwForm = $('#pwForm'), pwBtn = $('#pwSubmit');
+  function fieldError(input, msg) {
+    var wrap = input.closest('.sw-field'), err = $('.sw-err', wrap);
+    if (!err) { err = document.createElement('div'); err.className = 'sw-err'; err.setAttribute('role', 'alert'); wrap.appendChild(err); }
+    err.textContent = msg; input.classList.toggle('is-invalid', !!msg);
+  }
+  pwForm.addEventListener('submit', function (e) {
+    e.preventDefault(); e.stopImmediatePropagation();
+    var cur = $('#pwCurrent'), nw = $('#pwNew'), cf = $('#pwConfirm'), bad = false;
+    [cur, nw, cf].forEach(function (i) { fieldError(i, ''); });
+    if (!cur.value) { fieldError(cur, 'رمز عبور فعلی را وارد کنید.'); bad = true; }
+    if (nw.value.length < 8) { fieldError(nw, 'رمز عبور جدید باید حداقل ۸ کاراکتر باشد.'); bad = true; }
+    else if (nw.value === cur.value) { fieldError(nw, 'رمز جدید باید با رمز فعلی متفاوت باشد.'); bad = true; }
+    if (cf.value !== nw.value) { fieldError(cf, 'تکرار رمز عبور با رمز جدید یکی نیست.'); bad = true; }
+    if (bad) { toast('فرم را بررسی کنید', { type: 'error' }); return; }
+
+    pwBtn.classList.add('sw-loading'); pwBtn.disabled = true;
+    fetch('/sw-admin/settings/password', {
+      method: 'POST', credentials: 'same-origin',
+      headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+      body: JSON.stringify({ currentPassword: cur.value, newPassword: nw.value })
+    }).then(function (r) {
+      return r.json().catch(function () { return {}; }).then(function (j) { if (!r.ok || !j.success) { var er = new Error(j.message || 'تغییر رمز انجام نشد'); er.status = r.status; throw er; } return j; });
+    }).then(function () {
+      pwForm.reset(); meter.dataset.level = '0'; pwLabel.textContent = LABELS[0];
+      toast('رمز عبور تغییر کرد', { type: 'success', detail: 'از این پس با رمز جدید وارد شوید.' });
+    }).catch(function (err) {
+      if (err.status === 400 && /فعلی/.test(err.message)) fieldError(cur, err.message);
+      toast(err.message || 'خطا در ارتباط با سرور', { type: 'error' });
+    }).then(function () { pwBtn.classList.remove('sw-loading'); pwBtn.disabled = false; });
+  }, true);
 });
-<\/script>
-` }) %>
+</script>
+
+<%- include('partials/_scripts') %>

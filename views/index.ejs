@@ -3,7 +3,11 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>سُل وب — طراحی وب‌سایت حرفه‌ای</title>
+  <title><%= (siteSetting && siteSetting.seo && siteSetting.seo.metaTitle) || 'سُل وب — طراحی وب‌سایت حرفه‌ای' %></title>
+  <meta name="description" content="<%= (siteSetting && siteSetting.seo && siteSetting.seo.metaDescription) || 'سُل وب؛ طراحی و توسعه وب‌سایت، فروشگاه اینترنتی و راهکارهای دیجیتال حرفه‌ای.' %>">
+  <meta name="robots" content="index,follow,max-image-preview:large">
+  <link rel="canonical" href="<%= (siteSetting && siteSetting.siteUrl ? siteSetting.siteUrl.replace(/\/$/, '') : '') %>/">
+  <meta property="og:type" content="website"><meta property="og:title" content="<%= (siteSetting && siteSetting.seo && siteSetting.seo.metaTitle) || 'سُل وب — طراحی وب‌سایت حرفه‌ای' %>"><meta property="og:description" content="<%= (siteSetting && siteSetting.seo && siteSetting.seo.metaDescription) || 'طراحی و توسعه وب‌سایت و راهکارهای دیجیتال.' %>">
 
   <!-- جلوگیری از پرش رنگی تم هنگام لود (Anti-FOUC) -->
   <script>

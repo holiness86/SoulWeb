@@ -10,7 +10,7 @@
     const x = new Date(d);
     return Number.isNaN(x.getTime()) ? '—' : x.toLocaleDateString('fa-IR', { year: 'numeric', month: 'long', day: 'numeric' });
   };
-  const authorName = (p) => (p.author && p.author.name) ? p.author.name : '—';
+  const authorName = (p) => p.authorName || (p.author && p.author.name) || (typeof p.author === 'string' ? p.author : '—');
   const isPub = (p) => p.status === 'published';
 
   const publishedCount = list.filter(isPub).length;
@@ -50,6 +50,13 @@
         <div class="pstat"><div class="pstat-icon accent"><i class="bi bi-eye-fill"></i></div><div><div class="pstat-val text-grad"><%= fa(totalViews) %></div><div class="pstat-lbl">کل بازدید</div></div></div>
         <div class="pstat"><div class="pstat-icon ok"><i class="bi bi-folder2"></i></div><div><div class="pstat-val text-grad"><%= fa(categories.length) %></div><div class="pstat-lbl">دسته‌بندی</div></div></div>
       </div>
+
+      <% if (typeof notice !== 'undefined' && notice) { %>
+        <div class="login-alert" role="status" style="margin:0 0 1rem;<%= notice.type === 'success' ? 'background:var(--ok-bg);border-color:color-mix(in srgb,var(--ok) 28%,transparent);color:var(--ok);' : '' %>">
+          <i class="bi <%= notice.type === 'success' ? 'bi-check-circle-fill' : 'bi-exclamation-circle-fill' %>"></i>
+          <span><%= notice.message %></span>
+        </div>
+      <% } %>
 
       <!-- Filter / Search -->
       <div class="filter-bar fade-up fade-up-2" role="toolbar" aria-label="فیلتر مقالات">

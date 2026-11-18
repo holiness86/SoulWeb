@@ -59,18 +59,18 @@ function requireAdminAuth(req, res, next) {
 
 const toEnglishDigits = (str) => {
   if (!str) return str
-  const persianDigits = 'Û°Û±Û²Û³Û´ÛµÛ¶Û·Û¸Û¹'
+  const persianDigits = '۰۱۲۳۴۵۶۷۸۹'
   const arabicDigits  = '٠١٢٣٤٥٦٧٨٩'
   return String(str)
-    .replace(/[Û°-Û¹]/g, d => persianDigits.indexOf(d))
-    .replace(/[٠-٩]/g, d => arabicDigits.indexOf(d))
+    .replace(/[۰-۹]/g, d => String(persianDigits.indexOf(d)))
+    .replace(/[٠-٩]/g, d => String(arabicDigits.indexOf(d)))
 }
 
 const normalizeDate = (value) => {
   if (!value) return null
   const cleaned = toEnglishDigits(value).trim()
-  const parsed = moment(cleaned, 'jYYYY/jMM/jDD')
-  if (!parsed.isValid()) return null
+  const parsed = moment(cleaned, 'jYYYY/jMM/jDD', true)
+  if (!parsed.isValid() || parsed.format('jYYYY/jMM/jDD') !== cleaned) return null
   return parsed.locale('en').toDate()
 }
 
@@ -238,9 +238,9 @@ app.get('/sw-admin/api/notifications', requireAdminAuth, async (req, res) => {
 // ─────────────────────────────────────────
 //  DB + SERVER START
 // ─────────────────────────────────────────
-const DB_URL = 'mongodb://admin:pM8U6IsnbQBsnGspAg1f@soulwebdb-ttk-service:27017/admin'
-// const DB_URL = 'mongodb://localhost:27017/SoulWeb'
-const PORT   = 3000
+// const DB_URL = 'mongodb://admin:pM8U6IsnbQBsnGspAg1f@soulwebdb-ttk-service:27017/admin'
+const DB_URL = 'mongodb://localhost:27017/SoulWeb'
+const PORT   = 3001
 
 mongoose.connect(DB_URL)
   .then(() => {
@@ -286,7 +286,7 @@ const blogStorage = multer.diskStorage({
 })
 const blogUpload = multer({
   storage: blogStorage,
-  limits: { fileSize: 5 * 1024 * 1024 },
+  limits: { fileSize: 10 * 1024 * 1024 },
   fileFilter: (req, file, cb) => {
     if (!file.mimetype || !file.mimetype.startsWith('image/')) return cb(new Error('Only image files are allowed'));
     cb(null, true);
@@ -456,6 +456,7 @@ app.get('/sw-admin', requireAdminAuth, async (req, res) => {
       active: { label: 'در حال انجام', cls: 'active' },
       review: { label: 'در حال بررسی', cls: 'warning' },
       done: { label: 'تکمیل شده', cls: 'success' },
+      hold: { label: 'متوقف', cls: 'secondary' },
       pending: { label: 'در انتظار', cls: 'secondary' },
       cancelled: { label: 'لغو شده', cls: 'danger' }
     };
@@ -479,8 +480,8 @@ app.get('/sw-admin', requireAdminAuth, async (req, res) => {
         name: project.name || project.title || 'بدون عنوان',
         type: project.type || '',
         client:
-          project.client?.name ||
           project.client?.company ||
+          project.client?.name ||
           'بدون مشتری',
         cat:
           project.category?.title ||
@@ -583,7 +584,7 @@ app.get('/sw-admin/projects', requireAdminAuth, async (req, res) => {
       .sort({ name: 1 })
       .lean()
 
-    const serviceCategories = await Category.find({ type: 'service' }).lean()
+    const serviceCategories = await Category.find({ type: 'service', isActive: true }).sort({ order: 1, title: 1 }).lean()
 const kanbanColumns = [
   { key: 'todo', title: 'در انتظار' },
   { key: 'inprogress', title: 'در حال انجام' },
@@ -660,8 +661,22 @@ app.post('/sw-admin/projects/:id/update', requireAdminAuth, async (req, res) => 
       description
     } = req.body
 
-    if (!title || !client || !category) {
+    if (!title || !String(title).trim() || !client || !category) {
       return res.status(400).send('نام پروژه، مشتری و نوع پروژه الزامی هستند')
+    }
+
+    if (!mongoose.Types.ObjectId.isValid(req.params.id) ||
+        !mongoose.Types.ObjectId.isValid(client) ||
+        !mongoose.Types.ObjectId.isValid(category)) {
+      return res.status(400).send('شناسه پروژه، مشتری یا نوع پروژه معتبر نیست')
+    }
+
+    const [foundClient, foundCategory] = await Promise.all([
+      Client.exists({ _id: client, isActive: true }),
+      Category.exists({ _id: category, type: 'service', isActive: true })
+    ])
+    if (!foundClient || !foundCategory) {
+      return res.status(400).send('مشتری یا نوع پروژه انتخاب‌شده معتبر نیست')
     }
 
     const parsedStartDate = normalizeDate(startDate)
@@ -674,17 +689,19 @@ app.post('/sw-admin/projects/:id/update', requireAdminAuth, async (req, res) => 
       return res.status(400).send('تاریخ ددلاین نامعتبر است')
     }
 
-    await Project.findByIdAndUpdate(req.params.id, {
+    const updatedProject = await Project.findByIdAndUpdate(req.params.id, {
       title: title.trim(),
       client,
       category,
-      status,
+      status: ['active', 'review', 'done', 'hold', 'cancelled'].includes(status) ? status : 'active',
       progress: normalizeProgress(progress),
       startDate: parsedStartDate,
       deadline: parsedDeadline,
       techStack: normalizeTechStack(techStack),
       description: description ? description.trim() : ''
-    })
+    }, { new: true, runValidators: true })
+
+    if (!updatedProject) return res.status(404).send('پروژه پیدا نشد')
 
     res.redirect('/sw-admin/projects')
   } catch (err) {
@@ -783,6 +800,23 @@ app.get('/sw-admin/clients', requireAdminAuth, async (req, res) => {
 
     const totalPages = Math.ceil(filteredCount / limit)
 
+    const notices = {
+      success: {
+        created: 'مشتری جدید با موفقیت ثبت شد',
+        updated: 'اطلاعات مشتری با موفقیت به‌روزرسانی شد',
+        deleted: 'مشتری با موفقیت حذف شد'
+      },
+      error: {
+        name_required: 'نام مشتری الزامی است',
+        email_invalid: 'ایمیل واردشده معتبر نیست',
+        email_taken: 'این ایمیل قبلاً برای مشتری دیگری ثبت شده است',
+        category_invalid: 'دسته‌بندی انتخاب‌شده معتبر نیست',
+        client_missing: 'مشتری پیدا نشد',
+        client_has_records: 'این مشتری در پروژه، فاکتور یا محتوای دیگری استفاده شده؛ برای حفظ ارتباط داده‌ها او را غیرفعال کنید',
+        save_failed: 'ذخیره اطلاعات مشتری انجام نشد'
+      }
+    }
+
     res.render('admin/Clients', {
       clients: clientsWithProjects,
       categories,
@@ -795,7 +829,12 @@ app.get('/sw-admin/clients', requireAdminAuth, async (req, res) => {
       totalPages,
       limit,
       startItem: filteredCount === 0 ? 0 : skip + 1,
-      endItem: Math.min(skip + limit, filteredCount)
+      endItem: Math.min(skip + limit, filteredCount),
+      notice: req.query.success && notices.success[req.query.success]
+        ? { type: 'success', message: notices.success[req.query.success] }
+        : req.query.error && notices.error[req.query.error]
+          ? { type: 'error', message: notices.error[req.query.error] }
+          : null
     })
   } catch (err) {
     console.error(err)
@@ -813,23 +852,32 @@ app.post('/sw-admin/clients' , requireAdminAuth , async (req, res) => {
   try {
     const { name, company, email, phone, address, notes, avatar, category } = req.body
 
-    if (!String(name || '').trim()) return res.status(400).send('نام مشتری الزامی است')
+    const cleanName = String(name || '').trim()
+    const cleanEmail = String(email || '').trim().toLowerCase()
+    if (!cleanName) return res.redirect('/sw-admin/clients?error=name_required')
+    if (cleanEmail && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(cleanEmail)) {
+      return res.redirect('/sw-admin/clients?error=email_invalid')
+    }
+    if (category && (!mongoose.Types.ObjectId.isValid(category) || !await Category.exists({ _id: category, type: 'service', isActive: true }))) {
+      return res.redirect('/sw-admin/clients?error=category_invalid')
+    }
 
     await Client.create({
-      name: String(name).trim(),
+      name: cleanName,
       company: String(company || '').trim(),
-      email: String(email || '').trim() ? String(email).trim().toLowerCase() : undefined,
-      phone: String(phone || '').trim(),
+      email: cleanEmail || undefined,
+      phone: toEnglishDigits(String(phone || '').trim()),
       address: String(address || '').trim(),
       notes: String(notes || '').trim(),
       avatar: avatar || undefined,
       category: category || null
     })
 
-    res.redirect('/sw-admin/clients')
+    res.redirect('/sw-admin/clients?success=created')
   } catch (err) {
     console.error(err)
-    res.status(500).send('خطا در ثبت مشتری')
+    if (err.code === 11000) return res.redirect('/sw-admin/clients?error=email_taken')
+    res.redirect('/sw-admin/clients?error=save_failed')
   }
 })
 
@@ -837,8 +885,18 @@ app.post('/sw-admin/clients' , requireAdminAuth , async (req, res) => {
 
 app.post('/sw-admin/clients/:id/delete' , requireAdminAuth , async (req, res) => {
   try {
-    await Client.findByIdAndDelete(req.params.id)
-    res.redirect('/sw-admin/clients')
+    if (!mongoose.Types.ObjectId.isValid(req.params.id)) return res.redirect('/sw-admin/clients?error=client_missing')
+    const clientId = req.params.id
+    const linkedRecords = await Promise.all([
+      Project.exists({ client: clientId }),
+      Invoice.exists({ client: clientId }),
+      Ticket.exists({ client: clientId }),
+      Review.exists({ client: clientId }),
+      Portfolio.exists({ client: clientId })
+    ])
+    if (linkedRecords.some(Boolean)) return res.redirect('/sw-admin/clients?error=client_has_records')
+    const deleted = await Client.findByIdAndDelete(req.params.id)
+    res.redirect(deleted ? '/sw-admin/clients?success=deleted' : '/sw-admin/clients?error=client_missing')
   } catch (err) {
     res.status(500).send('خطا در حذف مشتری')
   }
@@ -846,18 +904,37 @@ app.post('/sw-admin/clients/:id/delete' , requireAdminAuth , async (req, res) =>
 
 app.get('/sw-admin/clients/export' , requireAdminAuth , async (req, res) => {
   try {
-    const clients = await Client.find().sort({ createdAt: -1 })
+    const clients = await Client.find()
+      .populate('category', 'title')
+      .sort({ createdAt: -1 })
+      .lean()
 
-    let csv = 'نام,شرکت,ایمیل,تلفن,آدرس,وضعیت\n'
-
-    clients.forEach(client => {
-      csv += `"${client.name || ''}","${client.company || ''}","${client.email || ''}","${client.phone || ''}","${client.address || ''}","${client.isActive ? 'فعال' : 'غیرفعال'}"\n`
-    })
+    const csvCell = value => {
+      let text = value == null ? '' : String(value)
+      // Keep spreadsheet apps from treating user-entered text as a formula.
+      if (/^[\t\r ]*[=+@-]/.test(text)) text = `'${text}`
+      return `"${text.replace(/"/g, '""')}"`
+    }
+    const rows = [[
+      'نام', 'شرکت', 'ایمیل', 'تلفن', 'دسته‌بندی', 'آدرس', 'یادداشت', 'وضعیت', 'تاریخ ثبت'
+    ]]
+    clients.forEach(client => rows.push([
+      client.name,
+      client.company,
+      client.email,
+      client.phone,
+      client.category?.title,
+      client.address,
+      client.notes,
+      client.isActive ? 'فعال' : 'غیرفعال',
+      client.createdAt ? new Date(client.createdAt).toLocaleDateString('fa-IR') : ''
+    ]))
+    const csv = rows.map(row => row.map(csvCell).join(',')).join('\r\n') + '\r\n'
 
     res.setHeader('Content-Type', 'text/csv; charset=utf-8')
-    res.setHeader('Content-Disposition', 'attachment; filename=clients.csv')
+    res.setHeader('Content-Disposition', "attachment; filename=clients.csv; filename*=UTF-8''clients.csv")
 
-    res.send('\uFEFF' + csv) // برای درست نمایش فارسی در Excel
+    res.send('\uFEFF' + csv)
   } catch (err) {
     console.error(err)
     res.status(500).send('خطا در خروجی CSV')
@@ -867,44 +944,46 @@ app.get('/sw-admin/clients/export' , requireAdminAuth , async (req, res) => {
 app.post('/sw-admin/clients/:id/update', requireAdminAuth, async (req, res) => {
   try {
     const { name, company, email, phone, address, notes, category, isActive } = req.body;
+    const cleanName = String(name || '').trim()
+    const cleanEmail = String(email || '').trim().toLowerCase()
 
-    if (!name || !name.trim()) {
-      return res.redirect('/sw-admin/clients?error=نام مشتری الزامی است');
+    if (!cleanName) return res.redirect('/sw-admin/clients?error=name_required')
+    if (!mongoose.Types.ObjectId.isValid(req.params.id)) return res.redirect('/sw-admin/clients?error=client_missing')
+    if (cleanEmail && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(cleanEmail)) return res.redirect('/sw-admin/clients?error=email_invalid')
+    if (category && (!mongoose.Types.ObjectId.isValid(category) || !await Category.exists({ _id: category, type: 'service', isActive: true }))) {
+      return res.redirect('/sw-admin/clients?error=category_invalid')
     }
 
     const updateData = {
-      name: name.trim(),
-      company: company ? company.trim() : '',
-      phone: phone ? phone.trim() : '',
-      address: address ? address.trim() : '',
-      notes: notes ? notes.trim() : '',
-      category: category || null,
-      isActive: isActive === 'on'
-    };
-
-    // ایمیل خالی را حذف می‌کنیم تا unique index خراب نشود
-    const mail = email ? email.trim().toLowerCase() : '';
-    if (mail) updateData.email = mail;
-    else updateData.$unset = { email: 1 };
+      $set: {
+        name: cleanName,
+        company: String(company || '').trim(),
+        phone: toEnglishDigits(String(phone || '').trim()),
+        address: String(address || '').trim(),
+        notes: String(notes || '').trim(),
+        category: category || null,
+        isActive: isActive === 'on'
+      }
+    }
+    if (cleanEmail) updateData.$set.email = cleanEmail
+    else updateData.$unset = { email: 1 }
 
     const client = await Client.findByIdAndUpdate(req.params.id, updateData, {
       new: true,
       runValidators: true
     });
 
-    if (!client) {
-      return res.redirect('/sw-admin/clients?error=مشتری پیدا نشد');
-    }
+    if (!client) return res.redirect('/sw-admin/clients?error=client_missing')
 
-    res.redirect('/sw-admin/clients?success=اطلاعات مشتری با موفقیت به‌روزرسانی شد');
+    res.redirect('/sw-admin/clients?success=updated')
   } catch (err) {
     console.error('Edit client error:', err);
 
     if (err.code === 11000) {
-      return res.redirect('/sw-admin/clients?error=این ایمیل قبلاً برای مشتری دیگری ثبت شده');
+      return res.redirect('/sw-admin/clients?error=email_taken')
     }
 
-    res.redirect('/sw-admin/clients?error=خطا در به‌روزرسانی اطلاعات مشتری');
+    res.redirect('/sw-admin/clients?error=save_failed')
   }
 });
 
@@ -1139,7 +1218,9 @@ app.get('/sw-admin/invoices/export/pdf', requireAdminAuth, async (req, res) => {
     const fileName = `invoices-${Date.now()}.pdf`
 
     res.setHeader('Content-Type', 'application/pdf')
-    res.setHeader('Content-Disposition', `inline; filename="${fileName}"`)
+    res.setHeader('Content-Disposition', `attachment; filename="${fileName}"`)
+    res.setHeader('Content-Length', pdfBuffer.length)
+    res.setHeader('Cache-Control', 'no-store')
     res.send(pdfBuffer)
 
   } catch (err) {
@@ -2202,12 +2283,96 @@ app.post('/sw-admin/reviews/:id/delete', requireAdminAuth, async (req, res) => {
 // ─────────────────────────────────────────
 //  ADMIN — BLOG
 // ─────────────────────────────────────────
+const slugifyBlogPost = value => String(value || '')
+  .normalize('NFKC')
+  .trim()
+  .toLowerCase()
+  .replace(/[\s_]+/g, '-')
+  .replace(/[^\p{L}\p{N}-]+/gu, '')
+  .replace(/-+/g, '-')
+  .replace(/^-|-$/g, '')
+
+async function uniqueBlogPostSlug(value, excludeId) {
+  const base = slugifyBlogPost(value) || `article-${Date.now()}`
+  let candidate = base
+  let suffix = 2
+  const query = slug => ({ slug, ...(excludeId ? { _id: { $ne: excludeId } } : {}) })
+  while (await BlogPost.exists(query(candidate))) candidate = `${base}-${suffix++}`
+  return candidate
+}
+
+function normalizeBlogTags(value) {
+  const values = Array.isArray(value) ? value : (value == null || value === '' ? [] : [value])
+  return [...new Set(values.map(tag => String(tag || '').trim()).filter(Boolean))]
+}
+
+function hasBlogBodyContent(value) {
+  const html = String(value || '')
+  const text = html.replace(/<img\b[^>]*>/gi, ' image ')
+    .replace(/<[^>]*>/g, ' ')
+    .replace(/&nbsp;|&#160;|&#xA0;/gi, ' ')
+    .replace(/\s+/g, ' ')
+    .trim()
+  return Boolean(text)
+}
+
+function parseBlogReadingTime(value) {
+  const clean = toEnglishDigits(String(value || '').trim())
+  if (!clean) return undefined
+  const minutes = Number.parseInt(clean, 10)
+  return Number.isInteger(minutes) && minutes >= 1 && minutes <= 999 ? minutes : null
+}
+
+async function resolveBlogAuthorName(value) {
+  const clean = String(value || '').trim()
+  if (!clean) return ''
+  let author = null
+  if (mongoose.Types.ObjectId.isValid(clean)) author = await User.findById(clean).select('name').lean()
+  if (!author) author = await User.findOne({ name: clean }).select('name').lean()
+  return author?.name || ''
+}
+
+function handleBlogUpload(req, res, next) {
+  blogUpload.single('coverImage')(req, res, err => {
+    if (!err) return next()
+    const message = err.code === 'LIMIT_FILE_SIZE'
+      ? 'حجم تصویر شاخص نباید بیشتر از ۱۰ مگابایت باشد'
+      : (err.message || 'بارگذاری تصویر انجام نشد')
+    res.status(400).send(message)
+  })
+}
+
+async function rejectBlogForm(req, res, status, message) {
+  if (req.file?.path) await fs.promises.unlink(req.file.path).catch(() => {})
+  return res.status(status).send(message)
+}
+
 app.get('/sw-admin/blog' , requireAdminAuth , async (req, res) => {
   try {
-    const posts = await BlogPost.find()
-      .sort({ createdAt: -1 })
-    res.render('admin/Blog', { posts })
+    const rawPosts = await BlogPost.find().sort({ createdAt: -1 }).lean()
+    const legacyAuthorIds = rawPosts
+      .map(post => String(post.author || ''))
+      .filter(author => mongoose.Types.ObjectId.isValid(author))
+    const authors = legacyAuthorIds.length
+      ? await User.find({ _id: { $in: legacyAuthorIds } }).select('name').lean()
+      : []
+    const authorNames = new Map(authors.map(author => [String(author._id), author.name]))
+    const posts = rawPosts.map(post => {
+      const authorValue = typeof post.author === 'object' ? post.author?.name : post.author
+      return { ...post, authorName: authorNames.get(String(authorValue || '')) || authorValue || '' }
+    })
+    const notices = {
+      success: { created: 'مقاله با موفقیت ذخیره شد', updated: 'تغییرات مقاله ذخیره شد', deleted: 'مقاله حذف شد' },
+      error: { save_failed: 'ذخیره مقاله انجام نشد', slug_taken: 'این نامک قبلاً استفاده شده است' }
+    }
+    const notice = req.query.success && notices.success[req.query.success]
+      ? { type: 'success', message: notices.success[req.query.success] }
+      : req.query.error && notices.error[req.query.error]
+        ? { type: 'error', message: notices.error[req.query.error] }
+        : null
+    res.render('admin/Blog', { posts, notice })
   } catch (err) {
+    console.error('Blog page error:', err)
     res.status(500).send('خطا در بارگذاری وبلاگ')
   }
 })
@@ -2237,9 +2402,12 @@ app.post('/sw-admin/blog/:id/status', requireAdminAuth, async (req, res) => {
 
 app.post('/sw-admin/blog/:id/delete' , requireAdminAuth , async (req, res) => {
   try {
-    await BlogPost.findByIdAndDelete(req.params.id)
-    res.redirect('/sw-admin/blog')
+    if (!mongoose.Types.ObjectId.isValid(req.params.id)) return res.status(400).send('شناسه مقاله معتبر نیست')
+    const post = await BlogPost.findByIdAndDelete(req.params.id)
+    if (!post) return res.status(404).send('مقاله پیدا نشد')
+    res.redirect('/sw-admin/blog?success=deleted')
   } catch (err) {
+    console.error('Blog delete error:', err)
     res.status(500).send('خطا')
   }
 })
@@ -2261,23 +2429,52 @@ app.get('/sw-admin/tasks' , requireAdminAuth , async (req, res) => {
 
 app.post('/sw-admin/tasks', requireAdminAuth, async (req, res) => {
   const wantsJson = (req.get('Accept') || '').includes('application/json')
+  const respondError = (status, message) => wantsJson
+    ? res.status(status).json({ success: false, message })
+    : res.status(status).send(message)
 
   try {
     const { title, priority, dueDate, project } = req.body
+    const cleanTitle = typeof title === 'string' ? title.trim() : ''
+    const assignedTo = req.session.user?.id || req.session.user?._id
 
-    if (!title || !title.trim()) {
-      return wantsJson
-        ? res.status(400).json({ success: false, message: 'عنوان وظیفه الزامی است' })
-        : res.status(400).send('عنوان وظیفه الزامی است')
+    if (!cleanTitle) return respondError(400, 'عنوان وظیفه الزامی است')
+    if (cleanTitle.length > 140) return respondError(400, 'عنوان وظیفه نباید بیشتر از ۱۴۰ نویسه باشد')
+    if (!assignedTo || !mongoose.Types.ObjectId.isValid(assignedTo)) return respondError(401, 'نشست کاربری معتبر نیست؛ دوباره وارد شوید')
+
+    let parsedDueDate = null
+    if (typeof dueDate === 'string' && dueDate.trim()) {
+      const normalizedDueDate = toEnglishDigits(dueDate.trim())
+      if (/^\d{4}-\d{2}-\d{2}$/.test(normalizedDueDate)) {
+        const [year, month, day] = normalizedDueDate.split('-').map(Number)
+        parsedDueDate = new Date(Date.UTC(year, month - 1, day, 12))
+        if (parsedDueDate.getUTCFullYear() !== year || parsedDueDate.getUTCMonth() !== month - 1 || parsedDueDate.getUTCDate() !== day) {
+          parsedDueDate = null
+        }
+      } else {
+        const jalaliDueDate = moment(normalizedDueDate, 'jYYYY/jMM/jDD', true)
+        if (jalaliDueDate.isValid() && jalaliDueDate.format('jYYYY/jMM/jDD') === normalizedDueDate) {
+          parsedDueDate = jalaliDueDate.locale('en').toDate()
+        }
+      }
+      if (!parsedDueDate || Number.isNaN(parsedDueDate.getTime())) return respondError(400, 'تاریخ موعد معتبر نیست')
+    }
+
+    let projectId = null
+    if (project) {
+      if (!mongoose.Types.ObjectId.isValid(project)) return respondError(400, 'پروژه انتخاب‌شده معتبر نیست')
+      const foundProject = await Project.exists({ _id: project, status: { $ne: 'cancelled' } })
+      if (!foundProject) return respondError(400, 'پروژه انتخاب‌شده پیدا نشد')
+      projectId = project
     }
 
     const task = await Task.create({
-      title: title.trim(),
+      title: cleanTitle,
       priority: ['low', 'medium', 'high'].includes(priority) ? priority : 'medium',
-      dueDate: dueDate || null,
-      project: project || null,
-      assignedTo: req.session.user.id,
-      createdBy: req.session.user.id
+      dueDate: parsedDueDate,
+      project: projectId,
+      assignedTo,
+      createdBy: assignedTo
     })
 
     if (wantsJson) {
@@ -2295,14 +2492,17 @@ app.post('/sw-admin/tasks', requireAdminAuth, async (req, res) => {
 
     res.redirect(req.get('Referer') || '/sw-admin/tasks')
   } catch (err) {
-    res.status(500).send('خطا در ثبت وظیفه')
+    console.error('Task create error:', err)
+    respondError(500, 'خطا در ثبت وظیفه؛ لطفاً دوباره تلاش کنید')
   }
 })
 
 // toggle done — returns JSON for fetch calls from dashboard
 app.post('/sw-admin/tasks/:id/toggle' , requireAdminAuth , async (req, res) => {
   try {
+    if (!mongoose.Types.ObjectId.isValid(req.params.id)) return res.status(400).json({ success: false, message: 'شناسه وظیفه معتبر نیست' })
     const task   = await Task.findById(req.params.id)
+    if (!task) return res.status(404).json({ success: false, message: 'وظیفه پیدا نشد' })
     task.isDone  = !task.isDone
     task.doneAt  = task.isDone ? new Date() : null
     await task.save()
@@ -2314,7 +2514,9 @@ app.post('/sw-admin/tasks/:id/toggle' , requireAdminAuth , async (req, res) => {
 
 app.post('/sw-admin/tasks/:id/delete' , requireAdminAuth , async (req, res) => {
   try {
-    await Task.findByIdAndDelete(req.params.id)
+    if (!mongoose.Types.ObjectId.isValid(req.params.id)) return res.status(400).send('شناسه وظیفه معتبر نیست')
+    const deleted = await Task.findByIdAndDelete(req.params.id)
+    if (!deleted) return res.status(404).send('وظیفه پیدا نشد')
     res.redirect(req.get('Referer') || '/sw-admin')
   } catch (err) {
     res.status(500).send('خطا')
@@ -2607,54 +2809,18 @@ app.post('/sw-admin/projects/add', requireAdminAuth, async (req, res) => {
       progress          // ← اضافه شد
     } = req.body
 
-    if (!title || !client || !category) {
+    if (!title || !String(title).trim() || !client || !category) {
       return res.status(400).send('نام پروژه، مشتری و نوع پروژه الزامی هستند')
     }
 
-    const toEnglishDigits = (str) => {
-      if (!str) return str
-      const persianDigits = 'Û°Û±Û²Û³Û´ÛµÛ¶Û·Û¸Û¹'
-      const arabicDigits  = '٠١٢٣٤٥٦٧٨٩'
-      return String(str)
-        .replace(/[Û°-Û¹]/g, d => persianDigits.indexOf(d))
-        .replace(/[٠-٩]/g, d => arabicDigits.indexOf(d))
+    if (!mongoose.Types.ObjectId.isValid(client) || !mongoose.Types.ObjectId.isValid(category)) {
+      return res.status(400).send('شناسه مشتری یا نوع پروژه معتبر نیست')
     }
-
-    const normalizeDate = (value) => {
-      if (!value) return null
-
-      const cleaned = toEnglishDigits(value).trim()
-      const parsed = moment(cleaned, 'jYYYY/jMM/jDD')
-
-      if (!parsed.isValid()) {
-        return null
-      }
-
-      return parsed.locale('en').toDate()
-    }
-
-    const normalizeTechStack = (value) => {
-      if (!value) return []
-
-      if (Array.isArray(value)) {
-        return value
-          .map(item => String(item).trim())
-          .filter(Boolean)
-      }
-
-      return String(value)
-        .split(/[,،·|]/)
-        .map(item => item.trim())
-        .filter(Boolean)
-    }
-
-    const normalizeProgress = (value) => {
-      const num = parseInt(toEnglishDigits(value), 10)
-
-      if (Number.isNaN(num)) return 0
-
-      return Math.max(0, Math.min(100, num))
-    }
+    const [foundClient, foundCategory] = await Promise.all([
+      Client.exists({ _id: client, isActive: true }),
+      Category.exists({ _id: category, type: 'service', isActive: true })
+    ])
+    if (!foundClient || !foundCategory) return res.status(400).send('مشتری یا نوع پروژه انتخاب‌شده معتبر نیست')
 
     const parsedStartDate = normalizeDate(startDate)
     const parsedDeadline  = normalizeDate(deadline)
@@ -2675,8 +2841,8 @@ app.post('/sw-admin/projects/add', requireAdminAuth, async (req, res) => {
       techStack: normalizeTechStack(techStack),
       description: description ? description.trim() : '',
       status: 'active',
-      progress: normalizeProgress(progress),   // ← دیگه هاردکد نیست
-      createdBy: '000000000000000000000001'
+      progress: normalizeProgress(progress),
+      createdBy: req.session.user.id || req.session.user._id
     })
 
     res.redirect('/sw-admin/projects')
@@ -3020,7 +3186,7 @@ app.post('/sw-admin/service-categories/add', requireAdminAuth, async (req, res) 
 
 app.get('/sw-admin/blog-form', requireAdminAuth, async (req, res) => {
   try {
-    const authors = await User.find().select('name').lean()   // به‌جای BlogPost.distinct('author')
+    const authors = await User.find().select('name').sort({ name: 1 }).lean()
     const categoriesRaw = await BlogPost.distinct('category');
     const categories = categoriesRaw
       .filter(Boolean)
@@ -3044,10 +3210,16 @@ app.get('/sw-admin/blog-form', requireAdminAuth, async (req, res) => {
 // ─────────────────────────────────────
 app.get('/sw-admin/blog-form/:id', requireAdminAuth, async (req, res) => {
   try {
+    if (!mongoose.Types.ObjectId.isValid(req.params.id)) return res.status(400).send('شناسه مقاله معتبر نیست')
     const post = await BlogPost.findById(req.params.id).lean();
     if (!post) return res.status(404).send('مقاله یافت نشد');
 
-    const authors = await User.find().select('name').lean()   // به‌جای BlogPost.distinct('author')
+    const authors = await User.find().select('name').sort({ name: 1 }).lean()
+    const oldAuthorId = String(post.author || '')
+    const matchingAuthor = mongoose.Types.ObjectId.isValid(oldAuthorId)
+      ? authors.find(author => String(author._id) === oldAuthorId)
+      : null
+    const formItem = { ...post, author: matchingAuthor?.name || oldAuthorId }
     const categoriesRaw = await BlogPost.distinct('category');
     const categories = categoriesRaw
 
@@ -3057,7 +3229,7 @@ app.get('/sw-admin/blog-form/:id', requireAdminAuth, async (req, res) => {
     const mediaItems = await Media.find().sort({ createdAt: -1 }).lean()
     res.render('admin/blog-form', {
       isEdit: true,
-      item: post,
+      item: formItem,
       authors,
       categories, mediaItems
     });
@@ -3070,33 +3242,44 @@ app.get('/sw-admin/blog-form/:id', requireAdminAuth, async (req, res) => {
 // ─────────────────────────────────────
 // POST  ایجاد مقاله جدید
 // ─────────────────────────────────────
-app.post('/sw-admin/blog', requireAdminAuth, blogUpload.single('coverImage'), async (req, res) => {
+app.post('/sw-admin/blog', requireAdminAuth, handleBlogUpload, async (req, res) => {
   try {
-    const { title, slug, excerpt, content, category, author, readTime, publish } = req.body;
+    const title = String(req.body.title || '').trim()
+    const content = String(req.body.content || '').trim()
+    const excerpt = String(req.body.excerpt || '').trim()
+    const category = String(req.body.category || '').trim()
+    const author = await resolveBlogAuthorName(req.body.author)
+    const coverImageAlt = String(req.body.coverImageAlt || '').trim()
+    const tags = normalizeBlogTags(req.body['tags[]'] ?? req.body.tags)
+    const readingTime = parseBlogReadingTime(req.body.readTime)
 
-    // چک‌باکس‌های تگ: اگه فقط ÛŒÚ©ÛŒ انتخاب بشه string میاد نه آرایه
-    let tags = req.body['tags[]'] || req.body.tags || [];
-    if (!Array.isArray(tags)) tags = [tags];
+    if (!title) return rejectBlogForm(req, res, 400, 'عنوان مقاله الزامی است')
+    if (!hasBlogBodyContent(content)) return rejectBlogForm(req, res, 400, 'متن مقاله را وارد کنید')
+    if (!author) return rejectBlogForm(req, res, 400, 'نویسنده را از فهرست انتخاب کنید')
+    if (excerpt.length > 300) return rejectBlogForm(req, res, 400, 'خلاصه مقاله نباید بیشتر از ۳۰۰ نویسه باشد')
+    if (coverImageAlt.length > 200) return rejectBlogForm(req, res, 400, 'متن جایگزین تصویر نباید بیشتر از ۲۰۰ نویسه باشد')
+    if (readingTime === null) return rejectBlogForm(req, res, 400, 'زمان مطالعه باید عددی بین ۱ تا ۹۹۹ دقیقه باشد')
 
     const newPost = new BlogPost({
       title,
-      slug,
+      slug: await uniqueBlogPostSlug(req.body.slug || title),
       excerpt,
-      body: content,              // توجه: content تو فرم → body تو schema
+      body: content,
       category,
       author,
       tags,
-      readingTime: readTime ? parseInt(readTime, 10) : undefined,
-      status: publish === '1' ? 'published' : 'draft',
+      readingTime,
+      status: req.body.publish === '1' ? 'published' : 'draft',
       coverImage: req.file ? '/uploads/blog/' + req.file.filename : (req.body.coverImage || undefined),
-      coverImageAlt: req.body.coverImageAlt || ''
+      coverImageAlt
     });
 
     await newPost.save();
-    res.redirect('/sw-admin/blog');
+    res.redirect('/sw-admin/blog?success=created');
   } catch (err) {
     console.error(err);
-    res.status(500).send('خطا در ذخیره مقاله');
+    if (err.code === 11000) return rejectBlogForm(req, res, 409, 'این نامک قبلاً استفاده شده است؛ نامک دیگری انتخاب کنید')
+    return rejectBlogForm(req, res, 500, 'خطا در ذخیره مقاله؛ اطلاعات فرم را بررسی کنید')
   }
 });
 
@@ -3150,39 +3333,52 @@ app.post('/clients/:id', requireAdminAuth, async (req, res) => {
 // ─────────────────────────────────────
 // POST  ویرایش مقاله
 // ─────────────────────────────────────
-app.post('/sw-admin/blog/:id/update', requireAdminAuth, blogUpload.single('coverImage'), async (req, res) => {
+app.post('/sw-admin/blog/:id/update', requireAdminAuth, handleBlogUpload, async (req, res) => {
   try {
-    const { title, slug, excerpt, content, category, author, readTime, publish } = req.body;
-
-    let tags = req.body['tags[]'] || req.body.tags || [];
-    if (!Array.isArray(tags)) tags = [tags];
+    if (!mongoose.Types.ObjectId.isValid(req.params.id)) return rejectBlogForm(req, res, 400, 'شناسه مقاله معتبر نیست')
+    const title = String(req.body.title || '').trim()
+    const content = String(req.body.content || '').trim()
+    const excerpt = String(req.body.excerpt || '').trim()
+    const category = String(req.body.category || '').trim()
+    const authorSelection = String(req.body.author || '').trim()
+    const resolvedAuthor = await resolveBlogAuthorName(authorSelection)
+    const coverImageAlt = String(req.body.coverImageAlt || '').trim()
+    const tags = normalizeBlogTags(req.body['tags[]'] ?? req.body.tags)
+    const readingTime = parseBlogReadingTime(req.body.readTime)
 
     const post = await BlogPost.findById(req.params.id);
-    if (!post) return res.status(404).send('مقاله یافت نشد');
+    if (!post) return rejectBlogForm(req, res, 404, 'مقاله یافت نشد')
+    const author = resolvedAuthor || (authorSelection === String(post.author || '').trim() ? authorSelection : '')
+    if (!title) return rejectBlogForm(req, res, 400, 'عنوان مقاله الزامی است')
+    if (!hasBlogBodyContent(content)) return rejectBlogForm(req, res, 400, 'متن مقاله را وارد کنید')
+    if (!author) return rejectBlogForm(req, res, 400, 'نویسنده را از فهرست انتخاب کنید')
+    if (excerpt.length > 300) return rejectBlogForm(req, res, 400, 'خلاصه مقاله نباید بیشتر از ۳۰۰ نویسه باشد')
+    if (coverImageAlt.length > 200) return rejectBlogForm(req, res, 400, 'متن جایگزین تصویر نباید بیشتر از ۲۰۰ نویسه باشد')
+    if (readingTime === null) return rejectBlogForm(req, res, 400, 'زمان مطالعه باید عددی بین ۱ تا ۹۹۹ دقیقه باشد')
 
+    post.slug = await uniqueBlogPostSlug(req.body.slug || title, post._id)
     post.title = title;
-    post.slug = slug;
     post.excerpt = excerpt;
     post.body = content;
     post.category = category;
     post.author = author;
     post.tags = tags;
-    post.readingTime = readTime ? parseInt(readTime, 10) : undefined;
-    post.status = publish === '1' ? 'published' : 'draft';
-    post.coverImageAlt = req.body.coverImageAlt || '';
+    post.readingTime = readingTime;
+    if (req.body.publish === '1') post.status = 'published'
+    else if (req.body.publish === '0') post.status = 'draft'
+    post.coverImageAlt = coverImageAlt;
 
     if (req.file) {
       post.coverImage = '/uploads/blog/' + req.file.filename;
     } else if (req.body.coverImage) {
       post.coverImage = req.body.coverImage;
     }
-    post.coverImageAlt = req.body.coverImageAlt || '';
-
-    await post.save(); // pre('save') hook برای publishedAt همینجا فعال می‌مونه
-    res.redirect('/sw-admin/blog');
+    await post.save();
+    res.redirect('/sw-admin/blog?success=updated');
   } catch (err) {
     console.error(err);
-    res.status(500).send('خطا در به‌روزرسانی مقاله');
+    if (err.code === 11000) return rejectBlogForm(req, res, 409, 'این نامک قبلاً استفاده شده است؛ نامک دیگری انتخاب کنید')
+    return rejectBlogForm(req, res, 500, 'خطا در به‌روزرسانی مقاله')
   }
 });
 

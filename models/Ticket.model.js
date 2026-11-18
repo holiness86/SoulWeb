@@ -87,28 +87,23 @@ const ticketSchema = new mongoose.Schema({
 // ─────────────────────────────────────────
 //  تولید خودکار شماره تیکت قبل از ذخیره
 // ─────────────────────────────────────────
-ticketSchema.pre('save', async function (next) {
-  if (!this.isNew || this.ticketNo) return next();
+ticketSchema.pre('save', async function () {
+  if (!this.isNew || this.ticketNo) return;
 
-  try {
-    const Ticket = mongoose.model('Ticket');
-    const lastTicket = await Ticket.findOne({}).sort({ createdAt: -1 }).select('ticketNo').lean();
+  const Ticket = mongoose.model('Ticket');
+  const lastTicket = await Ticket.findOne({}).sort({ createdAt: -1 }).select('ticketNo').lean();
 
-    let nextNumber = 1000;
-    if (lastTicket && lastTicket.ticketNo) {
-      const lastNumber = parseInt(lastTicket.ticketNo.replace('TCK-', ''), 10);
-      if (!isNaN(lastNumber)) nextNumber = lastNumber + 1;
-    }
-
-    this.ticketNo = `TCK-${nextNumber}`;
-    next();
-  } catch (err) {
-    next(err);
+  let nextNumber = 1000;
+  if (lastTicket && lastTicket.ticketNo) {
+    const lastNumber = parseInt(lastTicket.ticketNo.replace('TCK-', ''), 10);
+    if (!isNaN(lastNumber)) nextNumber = lastNumber + 1;
   }
+
+  this.ticketNo = `TCK-${nextNumber}`;
 });
 
 // وقتی وضعیت به closed تغییر می‌کند، تاریخ بسته‌شدن ثبت شود
-ticketSchema.pre('save', function (next) {
+ticketSchema.pre('save', function () {
   if (this.isModified('status')) {
     if (this.status === 'closed' && !this.closedAt) {
       this.closedAt = new Date();
@@ -116,7 +111,6 @@ ticketSchema.pre('save', function (next) {
       this.closedAt = undefined;
     }
   }
-  next();
 });
 
 module.exports = mongoose.model('Ticket', ticketSchema);

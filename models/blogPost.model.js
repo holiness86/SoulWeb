@@ -2,11 +2,10 @@ const mongoose = require('mongoose');
 
 const blogPostSchema = new mongoose.Schema({
   title:       { type: String, required: true, trim: true },
-  slug:        { type: String, unique: true, required: true },
+  slug:        { type: String, unique: true, required: true, trim: true, lowercase: true },
   excerpt:     { type: String, maxlength: 300 },
   body:        { type: String, required: true },  // HTML or Markdown
   coverImage:  { type: String },
-  coverImageAlt: { type: String, trim: true, maxlength: 200, default: '' },
   coverImageAlt: { type: String, trim: true, maxlength: 200 },
   // author: {
   //   type: mongoose.Schema.Types.ObjectId,
@@ -27,11 +26,10 @@ const blogPostSchema = new mongoose.Schema({
 }, { timestamps: true });
 
 // Auto-set publishedAt when status changes to published
-blogPostSchema.pre('save', function(next) {
+blogPostSchema.pre('save', function() {
   if (this.isModified('status') && this.status === 'published' && !this.publishedAt) {
     this.publishedAt = new Date();
   }
-  next();
 });
 
 module.exports = mongoose.model('BlogPost', blogPostSchema);

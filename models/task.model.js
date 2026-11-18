@@ -31,11 +31,10 @@ const taskSchema = new mongoose.Schema({
 }, { timestamps: true });
 
 // Auto-set doneAt when task is marked done
-taskSchema.pre('save', function(next) {
+taskSchema.pre('save', function() {
   if (this.isModified('isDone') && this.isDone && !this.doneAt) {
     this.doneAt = new Date();
   }
-  next();
 });
 
 module.exports = mongoose.model('Task', taskSchema);

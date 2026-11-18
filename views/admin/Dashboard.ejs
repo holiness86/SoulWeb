@@ -226,9 +226,7 @@
             <h2 class="panel-title"><i class="bi bi-list-check" style="color:var(--main-500);"></i> وظایف</h2>
             <button type="button" class="btn-sol-sm" data-modal-open="taskModal"><i class="bi bi-plus-lg"></i> جدید</button>
           </div>
-          <% if (!todayTasks.length) { %>
-            <div class="sw-empty"><i class="bi bi-check2-all"></i>وظیفه‌ای ثبت نشده است</div>
-          <% } %>
+          <div class="sw-empty" id="dashboardTaskEmpty" <%= todayTasks.length ? 'hidden' : '' %>><i class="bi bi-check2-all"></i>وظیفه‌ای ثبت نشده است</div>
           <% todayTasks.forEach(function (task) { %>
             <div class="task-item" data-id="<%= task._id %>">
               <div class="task-check <%= task.isDone ? 'done' : '' %>" role="checkbox" tabindex="0" aria-checked="<%= !!task.isDone %>"><%- task.isDone ? '<i class="bi bi-check-lg"></i>' : '' %></div>
@@ -251,10 +249,10 @@
       <h3 class="modal-title">وظیفه جدید</h3>
       <button type="button" class="btn-icon" data-modal-close aria-label="بستن"><i class="bi bi-x-lg"></i></button>
     </div>
-    <form action="/sw-admin/tasks" method="POST" data-validate>
+    <form action="/sw-admin/tasks" method="POST" id="dashboardTaskForm" data-validate novalidate>
       <div class="sw-field">
         <label class="sol-label" for="taskTitle">عنوان</label>
-        <input class="sol-input" id="taskTitle" name="title" data-rule="required" placeholder="مثلاً: ارسال پیش‌فاکتور" autocomplete="off">
+        <input class="sol-input" id="taskTitle" name="title" data-rule="required" maxlength="140" required placeholder="مثلاً: ارسال پیش‌فاکتور" autocomplete="off">
       </div>
       <div class="sw-field">
         <label class="sol-label" for="taskPri">اولویت</label>
@@ -298,6 +296,49 @@
     });
     document.addEventListener('keydown', function (e) {
       if ((e.key === 'Enter' || e.key === ' ') && e.target.classList && e.target.classList.contains('task-check')) { e.preventDefault(); toggle(e.target.closest('.task-item')); }
+    });
+  })();
+
+  // ثبت وظیفه از داشبورد؛ پاسخ API را بررسی می‌کنیم و فهرست را همان لحظه به‌روز می‌کنیم.
+  (function () {
+    var form = document.getElementById('dashboardTaskForm');
+    if (!form) return;
+    var title = form.querySelector('[name="title"]');
+    var priority = form.querySelector('[name="priority"]');
+    var submit = form.querySelector('[type="submit"]');
+    form.addEventListener('submit', function (e) {
+      e.preventDefault();
+      var value = title.value.trim();
+      if (!value) { title.focus(); return; }
+      submit.disabled = true;
+      submit.classList.add('sw-loading');
+      fetch(form.action, {
+        method: 'POST', credentials: 'same-origin',
+        headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+        body: JSON.stringify({ title: value, priority: priority.value })
+      }).then(function (r) {
+        if (r.redirected && r.url.indexOf('/login') > -1) { location.href = r.url; throw new Error('نشست شما پایان یافته است؛ دوباره وارد شوید'); }
+        return r.json().catch(function () { return {}; }).then(function (j) {
+          if (!r.ok || !j.success) throw new Error(j.message || 'ثبت وظیفه انجام نشد');
+          return j;
+        });
+      }).then(function (j) {
+        var row = document.createElement('div'); row.className = 'task-item'; row.dataset.id = j.task._id;
+        var check = document.createElement('div'); check.className = 'task-check'; check.setAttribute('role', 'checkbox'); check.tabIndex = 0; check.setAttribute('aria-checked', 'false');
+        var text = document.createElement('span'); text.className = 'task-text'; text.textContent = j.task.title;
+        var pri = document.createElement('span'); pri.className = 'pri ' + j.task.priority; pri.textContent = ({ high: 'بالا', medium: 'متوسط', low: 'کم' })[j.task.priority] || 'متوسط';
+        row.appendChild(check); row.appendChild(text); row.appendChild(pri);
+        var panel = document.getElementById('dashboardTaskEmpty').parentNode;
+        panel.insertBefore(row, document.getElementById('dashboardTaskEmpty').nextSibling);
+        document.getElementById('dashboardTaskEmpty').hidden = true;
+        title.value = '';
+        if (window.closeModal) closeModal('taskModal');
+        if (window.SW) SW.island('وظیفه اضافه شد', { type: 'success', ms: 1800 });
+      }).catch(function (err) {
+        if (window.SW) SW.island(err.message || 'خطا در ارتباط با سرور', { type: 'error' });
+      }).then(function () {
+        submit.disabled = false; submit.classList.remove('sw-loading');
+      });
     });
   })();
   </script>

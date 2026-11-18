@@ -277,11 +277,13 @@ document.addEventListener('DOMContentLoaded', function () {
     addBtn.classList.add('sw-loading'); addBtn.disabled = true;
     fetch('/sw-admin/tasks', { method: 'POST', credentials: 'same-origin', headers: { 'Content-Type': 'application/json', Accept: 'application/json' }, body: JSON.stringify(body) })
       .then(function (r) {
-        if (!(r.headers.get('content-type') || '').includes('json')) { location.reload(); return null; }   // روت قدیمی redirect می‌کند
-        return r.json().then(function (j) { if (!r.ok || !j.success) throw new Error(j.message || 'ثبت وظیفه انجام نشد'); return j; });
+        if (r.redirected && r.url.indexOf('/login') > -1) { location.href = r.url; throw new Error('نشست شما پایان یافته است؛ دوباره وارد شوید'); }
+        return r.json().catch(function () { return {}; }).then(function (j) {
+          if (!r.ok || !j.success) throw new Error(j.message || 'ثبت وظیفه انجام نشد');
+          return j;
+        });
       })
       .then(function (j) {
-        if (!j) return;
         var row = buildRow({ _id: j.task._id, title: j.task.title, priority: j.task.priority, due: j.task.dueDate ? new Date(j.task.dueDate).getTime() : 0 }, projTitle);
         list.appendChild(row); var empty = $('#taskEmpty'); if (empty) empty.hidden = true;
         sortList(); recount(); apply(); row.classList.add('landed');

@@ -59,6 +59,13 @@
         <div class="pstat"><div class="pstat-icon warn"><i class="bi bi-person-dash-fill"></i></div><div><div class="pstat-val text-grad"><%= fa(inactiveCount) %></div><div class="pstat-lbl">غیرفعال</div></div></div>
       </div>
 
+      <% if (typeof notice !== 'undefined' && notice) { %>
+        <div class="login-alert" role="status" style="margin:0 0 1rem;<%= notice.type === 'success' ? 'background:var(--ok-bg);border-color:color-mix(in srgb,var(--ok) 28%,transparent);color:var(--ok);' : '' %>">
+          <i class="bi <%= notice.type === 'success' ? 'bi-check-circle-fill' : 'bi-exclamation-circle-fill' %>"></i>
+          <span><%= notice.message %></span>
+        </div>
+      <% } %>
+
       <!-- Search + Filter -->
       <div class="sw-toolbar fade-up fade-up-2">
         <label class="sw-search" aria-label="جستجوی مشتری">

@@ -9,8 +9,8 @@
   const rawAuthors = (typeof authors !== 'undefined' && Array.isArray(authors)) ? authors : [];
 
   // authors می‌تواند [{_id,name}] (پیشنهادی) یا فقط آرایه‌ای از idها (رفتار قدیمی) باشد
-  const authorOpts = rawAuthors.map((a) => (a && typeof a === 'object' && a.name) ? { id: String(a._id), name: a.name } : { id: String(a), name: String(a) });
-  const itemAuthorId = safeItem.author ? String(typeof safeItem.author === 'object' && safeItem.author._id ? safeItem.author._id : safeItem.author) : '';
+  const authorOpts = rawAuthors.map((a) => (a && typeof a === 'object' && a.name) ? { value: String(a.name), name: a.name } : { value: String(a), name: String(a) });
+  const itemAuthorValue = safeItem.author ? String(typeof safeItem.author === 'object' && safeItem.author.name ? safeItem.author.name : safeItem.author) : '';
 
   const defaultTagOptions = [
     'طراحی وب', 'سئو', 'وردپرس', 'فروشگاه اینترنتی', 'برندینگ',
@@ -131,10 +131,10 @@
 
                 <div class="sw-field">
                   <label class="sol-label" for="postAuthor">نویسنده</label>
-                  <select class="sol-select" name="author" id="postAuthor">
+                  <select class="sol-select" name="author" id="postAuthor" data-rule="required" required>
                     <option value="">انتخاب نویسنده</option>
-                    <% authorOpts.forEach(function (a) { %><option value="<%= a.id %>" <%= a.id === itemAuthorId ? 'selected' : '' %>><%= a.name %></option><% }); %>
-                    <% if (itemAuthorId && !authorOpts.find(function (a) { return a.id === itemAuthorId; })) { %><option value="<%= itemAuthorId %>" selected><%= (safeItem.author && safeItem.author.name) || itemAuthorId %></option><% } %>
+                    <% authorOpts.forEach(function (a) { %><option value="<%= a.value %>" <%= a.value === itemAuthorValue ? 'selected' : '' %>><%= a.name %></option><% }); %>
+                    <% if (itemAuthorValue && !authorOpts.find(function (a) { return a.value === itemAuthorValue; })) { %><option value="<%= itemAuthorValue %>" selected><%= itemAuthorValue %></option><% } %>
                   </select>
                 </div>
 
@@ -225,7 +225,13 @@ document.addEventListener('DOMContentLoaded', function () {
   function bodyText() { return quill ? quill.getText() : contentInput.value; }
   function words() { return bodyText().trim().split(/\s+/).filter(Boolean).length; }
 
-  form.addEventListener('submit', function () { if (quill) contentInput.value = quill.root.innerHTML; dirty = false; });
+  form.addEventListener('submit', function (e) {
+    if (quill) contentInput.value = quill.root.innerHTML;
+    var text = quill ? quill.getText().replace(/\u00a0/g, ' ').trim() : contentInput.value.replace(/<[^>]*>/g, ' ').replace(/&nbsp;/gi, ' ').trim();
+    var hasImage = quill ? !!quill.root.querySelector('img') : /<img\b/i.test(contentInput.value);
+    if (!text && !hasImage) { e.preventDefault(); toast('متن مقاله را وارد کنید', { type: 'warning' }); return; }
+    dirty = false;
+  });
   form.addEventListener('input', markDirty);
   window.addEventListener('beforeunload', function (e) { if (dirty) { e.preventDefault(); e.returnValue = ''; } });
 
